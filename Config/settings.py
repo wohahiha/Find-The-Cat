@@ -249,6 +249,23 @@ REST_FRAMEWORK = {
 
 
 # --------------------------------------------------------------------------------------
+# 缓存（Redis）
+# --------------------------------------------------------------------------------------
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_DB_CACHE = int(os.getenv("REDIS_DB_CACHE", "0"))
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CACHE}",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}
+
+# --------------------------------------------------------------------------------------
 # 邮件配置
 # --------------------------------------------------------------------------------------
 
