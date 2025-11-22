@@ -266,6 +266,13 @@ CACHES = {
 }
 
 # --------------------------------------------------------------------------------------
+# Docker 配置（用于靶机容器）
+# --------------------------------------------------------------------------------------
+DOCKER_HOST = os.getenv("DOCKER_HOST", None)  # 默认 None，走本机 /var/run/docker.sock 或 Windows 管道
+DOCKER_TLS_VERIFY = os.getenv("DOCKER_TLS_VERIFY", "0")  # 远程 TLS 场景再用
+DOCKER_CERT_PATH = os.getenv("DOCKER_CERT_PATH", None)  # 同上
+
+# --------------------------------------------------------------------------------------
 # 邮件配置
 # --------------------------------------------------------------------------------------
 
@@ -290,6 +297,34 @@ EMAIL_USE_SSL = (os.getenv('EMAIL_USE_SSL') or str(provider_config.get('use_ssl'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'no-reply@ftc.local')
+
+
+# --------------------------------------------------------------------------------------
+# 邮件配置强校验（邮件是 FTC 的必需组件）
+# --------------------------------------------------------------------------------------
+
+def _require_setting(name: str, value: str) -> None:
+    if not value:
+        raise ImproperlyConfigured(f"邮件配置错误：{name} 不能为空，请检查环境变量 .env")
+
+
+# 只在使用 SMTP 后端 且 非 DEBUG 环境时强校验
+if EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend' and not DEBUG:
+    # 1. 必须有合法的 provider（或自定义 EMAIL_HOST）
+    if not EMAIL_PROVIDER and not EMAIL_HOST:
+        raise ImproperlyConfigured(
+            "邮件配置错误：必须设置 EMAIL_PROVIDER 或 EMAIL_HOST 其一"
+        )
+    if EMAIL_PROVIDER and EMAIL_PROVIDER not in PROVIDER_DEFAULTS:
+        raise ImproperlyConfigured(
+            f"邮件配置错误：不支持的 EMAIL_PROVIDER={EMAIL_PROVIDER}，"
+            f"可选值为：{', '.join(PROVIDER_DEFAULTS.keys())}"
+        )
+
+    # 2. 必须设置发信账号、授权码和默认发件人
+    _require_setting("EMAIL_HOST_USER", EMAIL_HOST_USER)
+    _require_setting("EMAIL_HOST_PASSWORD", EMAIL_HOST_PASSWORD)
+    _require_setting("DEFAULT_FROM_EMAIL", DEFAULT_FROM_EMAIL)
 
 # --------------------------------------------------------------------------------------
 # CORS (跨域资源共享) 设置
