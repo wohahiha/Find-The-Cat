@@ -1,0 +1,430 @@
+"""账户模块的业务服务层。
+
+职责：
+- 发送/校验邮箱验证码（注册、找回密码、换绑邮箱）。
+- 用户注册、登录（JWT）、重置密码、修改资料/邮箱/密码、注销账号。
+- 统一封装业务流程与异常抛出，视图层仅做参数接收与结果返回。
+"""
+
+from __future__ import annotations
+
+import logging
+import secrets
+from datetime import timedelta
+from uuid import uuid4
+
+from django.utils import timezone
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from apps.common.base.base_service import BaseService
+from apps.common.exceptions import (
+    ConflictError,
+    RateLimitError,
+    NotFoundError,
+    InvalidCredentialsError,
+    AccountInactiveError,
+)
+
+from apps.common.infra.email_sender import send_mail_with_account, send_mail_with_settings
+
+from .models import User, EmailVerificationCode, MailAccount
+from .repo import UserRepo, EmailVerificationCodeRepo
+from .schemas import (
+    SendEmailCodeSchema,
+    RegisterSchema,
+    LoginSchema,
+    ResetPasswordSchema,
+    ProfileUpdateSchema,
+    ChangePasswordSchema,
+    ChangeEmailSchema,
+    DeleteAccountSchema,
+)
+from .utils import assign_default_user_permissions
+
+logger = logging.getLogger(__name__)
+
+
+def serialize_user(user: User) -> dict[str, object]:
+    """
+    用户序列化工具：将 User 模型转换为 API 输出字典。
+    - user: 要序列化的用户实例。
+    - 返回：包含基础信息、权限标志、时间字段的字典。
+    """
+    return {
+        "id": user.pk,
+        "username": user.username,
+        "nickname": user.nickname,
+        "email": user.email,
+        "avatar": user.avatar,
+        "bio": user.bio,
+        "organization": user.organization,
+        "country": user.country,
+        "website": user.website,
+        "is_email_verified": user.is_email_verified,
+        "is_team_leader": user.is_team_leader,
+        "team_uuid": str(user.team_uuid) if user.team_uuid else None,
+        "is_staff": user.is_staff,
+        "is_superuser": user.is_superuser,
+        "date_joined": user.date_joined.isoformat() if user.date_joined else None,
+        "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+    }
+
+
+class SendEmailVerificationService(BaseService[EmailVerificationCode]):
+    """
+    发送邮箱验证码服务：
+    - 业务场景：注册、找回密码、绑定/变更邮箱。
+    - 职责：校验频率、生成验证码、落库并发送邮件。
+    - 输出：创建的验证码记录。
+    """
+
+    code_ttl = timedelta(minutes=10)
+    cooldown_seconds = 60
+
+    def __init__(
+        self,
+        user_repo: UserRepo | None = None,
+        code_repo: EmailVerificationCodeRepo | None = None,
+        mail_account: MailAccount | None = None,
+    ):
+        # 用户仓储：用于邮箱存在性校验
+        self.user_repo = user_repo or UserRepo()
+        # 验证码仓储：用于限流、创建、消费
+        self.code_repo = code_repo or EmailVerificationCodeRepo()
+        # 发信账号：若未指定则取默认发信配置
+        self.mail_account = mail_account or MailAccount.objects.get_default()
+
+    def _generate_code(self) -> str:
+        """生成 6 位纯数字验证码。"""
+        return "".join(secrets.choice("0123456789") for _ in range(6))
+
+    def _deliver(self, email: str, scene: str, code: str) -> None:
+        """
+        发送验证码邮件：
+        - email: 目标邮箱。
+        - scene: 验证码场景，用于文案映射。
+        - code: 验证码内容。
+        """
+        subject = "Find The Cat 验证码"
+        scene_map = {
+            EmailVerificationCode.Scene.REGISTER: "注册账号",
+            EmailVerificationCode.Scene.RESET_PASSWORD: "找回密码",
+            EmailVerificationCode.Scene.BIND_EMAIL: "绑定邮箱",
+        }
+        # 构造邮件正文，包含验证码与有效期提示
+        body = (
+            f"您正在进行 {scene_map.get(scene, '操作')}，验证码为 {code}，"
+            "10 分钟内有效。如果不是您本人操作，请忽略此邮件。"
+        )
+        try:
+            # 优先使用指定/默认的发信账号
+            if self.mail_account:
+                send_mail_with_account(
+                    account=self.mail_account,
+                    subject=subject,
+                    body=body,
+                    to=[email],
+                )
+            else:
+                # 无专用账号时回退到 settings 邮件配置
+                send_mail_with_settings(subject=subject, body=body, to=[email])
+        except Exception:
+            logger.exception("发送验证码邮件失败", extra={"email": email, "scene": scene})
+
+    def perform(self, schema: SendEmailCodeSchema) -> EmailVerificationCode:
+        """
+        发送验证码主流程：
+        - 校验邮箱是否可用（注册/重置流的存在性要求）。
+        - 限流：60 秒内同场景同邮箱不可重复发送。
+        - 生成并存储验证码，触发邮件发送。
+        """
+        # 邮箱统一小写，场景直接取 schema
+        email = schema.email.lower()
+        scene = schema.scene
+
+        # 注册场景要求：邮箱未被注册
+        if scene == EmailVerificationCode.Scene.REGISTER and self.user_repo.email_exists(email):
+            raise ConflictError(message="该邮箱已注册账户")
+        # 重置密码场景要求：邮箱必须存在
+        if scene == EmailVerificationCode.Scene.RESET_PASSWORD and not self.user_repo.email_exists(email):
+            raise NotFoundError(message="账号不存在")
+
+        # 限流：指定窗口内已有验证码则拒绝
+        if self.code_repo.has_recent_code(email=email, scene=scene, seconds=self.cooldown_seconds):
+            raise RateLimitError(message="验证码发送过于频繁，请稍后再试")
+
+        # 生成验证码并计算过期时间
+        code = self._generate_code()
+        expires_at = timezone.now() + self.code_ttl
+        # 写入数据库记录
+        record = self.code_repo.create_code(
+            email=email,
+            scene=scene,
+            code=code,
+            expires_at=expires_at,
+        )
+
+        # 发送邮件，异常已在内部记录日志
+        self._deliver(email=email, scene=scene, code=code)
+        return record
+
+
+class RegisterService(BaseService[User]):
+    """
+    选手注册服务：
+    - 校验用户名/邮箱唯一性。
+    - 校验注册邮箱验证码。
+    - 创建用户并分配默认权限组，标记邮箱验证通过。
+    """
+
+    def __init__(
+        self,
+        user_repo: UserRepo | None = None,
+        code_repo: EmailVerificationCodeRepo | None = None,
+    ):
+        # 用户仓储：唯一性校验与创建
+        self.user_repo = user_repo or UserRepo()
+        # 验证码仓储：校验注册验证码
+        self.code_repo = code_repo or EmailVerificationCodeRepo()
+
+    def perform(self, schema: RegisterSchema) -> User:
+        """
+        注册主流程：
+        - 校验用户名/邮箱是否占用。
+        - 消费注册验证码。
+        - 创建用户并默认验证邮箱。
+        """
+        email = schema.email.lower()
+        username = schema.username
+
+        # 唯一性校验：用户名和邮箱不得重复
+        if self.user_repo.username_exists(username):
+            raise ConflictError(message="用户名已被使用")
+        if self.user_repo.email_exists(email):
+            raise ConflictError(message="邮箱已注册账号")
+
+        # 校验并消费注册验证码
+        self.code_repo.consume(email=email, scene=EmailVerificationCode.Scene.REGISTER, code=schema.email_code)
+
+        # 生成昵称（默认使用用户名）
+        nickname = schema.nickname or username
+        # 创建用户记录
+        user = self.user_repo.create_user(
+            username=username,
+            email=email,
+            password=schema.password,
+            nickname=nickname,
+        )
+        # 标记邮箱已验证
+        self.user_repo.mark_email_verified(user)
+        # 兜底分配默认用户权限
+        assign_default_user_permissions(user)
+        return user
+
+
+class LoginService(BaseService[dict[str, object]]):
+    """
+    登录服务：
+    - 支持用户名或邮箱登录。
+    - 校验账户状态与密码，返回 JWT 刷新/访问令牌及用户信息。
+    """
+
+    atomic_enabled = False
+
+    def __init__(self, user_repo: UserRepo | None = None):
+        # 用户仓储：用于查找用户
+        self.user_repo = user_repo or UserRepo()
+
+    def perform(self, schema: LoginSchema) -> dict[str, object]:
+        """
+        登录主流程：
+        - 根据 identifier 获取用户。
+        - 校验账户有效性与密码正确性。
+        - 颁发 JWT Refresh 与 Access。
+        """
+        identifier = schema.identifier
+        user = self.user_repo.get_by_identifier(identifier)
+        if user is None:
+            raise InvalidCredentialsError(message="账号或密码错误")
+
+        if not user.is_active:
+            raise AccountInactiveError(message="账户失效，请联系管理员")
+
+        if not user.check_password(schema.password):
+            raise InvalidCredentialsError(message="账号或密码错误")
+
+        refresh = RefreshToken.for_user(user)
+        return {
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user": serialize_user(user),
+        }
+
+
+class ResetPasswordService(BaseService[User]):
+    """
+    通过邮箱验证码重置密码：
+    - 校验验证码后重置目标邮箱对应用户的密码。
+    """
+
+    def __init__(
+        self,
+        user_repo: UserRepo | None = None,
+        code_repo: EmailVerificationCodeRepo | None = None,
+    ):
+        # 用户仓储：用于查询/写入用户
+        self.user_repo = user_repo or UserRepo()
+        # 验证码仓储：用于消费重置验证码
+        self.code_repo = code_repo or EmailVerificationCodeRepo()
+
+    def perform(self, schema: ResetPasswordSchema) -> User:
+        """
+        重置密码主流程：
+        - 消费重置场景的验证码。
+        - 获取用户并设置新密码。
+        """
+        email = schema.email.lower()
+        self.code_repo.consume(email=email, scene=EmailVerificationCode.Scene.RESET_PASSWORD, code=schema.code)
+        user = self.user_repo.get_by_email(email)
+        return self.user_repo.set_password(user, schema.new_password)
+
+
+class UpdateProfileService(BaseService[User]):
+    """
+    更新个人资料：
+    - 支持部分字段更新，并记录更新时间。
+    """
+
+    def perform(self, user: User, schema: ProfileUpdateSchema) -> User:
+        """
+        资料更新流程：
+        - 根据 schema 提取非空字段并逐项覆盖用户属性。
+        - 保存时仅更新修改字段与更新时间，减少数据库写入。
+        """
+        payload = schema.to_dict(exclude_none=True)
+        # 将有效字段写回用户对象
+        for field, value in payload.items():
+            setattr(user, field, value)
+        # 仅保存修改过的字段 + 更新时间
+        user.save(update_fields=[*payload.keys(), "updated_at"])
+        return user
+
+
+class ChangePasswordService(BaseService[User]):
+    """
+    登录态下修改密码：
+    - 需要旧密码验证身份，再设置新密码。
+    """
+
+    def __init__(self, user_repo: UserRepo | None = None):
+        # 用户仓储：用于密码写入
+        self.user_repo = user_repo or UserRepo()
+
+    def perform(self, user: User, schema: ChangePasswordSchema) -> User:
+        """
+        修改密码主流程：
+        - 校验旧密码正确性。
+        - 写入新密码并返回用户。
+        """
+        if not user.check_password(schema.old_password):
+            raise InvalidCredentialsError(message="当前密码不正确")
+        return self.user_repo.set_password(user, schema.new_password)
+
+
+class ChangeEmailService(BaseService[User]):
+    """
+    变更邮箱服务：
+    - 需要当前密码验证身份。
+    - 校验邮箱唯一性与场景验证码。
+    """
+
+    def __init__(
+        self,
+        user_repo: UserRepo | None = None,
+        code_repo: EmailVerificationCodeRepo | None = None,
+    ):
+        # 用户仓储：查找/写入用户
+        self.user_repo = user_repo or UserRepo()
+        # 验证码仓储：校验绑定邮箱验证码
+        self.code_repo = code_repo or EmailVerificationCodeRepo()
+
+    def perform(self, user: User, schema: ChangeEmailSchema) -> User:
+        """
+        变更邮箱主流程：
+        - 校验当前密码。
+        - 校验新邮箱与旧邮箱不同、未被其他账号占用。
+        - 消费绑定邮箱验证码。
+        - 更新邮箱并标记已验证。
+        """
+        if not user.check_password(schema.current_password):
+            raise InvalidCredentialsError(message="当前密码不正确")
+
+        new_email = schema.new_email.lower()
+        if new_email == user.email:
+            raise ConflictError(message="新邮箱与当前邮箱相同")
+        if self.user_repo.email_exists_for_other(new_email, exclude_user_id=user.pk):
+            raise ConflictError(message="该邮箱已绑定其他账号")
+
+        self.code_repo.consume(email=new_email, scene=EmailVerificationCode.Scene.BIND_EMAIL, code=schema.email_code)
+
+        user.email = new_email
+        user.is_email_verified = True
+        user.save(update_fields=["email", "is_email_verified", "updated_at"])
+        return user
+
+
+class DeleteAccountService(BaseService[User]):
+    """
+    注销账号：
+    - 校验密码后进行“软删除”处理，释放用户名和邮箱占用。
+    - 通过改名/改邮箱/禁用账号/清空可识别信息来防止再登录。
+    """
+
+    def perform(self, user: User, schema: DeleteAccountSchema) -> User:
+        """
+        注销主流程：
+        - 校验密码。
+        - 生成唯一后缀，重写用户名和邮箱，清空个人信息并禁用账号。
+        - 设置不可用密码，防止再次登录。
+        """
+        if not user.check_password(schema.password):
+            raise InvalidCredentialsError(message="密码不正确，无法注销账号")
+
+        # 生成随机后缀，避免用户名/邮箱冲突
+        suffix = uuid4().hex[:8]
+        user.username = f"deleted_user_{user.pk}_{suffix}"
+        user.email = f"deleted_{user.pk}_{suffix}@deleted.local"
+        # 软删除：禁用账号与邮箱验证标志
+        user.is_active = False
+        user.is_email_verified = False
+        # 清空可识别的个人信息
+        user.nickname = "已注销用户"
+        user.bio = ""
+        user.avatar = ""
+        user.organization = ""
+        user.country = ""
+        user.website = ""
+        user.team_uuid = None
+        user.is_team_leader = False
+        # 设置不可用密码，防止登录
+        user.set_unusable_password()
+        user.save(
+            update_fields=[
+                "username",
+                "email",
+                "is_active",
+                "is_email_verified",
+                "nickname",
+                "bio",
+                "avatar",
+                "organization",
+                "country",
+                "website",
+                "team_uuid",
+                "is_team_leader",
+                "password",
+                "updated_at",
+            ]
+        )
+        logger.info("User %s has been deactivated", user.pk)
+        return user

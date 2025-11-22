@@ -1,0 +1,63 @@
+"""
+自定义分页器（apps.common.pagination）
+
+设计目标：
+- 统一分页响应结构，与 common.response.page_success 对齐；
+- 保留 DRF PageNumberPagination 的所有默认行为（页码、page_size 参数）；
+- 控制默认分页大小、最大分页大小；
+- 所有分页接口自动返回统一结构：
+    {
+        "code": 0,
+        "message": "OK",
+        "data": [...],
+        "extra": {
+            "page": 1,
+            "page_size": 20,
+            "total": 102,
+            "has_next": true,
+            "has_previous": false
+        }
+    }
+"""
+
+from __future__ import annotations
+
+from typing import Any, List
+
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.request import Request
+from rest_framework.response import Response
+
+from apps.common.response import page_success
+
+
+class StandardPagination(PageNumberPagination):
+    """
+    标准分页器（默认分页方案）
+
+    参数说明：
+    - page_size：默认每页大小（20）
+    - page_size_query_param：允许前端通过 ?page_size=xxx 指定每页大小
+    - max_page_size：前端可指定的最大单页数量（防止一次性拉过多）
+    """
+
+    page_size: int = 20
+    page_size_query_param: str = "page_size"
+    max_page_size: int = 100
+
+    def get_paginated_response(self, data: List[Any]) -> Response:
+        """
+        将分页后的数据封装为统一格式。
+
+        注意：
+        - self.page：当前页对象
+        - self.page.paginator：分页器对象（包含总数 / 分页信息）
+        """
+        return page_success(
+            items=data,  # 当前页数据列表
+            page=self.page.number,  # 当前页码（从 1 开始）
+            page_size=self.page.paginator.per_page,  # 后端实际使用的 page_size
+            total=self.page.paginator.count,  # 数据总条数
+            has_next=self.page.has_next(),  # 是否有下一页
+            has_previous=self.page.has_previous(),  # 是否有上一页
+        )
