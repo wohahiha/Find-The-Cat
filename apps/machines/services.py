@@ -16,10 +16,8 @@ from .repo import MachineRepo
 from .schemas import MachineStartSchema, MachineStopSchema
 
 # 服务层：靶机实例生命周期管理，使用 docker_manager/redis_client 占位调用。
-try:
-    from apps.common.infra import docker_manager
-except Exception:  # pragma: no cover
-    docker_manager = None
+from apps.common.infra import docker_manager
+from apps.common.infra import redis_client
 
 
 def serialize_machine(machine: MachineInstance) -> dict:
@@ -84,7 +82,7 @@ class MachineStartService(BaseService[MachineInstance]):
             dynamic_flag = f"{challenge.dynamic_prefix}{secrets.token_hex(4)}"
 
         # 5) 启动容器（占位调用 docker_manager，如未实现则使用假 ID）
-        container_id = self._start_container_stub(challenge_slug=challenge.slug, port=port)
+        container_id = self._start_container(challenge_slug=challenge.slug, port=port, dynamic_flag=dynamic_flag)
 
         # 6) 创建实例记录
         instance = self.machine_repo.create(
@@ -103,23 +101,45 @@ class MachineStartService(BaseService[MachineInstance]):
         return instance
 
     def _allocate_port(self) -> int:
-        """占位端口分配：简单随机，避免与运行中实例冲突。"""
-        used = self.machine_repo.running_ports()
-        for _ in range(100):
+        """
+        使用 redis + db 双重校验的端口分配（简化版）：
+        - 先从 redis 集合读占用，如果未配置则回退数据库检查。
+        """
+        used_db = self.machine_repo.running_ports()
+        key = "machines:ports:used"
+        used_redis = set(redis_client.get_json(key) or [])
+        used = used_db.union(used_redis)
+        for _ in range(200):
             port = random.randint(20000, 40000)
             if port not in used:
+                # 写入 redis 记录占用，设置短期过期以防泄漏
+                redis_client.set_json(key, list(used | {port}), ex=300)
                 return port
-        # 兜底：若极端冲突，抛出异常
         raise ConflictError(message="端口分配失败，请稍后重试")
 
-    def _start_container_stub(self, challenge_slug: str, port: int) -> str:
-        """调用 docker_manager 启动容器的占位实现。"""
-        if docker_manager and hasattr(docker_manager, "start_container"):
-            try:
-                return docker_manager.start_container(challenge_slug, port=port)  # type: ignore[arg-type]
-            except Exception:
-                return f"mock-{secrets.token_hex(4)}"
-        return f"mock-{secrets.token_hex(4)}"
+    def _start_container(self, challenge_slug: str, port: int, dynamic_flag: str) -> str:
+        """
+        启动容器并返回 ID，支持 mock。
+        - env 注入动态 flag（若存在）。
+        """
+        env = {}
+        if dynamic_flag:
+            env["DYNAMIC_FLAG"] = dynamic_flag
+        # 镜像名可通过环境变量前缀/标签定制，默认使用题目 slug
+        image_prefix = docker_manager.IMAGE_PREFIX if hasattr(docker_manager, "IMAGE_PREFIX") else ""
+        image_tag = docker_manager.IMAGE_TAG if hasattr(docker_manager, "IMAGE_TAG") else "latest"
+        image = f"{image_prefix}{challenge_slug}:{image_tag}" if image_prefix or image_tag else challenge_slug
+        try:
+            return docker_manager.start_container(
+                image,
+                port=port,
+                env=env,
+                container_port=getattr(docker_manager, "CONTAINER_PORT", None),
+                network=getattr(docker_manager, "DOCKER_NETWORK", None),
+            )
+        except Exception:
+            # 记录占位 ID，避免启动失败阻断流程（可根据需求改为抛错）
+            return f"mock-{secrets.token_hex(4)}"
 
 
 class MachineStopService(BaseService[MachineInstance]):
@@ -142,7 +162,7 @@ class MachineStopService(BaseService[MachineInstance]):
             raise PermissionDeniedError(message="无权停止该靶机")
 
         # 停止容器占位
-        self._stop_container_stub(instance.container_id)
+        self._stop_container(instance.container_id)
 
         instance.status = MachineInstance.Status.STOPPED
         instance.container_id = instance.container_id or ""
@@ -155,10 +175,8 @@ class MachineStopService(BaseService[MachineInstance]):
         membership = self.member_repo.filter(team_id=team_id, user=user, is_active=True).first()
         return membership is not None
 
-    def _stop_container_stub(self, container_id: str) -> None:
-        if docker_manager and hasattr(docker_manager, "stop_container"):
-            try:
-                docker_manager.stop_container(container_id)
-            except Exception:
-                return
-        return
+    def _stop_container(self, container_id: str) -> None:
+        try:
+            docker_manager.stop_container(container_id)
+        except Exception:
+            return

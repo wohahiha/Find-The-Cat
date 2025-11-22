@@ -1,0 +1,106 @@
+"""
+Docker 管理封装：
+- 封装容器的启动/停止接口，支持本地或远程 Docker。
+- 提供 mock 模式（未安装 Docker SDK 时使用）。
+"""
+
+from __future__ import annotations
+
+import os
+import secrets
+from typing import Optional
+
+from django.conf import settings
+
+_USE_MOCK = os.getenv("DOCKER_USE_MOCK", "0") == "1"
+# 镜像前缀/标签、容器端口、网络等配置，通过环境变量控制，便于举办方自定义
+IMAGE_PREFIX = os.getenv("DOCKER_IMAGE_PREFIX", "")  # 例：registry.local/ftc/
+IMAGE_TAG = os.getenv("DOCKER_IMAGE_TAG", "latest")
+CONTAINER_PORT = int(os.getenv("DOCKER_CONTAINER_PORT", "80"))  # 容器内服务端口，默认 80
+DOCKER_NETWORK = os.getenv("DOCKER_NETWORK", None)  # 可选：docker 网络名称
+
+try:
+    import docker  # type: ignore
+except Exception:  # pragma: no cover
+    docker = None
+    _USE_MOCK = True
+
+
+def _get_client():
+    if _USE_MOCK:
+        return None
+    if not docker:
+        raise RuntimeError("未安装 docker SDK，请 pip install docker 或开启 DOCKER_USE_MOCK=1")
+    host = getattr(settings, "DOCKER_HOST", None)
+    tls_verify = os.getenv("DOCKER_TLS_VERIFY", "0")
+    cert_path = os.getenv("DOCKER_CERT_PATH", None)
+
+    kwargs = {}
+    if host:
+        kwargs["base_url"] = host
+    if tls_verify == "1" and cert_path:
+        tls_config = docker.tls.TLSConfig(
+            client_cert=(os.path.join(cert_path, "cert.pem"), os.path.join(cert_path, "key.pem")),
+            verify=True,
+            ca_cert=os.path.join(cert_path, "ca.pem"),
+        )
+        kwargs["tls"] = tls_config
+    return docker.from_env(**kwargs) if not host else docker.DockerClient(**kwargs)
+
+
+def start_container(
+    image: str,
+    *,
+    name: Optional[str] = None,
+    port: Optional[int] = None,
+    env: Optional[dict] = None,
+    container_port: int | None = None,
+    network: Optional[str] = None,
+) -> str:
+    """
+    启动容器：
+    - image：镜像名（外部可传完整名，或结合 IMAGE_PREFIX/TAG 预处理）
+    - name：可选容器名
+    - port：映射到宿主机的端口（映射容器内 container_port，默认 80）
+    - env：环境变量（可用于注入动态 flag）
+    - container_port：容器内部监听端口，未指定则使用环境变量 CONTAINER_PORT
+    - network：可选 docker 网络名称
+    返回容器 ID
+    """
+    if _USE_MOCK:
+        return f"mock-{secrets.token_hex(4)}"
+    client = _get_client()
+    ports = {}
+    if port:
+        c_port = container_port or CONTAINER_PORT or 80
+        ports = {f"{c_port}/tcp": port}
+    # 允许通过全局网络配置注入
+    run_kwargs = {
+        "detach": True,
+        "name": name,
+        "ports": ports or None,
+        "environment": env or None,
+    }
+    if network or DOCKER_NETWORK:
+        run_kwargs["network"] = network or DOCKER_NETWORK
+    container = client.containers.run(
+        image,
+        **run_kwargs,
+    )
+    return container.id
+
+
+def stop_container(container_id: str) -> None:
+    """
+    停止并移除容器。
+    """
+    if _USE_MOCK:
+        return
+    client = _get_client()
+    try:
+        container = client.containers.get(container_id)
+        container.stop()
+        container.remove()
+    except Exception:
+        # 容器可能已不存在，忽略
+        return

@@ -9,6 +9,7 @@ from apps.accounts.models import User
 from apps.challenges.models import ChallengeSolve
 from apps.challenges.repo import ChallengeRepo, ChallengeSolveRepo
 from apps.machines.repo import MachineRepo
+from apps.common.infra import redis_client
 from apps.contests.services import ContestContextService
 from apps.contests.repo import TeamMemberRepo
 
@@ -91,8 +92,7 @@ class SubmissionService(BaseService[Submission]):
         # 记录当前血次序：正确提交前统计
         blood_rank = 0
         if is_correct:
-            current_solved = self.solve_repo.filter(challenge=challenge).count()
-            blood_rank = current_solved + 1
+            blood_rank = self._next_blood_rank(challenge)
 
         # 4) 若已解出，再次提交记为重复并抛出业务错误
         if existing_solve:
@@ -147,14 +147,26 @@ class SubmissionService(BaseService[Submission]):
                     "judged_at": timezone.now(),
                 }
             )
-            solve = self.solve_repo.create(
-                {
-                    "challenge": challenge,
-                    "user": user,
-                    "team": membership.team if membership else None,
-                    "awarded_points": awarded_points,
-                }
-            )
-            submission.solve = solve
-            submission.save(update_fields=["solve"])
+        solve = self.solve_repo.create(
+            {
+                "challenge": challenge,
+                "user": user,
+                "team": membership.team if membership else None,
+                "awarded_points": awarded_points,
+            }
+        )
+        submission.solve = solve
+        submission.save(update_fields=["solve"])
         return submission
+
+    def _next_blood_rank(self, challenge) -> int:
+        """
+        使用 redis 计数器获取血次序，降低并发冲突。
+        """
+        key = f"challenge:{challenge.id}:blood_rank"
+        try:
+            rank = redis_client.incr(key, amount=1)
+            return rank
+        except Exception:
+            current_solved = self.solve_repo.filter(challenge=challenge).count()
+            return current_solved + 1

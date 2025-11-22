@@ -38,7 +38,7 @@ class User(AbstractUser):
         ADMIN = "admin", "管理员"
 
     """
-    FTC 自定义用户模型，扩展基础资料并预留队伍相关字段。
+    FTC 自定义用户模型，扩展基础资料。
     """
 
     # 唯一邮箱，作为登录与通知标识
@@ -87,20 +87,6 @@ class User(AbstractUser):
         "邮箱已验证",
         default=False,
         help_text="邮箱是否已通过验证码验证",
-    )
-    # 是否队长，占位字段，后续由 Team 模块外键控制
-    is_team_leader = models.BooleanField(
-        "队长",
-        default=False,
-        help_text="是否担任当前队伍队长（Team 模块完善后会迁移为外键判断）",
-    )
-    # 队伍占位 UUID，将由 contests/teams 模块替换
-    team_uuid = models.UUIDField(
-        "队伍占位符",
-        null=True,
-        blank=True,
-        help_text="所属队伍占位字段，后续 contests/teams 模块会替换为外键",
-        db_index=True,
     )
     # 资料更新时间戳
     updated_at = models.DateTimeField("更新时间", auto_now=True)

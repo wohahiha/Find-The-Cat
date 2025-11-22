@@ -61,8 +61,6 @@ def serialize_user(user: User) -> dict[str, object]:
         "country": user.country,
         "website": user.website,
         "is_email_verified": user.is_email_verified,
-        "is_team_leader": user.is_team_leader,
-        "team_uuid": str(user.team_uuid) if user.team_uuid else None,
         "is_staff": user.is_staff,
         "is_superuser": user.is_superuser,
         "date_joined": user.date_joined.isoformat() if user.date_joined else None,
@@ -404,8 +402,6 @@ class DeleteAccountService(BaseService[User]):
         user.organization = ""
         user.country = ""
         user.website = ""
-        user.team_uuid = None
-        user.is_team_leader = False
         # 设置不可用密码，防止登录
         user.set_unusable_password()
         user.save(
@@ -420,8 +416,6 @@ class DeleteAccountService(BaseService[User]):
                 "organization",
                 "country",
                 "website",
-                "team_uuid",
-                "is_team_leader",
                 "password",
                 "updated_at",
             ]

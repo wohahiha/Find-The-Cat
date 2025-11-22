@@ -147,8 +147,6 @@ class StaffUserChangeForm(UserChangeForm):
         cleaned = super().clean()  # 先调用父类校验，保持基础验证
         cleaned["account_type"] = User.AccountType.ADMIN
         cleaned["is_staff"] = True
-        cleaned["is_team_leader"] = False
-        cleaned["team_uuid"] = None
         return cleaned
 
     def __init__(self, *args, **kwargs):
@@ -384,22 +382,16 @@ class PlayerUserAdmin(BaseUserAdmin):
     )
     fieldsets = BaseUserAdmin.fieldsets + (
         (
-            "队伍信息",
-            {
-                "fields": ("is_team_leader", "team_uuid"),
-            },
-        ),
-        (
             "权限",
             {
                 "fields": ("groups", "user_permissions"),
             },
         ),
     )
-    # 列表字段：追加队长标志以区分队伍负责人
-    list_display = BaseUserAdmin.list_display + ("display_team_leader",)
-    # 过滤条件：按有效/邮箱验证/队长状态筛选
-    list_filter = ("is_active", "is_email_verified", "is_team_leader")
+    # 列表字段：沿用基础展示
+    list_display = BaseUserAdmin.list_display
+    # 过滤条件：按有效/邮箱验证筛选
+    list_filter = ("is_active", "is_email_verified")
 
     def get_queryset(self, request):
         """
@@ -469,13 +461,6 @@ class PlayerUserAdmin(BaseUserAdmin):
             initial["groups"] = [default_group.pk]
         return initial
 
-    # admin.display：布尔展示队长标志，列名“队长”
-    @admin.display(boolean=True, description="队长")
-    def display_team_leader(self, obj: User) -> bool:
-        """列表显示队长标志，便于筛选队伍负责人。"""
-        return obj.is_team_leader
-
-
 # @admin.register：将管理员账户的管理配置注册到后台站点
 @admin.register(StaffUser)
 class StaffUserAdmin(BaseUserAdmin):
@@ -487,8 +472,8 @@ class StaffUserAdmin(BaseUserAdmin):
     - 保存时为普通管理员自动分配默认管理员组。
     """
     add_form = StaffUserCreationForm
-    # exclude：管理员不需要队伍相关字段，保持后台表单简洁
-    exclude = ("is_team_leader", "team_uuid")
+    # 管理员不涉及队伍信息，保持表单简洁
+    exclude: tuple[str, ...] = tuple()
     fieldsets = BaseUserAdmin.fieldsets
     # add_fieldsets：新增管理员时的字段布局，包含基础信息与权限分配
     add_fieldsets = (

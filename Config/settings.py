@@ -12,7 +12,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
-from datetime import timedelta
+
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -300,7 +301,7 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'no-repl
 
 
 # --------------------------------------------------------------------------------------
-# 邮件配置强校验（邮件是 FTC 的必需组件）
+# 邮件配置强校验
 # --------------------------------------------------------------------------------------
 
 def _require_setting(name: str, value: str) -> None:
