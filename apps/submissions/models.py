@@ -38,6 +38,8 @@ class Submission(models.Model):
     message = models.CharField("提示", max_length=255, blank=True, default="")
     # 判定得分（正确时记录）
     awarded_points = models.PositiveIntegerField("得分", default=0)
+    # 血次序（第几血），错误或重复为 0
+    blood_rank = models.PositiveIntegerField("血次序", default=0)
     # 对应的解题记录（仅正确时关联）
     solve = models.ForeignKey("challenges.ChallengeSolve", verbose_name="解题记录", related_name="submissions", on_delete=models.SET_NULL, null=True, blank=True)
     # 创建时间

@@ -45,6 +45,8 @@ class MachineServiceTests(TestCase):
         instance = MachineStartService().execute(self.user, schema)
         self.assertEqual(instance.status, MachineInstance.Status.RUNNING)
         self.assertTrue(instance.port)
+        # 动态题目应生成动态 flag
+        self.assertTrue(instance.dynamic_flag)
         stopped = MachineStopService().execute(self.user, MachineStopSchema(machine_id=instance.id))
         self.assertEqual(stopped.status, MachineInstance.Status.STOPPED)
 

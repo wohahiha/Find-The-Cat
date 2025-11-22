@@ -18,3 +18,25 @@ class MachineRepo(BaseRepo[MachineInstance]):
             return self.filter(pk=pk).get()
         except MachineInstance.DoesNotExist as exc:  # type: ignore[attr-defined]
             raise NotFoundError(message="靶机实例不存在") from exc
+
+    def running_for_user(self, *, contest, challenge, user) -> MachineInstance | None:
+        """查询用户在指定题目下的运行中实例。"""
+        return (
+            self.filter(
+                contest=contest,
+                challenge=challenge,
+                user=user,
+                status=MachineInstance.Status.RUNNING,
+            )
+            .order_by("-created_at")
+            .first()
+        )
+
+    def running_ports(self) -> set[int]:
+        """获取所有运行中实例占用的端口集合，用于分配去重。"""
+        return set(
+            p
+            for p in self.filter(status=MachineInstance.Status.RUNNING)
+            .exclude(port=None)
+            .values_list("port", flat=True)
+        )

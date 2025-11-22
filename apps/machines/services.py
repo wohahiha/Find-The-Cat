@@ -5,7 +5,7 @@ import random
 from typing import Optional
 
 from apps.common.base.base_service import BaseService
-from apps.common.exceptions import ConflictError, PermissionDeniedError, NotFoundError
+from apps.common.exceptions import ConflictError, PermissionDeniedError, NotFoundError, ValidationError
 from apps.accounts.models import User
 from apps.contests.services import ContestContextService
 from apps.contests.repo import TeamMemberRepo
@@ -74,13 +74,7 @@ class MachineStartService(BaseService[MachineInstance]):
         membership = self.member_repo.get_membership(contest=contest, user=user)
 
         # 3) 防止重复实例：同一用户/题目存在运行实例则拒绝
-        running_exists = self.machine_repo.filter(
-            contest=contest,
-            challenge=challenge,
-            user=user,
-            status=MachineInstance.Status.RUNNING,
-        ).exists()
-        if running_exists:
+        if self.machine_repo.running_for_user(contest=contest, challenge=challenge, user=user):
             raise ConflictError(message="已有运行中的靶机实例，请先停止再创建")
 
         # 4) 生成端口与动态 Flag（占位逻辑）
@@ -109,8 +103,14 @@ class MachineStartService(BaseService[MachineInstance]):
         return instance
 
     def _allocate_port(self) -> int:
-        """占位端口分配：简单随机，未来可接入 redis 分配池。"""
-        return random.randint(20000, 40000)
+        """占位端口分配：简单随机，避免与运行中实例冲突。"""
+        used = self.machine_repo.running_ports()
+        for _ in range(100):
+            port = random.randint(20000, 40000)
+            if port not in used:
+                return port
+        # 兜底：若极端冲突，抛出异常
+        raise ConflictError(message="端口分配失败，请稍后重试")
 
     def _start_container_stub(self, challenge_slug: str, port: int) -> str:
         """调用 docker_manager 启动容器的占位实现。"""
@@ -131,13 +131,14 @@ class MachineStopService(BaseService[MachineInstance]):
 
     atomic_enabled = True
 
-    def __init__(self, machine_repo: MachineRepo | None = None):
+    def __init__(self, machine_repo: MachineRepo | None = None, member_repo: TeamMemberRepo | None = None):
         self.machine_repo = machine_repo or MachineRepo()
+        self.member_repo = member_repo or TeamMemberRepo()
 
     def perform(self, user: User, schema: MachineStopSchema) -> MachineInstance:
         instance = self.machine_repo.get_by_id(schema.machine_id)
         # 权限：管理员或本实例关联用户/队伍
-        if not (user.is_staff or instance.user_id == user.id or (instance.team and self._user_in_team(user, instance.team_id))):
+        if not (user.is_staff or instance.user_id == user.id or self._user_in_team(user, instance.team_id)):
             raise PermissionDeniedError(message="无权停止该靶机")
 
         # 停止容器占位
@@ -149,7 +150,10 @@ class MachineStopService(BaseService[MachineInstance]):
         return instance
 
     def _user_in_team(self, user: User, team_id: Optional[int]) -> bool:
-        return False  # 简化处理：若需校验队伍成员可接入 TeamMemberRepo
+        if team_id is None:
+            return False
+        membership = self.member_repo.filter(team_id=team_id, user=user, is_active=True).first()
+        return membership is not None
 
     def _stop_container_stub(self, container_id: str) -> None:
         if docker_manager and hasattr(docker_manager, "stop_container"):

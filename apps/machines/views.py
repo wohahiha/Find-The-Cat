@@ -6,6 +6,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.common import response
+from apps.common.throttles import MachineStartRateThrottle
 
 from .schemas import MachineStartSchema, MachineStopSchema
 from .services import MachineStartService, MachineStopService, serialize_machine
@@ -22,6 +23,7 @@ class MachineListCreateView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [MachineStartRateThrottle]
     repo = MachineRepo()
     start_service = MachineStartService()
 

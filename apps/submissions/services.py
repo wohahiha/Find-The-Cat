@@ -4,10 +4,11 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.common.base.base_service import BaseService
-from apps.common.exceptions import WrongFlagError, ChallengeAlreadySolvedError
+from apps.common.exceptions import WrongFlagError, ChallengeAlreadySolvedError, ValidationError
 from apps.accounts.models import User
 from apps.challenges.models import ChallengeSolve
 from apps.challenges.repo import ChallengeRepo, ChallengeSolveRepo
+from apps.machines.repo import MachineRepo
 from apps.contests.services import ContestContextService
 from apps.contests.repo import TeamMemberRepo
 
@@ -29,6 +30,7 @@ def serialize_submission(submission: Submission) -> dict:
         "status": submission.status,
         "is_correct": submission.is_correct,
         "awarded_points": submission.awarded_points,
+        "blood_rank": submission.blood_rank,
         "message": submission.message,
         "solve_id": submission.solve_id,
         "created_at": submission.created_at,
@@ -58,6 +60,7 @@ class SubmissionService(BaseService[Submission]):
         self.solve_repo = solve_repo or ChallengeSolveRepo()
         self.member_repo = member_repo or TeamMemberRepo()
         self.submission_repo = submission_repo or SubmissionRepo()
+        self.machine_repo = MachineRepo()
 
     def perform(self, user: User, schema: SubmissionCreateSchema) -> Submission:
         # 1) 获取比赛与题目，并校验比赛进行中
@@ -72,10 +75,24 @@ class SubmissionService(BaseService[Submission]):
         existing_solve = self.solve_repo.get_user_solve(challenge=challenge, user=user)
 
         # 3) 判题
-        is_correct = challenge.check_flag(schema.flag)
+        # 动态 flag：需匹配用户运行实例的动态 flag；否则使用题目校验
+        if challenge.flag_type == challenge.FlagType.DYNAMIC:
+            instance = self.machine_repo.running_for_user(contest=contest, challenge=challenge, user=user)
+            if not instance or not instance.dynamic_flag:
+                raise ValidationError(message="请先启动靶机后再提交动态 Flag")
+            is_correct = schema.flag.strip() == instance.dynamic_flag
+            dynamic_flag_used = instance.dynamic_flag
+        else:
+            is_correct = challenge.check_flag(schema.flag)
+            dynamic_flag_used = ""
         status = Submission.Status.ACCEPTED if is_correct else Submission.Status.REJECTED
         message = "Flag 正确" if is_correct else "Flag 不正确"
         awarded_points = challenge.base_points if is_correct else 0
+        # 记录当前血次序：正确提交前统计
+        blood_rank = 0
+        if is_correct:
+            current_solved = self.solve_repo.filter(challenge=challenge).count()
+            blood_rank = current_solved + 1
 
         # 4) 若已解出，再次提交记为重复并抛出业务错误
         if existing_solve:
@@ -88,6 +105,7 @@ class SubmissionService(BaseService[Submission]):
                     "flag_submitted": schema.flag,
                     "status": Submission.Status.DUPLICATE,
                     "is_correct": False,
+                    "blood_rank": 0,
                     "message": "你已经解出该题目",
                     "awarded_points": 0,
                 }
@@ -105,6 +123,7 @@ class SubmissionService(BaseService[Submission]):
                     "flag_submitted": schema.flag,
                     "status": status,
                     "is_correct": False,
+                    "blood_rank": 0,
                     "message": message,
                     "awarded_points": 0,
                 }
@@ -119,9 +138,10 @@ class SubmissionService(BaseService[Submission]):
                     "challenge": challenge,
                     "user": user,
                     "team": membership.team if membership else None,
-                    "flag_submitted": schema.flag,
+                    "flag_submitted": dynamic_flag_used or schema.flag,
                     "status": status,
                     "is_correct": True,
+                    "blood_rank": blood_rank,
                     "message": message,
                     "awarded_points": awarded_points,
                     "judged_at": timezone.now(),
