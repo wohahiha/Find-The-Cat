@@ -7,16 +7,45 @@ from rest_framework.response import Response
 
 from apps.common import response
 
-# 视图骨架：后续提供靶机启动/停止接口。
+from .schemas import MachineStartSchema, MachineStopSchema
+from .services import MachineStartService, MachineStopService, serialize_machine
+from .repo import MachineRepo
+
+# 视图层：提供靶机启动、停止与列表接口。
 
 
-class MachinePlaceholderView(APIView):
+class MachineListCreateView(APIView):
     """
-    占位接口：
-    - 仅返回提示信息，提醒后续补充靶机管理逻辑。
+    靶机列表/启动接口：
+    - GET：查询当前用户的靶机实例。
+    - POST：为指定比赛/题目启动靶机。
     """
 
     permission_classes = [IsAuthenticated]
+    repo = MachineRepo()
+    start_service = MachineStartService()
+
+    def get(self, request: Request) -> Response:
+        queryset = self.repo.filter(user=request.user).order_by("-created_at")
+        data = [serialize_machine(m) for m in queryset]
+        return response.success({"items": data})
 
     def post(self, request: Request) -> Response:
-        return response.success(message="Machines 模块尚未实现，敬请期待")
+        schema = MachineStartSchema.from_dict(request.data, auto_validate=True)
+        instance = self.start_service.execute(request.user, schema)
+        return response.created({"machine": serialize_machine(instance)}, message="靶机已启动")
+
+
+class MachineStopView(APIView):
+    """
+    靶机停止接口：
+    - POST：停止指定实例。
+    """
+
+    permission_classes = [IsAuthenticated]
+    stop_service = MachineStopService()
+
+    def post(self, request: Request, machine_id: int) -> Response:
+        schema = MachineStopSchema.from_dict({"machine_id": machine_id}, auto_validate=True)
+        instance = self.stop_service.execute(request.user, schema)
+        return response.success({"machine": serialize_machine(instance)}, message="靶机已停止")

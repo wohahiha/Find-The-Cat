@@ -4,14 +4,37 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from apps.common.base.base_schema import BaseSchema
+from apps.common.exceptions import ValidationError
 
-# Schema 骨架：后续定义启动/停止靶机、动态 Flag 等入参。
+# Schema：靶机启动与关闭的入参校验。
 
 
 @dataclass
-class PlaceholderMachineSchema(BaseSchema[None]):
+class MachineStartSchema(BaseSchema[None]):
     """
-    占位 Schema：
-    - 待补充靶机操作的参数校验。
+    启动靶机入参：
+    - 需要比赛/题目标识。
     """
-    auto_validate: ClassVar[bool] = False
+    auto_validate: ClassVar[bool] = True
+    contest_slug: str
+    challenge_slug: str
+
+    def validate(self) -> None:
+        if not self.contest_slug:
+            raise ValidationError(message="缺少比赛标识")
+        if not self.challenge_slug:
+            raise ValidationError(message="缺少题目标识")
+
+
+@dataclass
+class MachineStopSchema(BaseSchema[None]):
+    """
+    停止靶机入参：
+    - 通过实例 ID 指定。
+    """
+    auto_validate: ClassVar[bool] = True
+    machine_id: int
+
+    def validate(self) -> None:
+        if self.machine_id <= 0:
+            raise ValidationError(message="非法的实例 ID")

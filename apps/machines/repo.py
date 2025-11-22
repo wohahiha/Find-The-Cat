@@ -1,14 +1,20 @@
 from __future__ import annotations
 
 from apps.common.base.base_repo import BaseRepo
+from apps.common.exceptions import NotFoundError
 
-# 仓储骨架：后续封装靶机实例的查询与持久化。
+from .models import MachineInstance
+
+# 仓储层：封装靶机实例的查询与持久化。
 
 
-class PlaceholderMachineRepo(BaseRepo):
-    """
-    占位仓储：
-    - 保留接口形态，后续替换为实际模型和方法。
-    """
+class MachineRepo(BaseRepo[MachineInstance]):
+    """靶机实例仓储：提供按主键获取与活跃查询。"""
 
-    model = None
+    model = MachineInstance
+
+    def get_by_id(self, pk: int) -> MachineInstance:
+        try:
+            return self.filter(pk=pk).get()
+        except MachineInstance.DoesNotExist as exc:  # type: ignore[attr-defined]
+            raise NotFoundError(message="靶机实例不存在") from exc

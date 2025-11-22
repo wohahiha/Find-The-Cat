@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from django.urls import path
 
-from .views import MachinePlaceholderView
+from .views import MachineListCreateView, MachineStopView
 
 app_name = "machines"
 
-# 路由骨架：后续扩展靶机接口。
+# 路由：靶机列表、启动、停止。
 urlpatterns = [
-    path("placeholder/", MachinePlaceholderView.as_view(), name="placeholder"),
+    path("", MachineListCreateView.as_view(), name="list-create"),
+    path("<int:machine_id>/stop/", MachineStopView.as_view(), name="stop"),
 ]
