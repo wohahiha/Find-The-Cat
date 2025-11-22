@@ -61,6 +61,8 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.contests',
     'apps.challenges',
+    'apps.submissions',
+    'apps.machines',
     # ...后续再扩充
 ]
 
