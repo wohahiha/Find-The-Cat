@@ -3,6 +3,8 @@ from __future__ import annotations
 import secrets
 from typing import Optional
 
+from django.utils import timezone
+
 from apps.common.base.base_service import BaseService
 from apps.common.exceptions import (
     ValidationError,
@@ -367,9 +369,15 @@ class ScoreboardService(BaseService[list[dict]]):
 
     def perform(self, contest: Contest) -> list[dict]:
         """计算记分板：汇总解题记录并排序。"""
-        # 1) 查询比赛下所有解题，按时间排序
+        # 1) 计算封榜/截止时间，封榜后只统计封榜前的解题；否则以比赛结束时间为上限
+        now = timezone.now()
+        cutoff = contest.end_time
+        if contest.freeze_time and now >= contest.freeze_time:
+            cutoff = min(contest.freeze_time, contest.end_time)
+
+        # 2) 查询满足时间窗口的解题，按时间排序
         solves = (
-            ChallengeSolve.objects.filter(challenge__contest=contest)
+            ChallengeSolve.objects.filter(challenge__contest=contest, solved_at__lte=cutoff)
             .select_related("challenge", "team", "user")
             .order_by("solved_at")
         )
@@ -416,7 +424,7 @@ class ScoreboardService(BaseService[list[dict]]):
                 }
             )
 
-        # 2) 依据分数与最后解题时间排序并生成排名
+        # 3) 依据分数与最后解题时间排序并生成排名
         sorted_entries = sorted(
             board.values(),
             key=lambda item: (-item["score"], item["last_solve"]),

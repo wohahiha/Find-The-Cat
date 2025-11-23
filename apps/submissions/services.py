@@ -4,7 +4,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.common.base.base_service import BaseService
-from apps.common.exceptions import WrongFlagError, ChallengeAlreadySolvedError, ValidationError
+from apps.common.exceptions import WrongFlagError, ChallengeAlreadySolvedError, ValidationError, ChallengeNotAvailableError
 from apps.accounts.models import User
 from apps.challenges.models import ChallengeSolve
 from apps.challenges.repo import ChallengeRepo, ChallengeSolveRepo
@@ -69,7 +69,7 @@ class SubmissionService(BaseService[Submission]):
         self.contest_service.ensure_contest_running(contest)
         challenge = self.challenge_repo.get_by_slug(contest=contest, slug=schema.challenge_slug)
         if not challenge.is_active:
-            raise ChallengeAlreadySolvedError(message="题目未开放")
+            raise ChallengeNotAvailableError(message="题目未开放")
 
         # 2) 获取队伍关系与是否已解出
         membership = self.member_repo.get_membership(contest=contest, user=user)
@@ -165,7 +165,8 @@ class SubmissionService(BaseService[Submission]):
         """
         key = f"challenge:{challenge.id}:blood_rank"
         try:
-            rank = redis_client.incr(key, amount=1)
+            # 设置短期过期，防止长期堆积（默认 30 天，可视需求调整）
+            rank = redis_client.incr(key, amount=1, ex=60 * 60 * 24 * 30)
             return rank
         except Exception:
             current_solved = self.solve_repo.filter(challenge=challenge).count()

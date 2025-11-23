@@ -4,6 +4,8 @@ import secrets
 import random
 from typing import Optional
 
+import logging
+
 from apps.common.base.base_service import BaseService
 from apps.common.exceptions import ConflictError, PermissionDeniedError, NotFoundError, ValidationError
 from apps.accounts.models import User
@@ -18,6 +20,8 @@ from .schemas import MachineStartSchema, MachineStopSchema
 # 服务层：靶机实例生命周期管理，使用 docker_manager/redis_client 占位调用。
 from apps.common.infra import docker_manager
 from apps.common.infra import redis_client
+
+logger = logging.getLogger(__name__)
 
 
 def serialize_machine(machine: MachineInstance) -> dict:
@@ -138,8 +142,9 @@ class MachineStartService(BaseService[MachineInstance]):
                 network=getattr(docker_manager, "DOCKER_NETWORK", None),
             )
         except Exception:
-            # 记录占位 ID，避免启动失败阻断流程（可根据需求改为抛错）
-            return f"mock-{secrets.token_hex(4)}"
+            # 记录异常并提示前端稍后重试，避免产生无法控制的实例记录
+            logger.exception("启动靶机容器失败", extra={"challenge": challenge_slug, "port": port})
+            raise ConflictError(message="靶机启动失败，请稍后重试")
 
 
 class MachineStopService(BaseService[MachineInstance]):

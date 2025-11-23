@@ -200,12 +200,8 @@ class TeamTransferView(APIView):
         payload = dict(request.data)
         payload["team_id"] = team_id
         schema = TeamTransferSchema.from_dict(payload, auto_validate=True)
-        try:
-            team = TeamTransferService().execute(request.user, schema)
-            return response.success({"team": serialize_team(team)}, message="队长已移交")
-        except Exception as exc:
-            # 若业务错误导致移交失败，返回提示但不抛异常，便于前端展示。
-            return response.success(message=f"队长移交失败：{exc}")
+        team = TeamTransferService().execute(request.user, schema)
+        return response.success({"team": serialize_team(team)}, message="队长已移交")
 
 
 class ContestAnnouncementView(APIView):
