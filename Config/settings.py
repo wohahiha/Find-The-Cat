@@ -241,6 +241,27 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "FTC API",
+    "VERSION": "1.0.0",
+    # Bearer/JWT 认证声明
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    },
+    # 告诉 spectacular 我们的自定义认证类使用上述 Bearer 配置
+    "AUTHENTICATION_WHITELIST": [
+        "apps.common.authentication.JWTAuthentication",
+    ],
+    # 显式声明需要解析的认证类（便于加载 OpenAPI 扩展）
+    "AUTHENTICATION_CLASSES": [
+        "apps.common.authentication.JWTAuthentication",
+    ],
+}
+
 # 按需调整 token 过期时间
 # SIMPLE_JWT = {
 #     'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
@@ -338,3 +359,10 @@ CORS_ALLOW_ALL_ORIGINS = True
 #     "http://localhost:5173",
 #     "http://127.0.0.1:5173",
 # ]
+
+
+# --------------------------------------------------------------------------------------
+# Spectacular OpenAPI 扩展加载（注册自定义 JWT 认证扩展）
+# --------------------------------------------------------------------------------------
+from apps.common import openapi as _common_openapi  # noqa: F401
+

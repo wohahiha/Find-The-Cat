@@ -5,6 +5,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 from apps.common import response
 from apps.common.permissions import IsAuthenticated, IsAdmin
@@ -47,6 +49,7 @@ class ContestListView(APIView):
     """比赛列表/创建接口：GET 公共访问，POST 仅管理员。"""
     permission_classes = [AllowAny]
 
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request) -> Response:
         # 按状态过滤比赛（进行中/未开始/已结束）
         repo = ContestRepo()
@@ -63,6 +66,7 @@ class ContestListView(APIView):
         data = [serialize_contest(c) for c in queryset]
         return response.success({"items": data})
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
         # 运行时切换为管理员权限
         self.permission_classes = [IsAdmin]  # type: ignore[assignment]
@@ -80,6 +84,7 @@ class ContestDetailView(APIView):
     member_repo = TeamMemberRepo()
     scoreboard_service = ScoreboardService()
 
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, slug: str) -> Response:
         # 获取比赛与基础信息
         contest = self.context_service.get_contest(slug)
@@ -109,6 +114,7 @@ class ContestTeamsView(APIView):
     context_service = ContestContextService()
     team_repo = TeamRepo()
 
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, slug: str) -> Response:
         # 查询比赛并返回所有有效队伍
         contest = self.context_service.get_contest(slug)
@@ -116,6 +122,7 @@ class ContestTeamsView(APIView):
         data = [serialize_team(team) for team in teams]
         return response.success({"contest": contest.slug, "teams": data})
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, slug: str) -> Response:
         # 补充比赛标识后交由服务层创建队伍
         payload = dict(request.data)
@@ -129,6 +136,7 @@ class ContestTeamJoinView(APIView):
     """加入队伍接口：需登录，通过邀请码加入。"""
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, slug: str) -> Response:
         # 补充比赛标识后交由服务层处理
         payload = dict(request.data)
@@ -145,6 +153,7 @@ class TeamLeaveView(APIView):
     """退出队伍接口：需登录，队长多人时需先转移/解散。"""
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, slug: str) -> Response:
         schema = TeamLeaveSchema.from_dict({"contest_slug": slug}, auto_validate=True)
         TeamLeaveService().execute(request.user, schema)
@@ -155,6 +164,7 @@ class TeamDisbandView(APIView):
     """解散队伍接口：需登录，队长或管理员可操作。"""
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, team_id: int) -> Response:
         schema = TeamDisbandSchema.from_dict({"team_id": team_id}, auto_validate=True)
         team = TeamDisbandService().execute(request.user, schema)
@@ -169,6 +179,7 @@ class TeamInviteResetView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, team_id: int) -> Response:
         schema = TeamInviteResetSchema.from_dict({"team_id": team_id}, auto_validate=True)
         team = TeamInviteResetService().execute(request.user, schema)
@@ -183,6 +194,7 @@ class TeamTransferView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, team_id: int) -> Response:
         # 补充队伍 ID 后交由服务层移交
         payload = dict(request.data)
@@ -207,12 +219,14 @@ class ContestAnnouncementView(APIView):
     context_service = ContestContextService()
     service = ContestAnnouncementService()
 
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, slug: str) -> Response:
         # 获取比赛并返回有效公告列表
         contest = self.context_service.get_contest(slug)
         announcements = self.context_service.list_announcements(contest)
         return response.success({"items": [serialize_announcement(ann) for ann in announcements]})
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, slug: str) -> Response:
         # 运行时切换为管理员权限并创建公告
         self.permission_classes = [IsAdmin]  # type: ignore[assignment]

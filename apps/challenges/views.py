@@ -4,6 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 from apps.common import response
 from apps.common.permissions import IsAdmin
@@ -27,6 +29,7 @@ class ChallengeListView(APIView):
     context_service = ContestContextService()
     challenge_repo = ChallengeRepo()
 
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, contest_slug: str) -> Response:
         # 获取比赛并返回所有已开放题目
         contest = self.context_service.get_contest(contest_slug)
@@ -34,6 +37,7 @@ class ChallengeListView(APIView):
         data = [serialize_challenge(ch) for ch in challenges]
         return response.success({"items": data})
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, contest_slug: str) -> Response:
         # 运行时切换权限为管理员
         self.permission_classes = [IsAdmin]  # type: ignore[assignment]
@@ -51,12 +55,14 @@ class ChallengeDetailView(APIView):
     context_service = ContestContextService()
     challenge_repo = ChallengeRepo()
 
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, contest_slug: str, challenge_slug: str) -> Response:
         # 获取题目并返回详情
         contest = self.context_service.get_contest(contest_slug)
         challenge = self.challenge_repo.get_by_slug(contest=contest, slug=challenge_slug)
         return response.success({"challenge": serialize_challenge(challenge)})
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def patch(self, request: Request, contest_slug: str, challenge_slug: str) -> Response:
         # 运行时切换权限为管理员
         self.permission_classes = [IsAdmin]  # type: ignore[assignment]
@@ -72,6 +78,7 @@ class ChallengeSubmitView(APIView):
     """提交 Flag 接口：需登录，校验后返回得分。"""
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, contest_slug: str, challenge_slug: str) -> Response:
         # 校验入参并调用提交服务
         schema = ChallengeSubmitSchema.from_dict(request.data, auto_validate=True)

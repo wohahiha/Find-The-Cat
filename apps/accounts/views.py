@@ -13,6 +13,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 from apps.common import response
 from apps.common.permissions import IsAuthenticated
@@ -86,6 +88,7 @@ class SendEmailVerificationView(APIView):
     # 限流：用户 POST 类场景
     throttle_classes = [UserPostRateThrottle]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
         """
         发送验证码：
@@ -113,6 +116,7 @@ class RegisterView(APIView):
     # 限流：用户 POST 类场景
     throttle_classes = [UserPostRateThrottle]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
         """
         提交注册：
@@ -136,6 +140,7 @@ class LoginView(APIView):
     # 登录限流：使用登录专用节流器
     throttle_classes = [LoginRateThrottle]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
         """
         登录流程：
@@ -170,6 +175,7 @@ class PasswordResetRequestView(APIView):
     # 发送验证码走用户 POST 限流
     throttle_classes = [UserPostRateThrottle]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
         """
         申请重置：
@@ -194,6 +200,7 @@ class PasswordResetView(APIView):
     # 用户 POST 限流
     throttle_classes = [UserPostRateThrottle]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
         """
         重置密码：
@@ -214,11 +221,13 @@ class ProfileView(APIView):
     # 需要登录
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request) -> Response:
         """获取当前用户资料。"""
         _ = self
         return response.success({"user": serialize_user(request.user)})
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def patch(self, request: Request) -> Response:
         """
         部分更新个人资料：
@@ -239,6 +248,7 @@ class ChangePasswordView(APIView):
     # 需要登录
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
         """
         修改密码：
@@ -259,6 +269,7 @@ class ChangeEmailView(APIView):
     # 需要登录
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
         """
         修改邮箱：
@@ -280,6 +291,7 @@ class DeleteAccountView(APIView):
     # 需要登录
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
         """
         注销流程：

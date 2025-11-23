@@ -4,6 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 from apps.common import response
 from apps.common.throttles import MachineStartRateThrottle
@@ -27,11 +29,13 @@ class MachineListCreateView(APIView):
     repo = MachineRepo()
     start_service = MachineStartService()
 
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request) -> Response:
         queryset = self.repo.filter(user=request.user).order_by("-created_at")
         data = [serialize_machine(m) for m in queryset]
         return response.success({"items": data})
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
         schema = MachineStartSchema.from_dict(request.data, auto_validate=True)
         instance = self.start_service.execute(request.user, schema)
@@ -47,6 +51,7 @@ class MachineStopView(APIView):
     permission_classes = [IsAuthenticated]
     stop_service = MachineStopService()
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, machine_id: int) -> Response:
         schema = MachineStopSchema.from_dict({"machine_id": machine_id}, auto_validate=True)
         instance = self.stop_service.execute(request.user, schema)
