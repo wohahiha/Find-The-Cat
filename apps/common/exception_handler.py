@@ -10,7 +10,6 @@
   避免把 traceback 暴露给前端。
 """
 
-import logging
 from typing import Any
 
 from rest_framework import status
@@ -34,8 +33,9 @@ from .exceptions import (
     RateLimitError,
 )
 from .response import api_response, payload_from_biz_error
+from .infra.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def _extract_message(detail: Any) -> str:

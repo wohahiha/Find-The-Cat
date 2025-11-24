@@ -16,6 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+
+# Admin 中文化：修改后台标题/页眉/站点名称，避免默认英文显示
+admin.site.site_header = "Find The Cat 管理后台"
+admin.site.site_title = "Find The Cat"
+admin.site.index_title = "管理控制台"
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -23,4 +29,7 @@ urlpatterns = [
     path('api/contests/', include('apps.contests.urls')),
     path('api/submissions/', include('apps.submissions.urls')),
     path('api/machines/', include('apps.machines.urls')),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]

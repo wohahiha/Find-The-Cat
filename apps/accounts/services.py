@@ -7,8 +7,6 @@
 """
 
 from __future__ import annotations
-
-import logging
 import secrets
 from datetime import timedelta
 from uuid import uuid4
@@ -26,6 +24,7 @@ from apps.common.exceptions import (
 )
 
 from apps.common.infra.email_sender import send_mail_with_account, send_mail_with_settings
+from apps.common.infra.logger import get_logger
 
 from .models import User, EmailVerificationCode, MailAccount
 from .repo import UserRepo, EmailVerificationCodeRepo
@@ -41,7 +40,7 @@ from .schemas import (
 )
 from .utils import assign_default_user_permissions
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def serialize_user(user: User) -> dict[str, object]:

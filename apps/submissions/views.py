@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -8,6 +7,8 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 from apps.common import response
+from apps.common.permissions import IsAuthenticated
+from apps.challenges.serializers import serialize_challenge
 
 from .schemas import SubmissionCreateSchema
 from .services import SubmissionService, serialize_submission
@@ -29,7 +30,13 @@ class SubmissionCreateView(APIView):
     def post(self, request: Request) -> Response:
         schema = SubmissionCreateSchema.from_dict(request.data, auto_validate=True)
         submission = self.service.execute(request.user, schema)
+        challenge_payload = serialize_challenge(submission.challenge, current_points=submission.awarded_points)
         return response.created(
-            {"submission": serialize_submission(submission)},
+            {
+                "submission": serialize_submission(submission),
+                "challenge": challenge_payload,
+                "awarded_points": submission.awarded_points,
+                "solved_at": getattr(submission.solve, "solved_at", None),
+            },
             message="提交已记录",
         )

@@ -21,7 +21,7 @@ FTC 项目的技术架构与 SRS 定义。**
 
 ### 1.1 顶层目录说明
 
-本项目采用 Django + DRF + Vue 的前后端分离架构，后端结构如下（已包含当前进度中的新增文件与模板覆盖）：
+本项目采用 Django + DRF + Vue 的前后端分离架构，后端结构如下（已包含当前进度中的新增文件、迁移与模板覆盖）：
 
 ```
 FTC/                          # Django 项目根目录
@@ -64,7 +64,7 @@ FTC/                          # Django 项目根目录
 │   │       ├─ 0006_create_default_groups.py
 │   │       └─ 0007_ensure_default_groups_permissions.py
 │   │
-│   ├─ contests/              # 比赛管理（比赛、公告、队伍）
+│   ├─ contests/              # 比赛管理（比赛、公告、队伍、记分板）
 │   │   ├─ __init__.py
 │   │   ├─ admin.py
 │   │   ├─ apps.py
@@ -111,7 +111,7 @@ FTC/                          # Django 项目根目录
 │   │   │   ├─ email_sender.py
 │   │   │   ├─ file_storage.py
 │   │   │   ├─ jwt_provider.py
-│   │   │   ├─ logger.py
+│   │   │   ├─ logger.py       # 日志封装（级别/格式/文件输出）
 │   │   │   └─ redis_client.py
 │   │   ├─ utils/             # 通用工具函数（严格无业务逻辑）
 │   │   │   ├─ __init__.py
@@ -128,10 +128,31 @@ FTC/                          # Django 项目根目录
 │   │   ├─ response.py        # 统一 API 响应格式
 │   │   └─ throttles.py       # 自定义限速
 │   │
-│   └─ （未来 app：按 SRS 顺序，尚未落地）
-│       ├─ submissions/       # Flag 提交（记录、判题日志）
-│       ├─ machines/          # 靶机实例管理（Docker 容器）
-│       └─ .../               # 其他功能需求模块
+│   ├─ submissions/           # Flag 提交（记录、判题日志、排行榜失效）
+│   │   ├─ __init__.py
+│   │   ├─ admin.py
+│   │   ├─ apps.py
+│   │   ├─ models.py
+│   │   ├─ repo.py
+│   │   ├─ schemas.py
+│   │   ├─ services.py        # 判题、血次序、记分板缓存失效
+│   │   ├─ tests.py
+│   │   ├─ urls.py
+│   │   └─ views.py
+│   │
+│   ├─ machines/              # 靶机实例管理（Docker 容器）
+│   │   ├─ __init__.py
+│   │   ├─ admin.py
+│   │   ├─ apps.py
+│   │   ├─ models.py          # MachineInstance（已移除动态 Flag 字段）
+│   │   ├─ repo.py
+│   │   ├─ schemas.py
+│   │   ├─ services.py        # 启停靶机、端口分配
+│   │   ├─ tests.py
+│   │   ├─ urls.py
+│   │   └─ views.py
+│   │
+│   └─ ...                    # 未来按 SRS 拓展
 │
 ├─ locale/                    # 自定义翻译目录（覆盖后台 JS 文本）
 │   └─ zh_Hans/
@@ -466,7 +487,9 @@ Codex 应当：
 ## 9. 当前进度
 
 - accounts：注册/登录/验证码/资料修改/密码邮箱修改/注销接口已就绪，APITestCase 覆盖核心流程。
-- contests：比赛创建/状态筛选/公告接口已完成；队伍创建/加入/退出/解散/邀请码重置/队长移交接口就绪并有 API 测试。
-- challenges：题目创建/更新/列表/详情/提交 Flag 已完成，支持子任务、附件、静态/动态 Flag 类型；使用 BizError 校验，新增 API
-  测试。
-- 翻译：自定义 locale（djangojs）覆盖后台选择框提示，模板覆盖新增用户提示与批量操作布局，base_site 追加“切换账户”入口。
+- contests：比赛创建/状态筛选/公告/队伍全链路完成；记分板支持 Redis 缓存并在解题/提交后自动失效；API 测试通过。
+- challenges：题目创建/更新/列表/详情/提交 Flag 完成，支持子任务、附件、静态/动态 Flag（哈希生成）、附件上传接口；后台表单优化；API 与附件上传测试通过。
+- submissions：提交记录/判题/血次序/排行榜缓存失效逻辑完成，支持动态 Flag 判题，API 测试通过。
+- machines：靶机实例管理完成，端口分配与 Docker 启停占位，动态 Flag 字段已移除，测试使用 Docker mock。
+- 通用：存储支持本地/OSS，日志支持级别/格式/文件输出，JWT 封装与工具库（crypto/helpers/time/validators）完善；schema.yaml 已更新。
+- 翻译与模板：自定义 locale（djangojs）覆盖后台提示，模板覆盖新增用户提示与批量操作布局，base_site 追加“切换账户”入口。

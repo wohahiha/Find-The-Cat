@@ -4,8 +4,6 @@ import secrets
 import random
 from typing import Optional
 
-import logging
-
 from apps.common.base.base_service import BaseService
 from apps.common.exceptions import ConflictError, PermissionDeniedError, NotFoundError, ValidationError
 from apps.accounts.models import User
@@ -20,8 +18,10 @@ from .schemas import MachineStartSchema, MachineStopSchema
 # 服务层：靶机实例生命周期管理，使用 docker_manager/redis_client 占位调用。
 from apps.common.infra import docker_manager
 from apps.common.infra import redis_client
+from apps.common.infra.logger import get_logger
+from apps.common.utils.redis_keys import machine_ports_key
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def serialize_machine(machine: MachineInstance) -> dict:
@@ -35,7 +35,6 @@ def serialize_machine(machine: MachineInstance) -> dict:
         "container_id": machine.container_id,
         "host": machine.host,
         "port": machine.port,
-        "dynamic_flag": machine.dynamic_flag,
         "status": machine.status,
         "created_at": machine.created_at,
         "updated_at": machine.updated_at,
@@ -79,14 +78,11 @@ class MachineStartService(BaseService[MachineInstance]):
         if self.machine_repo.running_for_user(contest=contest, challenge=challenge, user=user):
             raise ConflictError(message="已有运行中的靶机实例，请先停止再创建")
 
-        # 4) 生成端口与动态 Flag（占位逻辑）
+        # 4) 生成端口（动态 Flag 由挑战模块负责校验，不在靶机保存）
         port = self._allocate_port()
-        dynamic_flag = ""
-        if challenge.flag_type == challenge.FlagType.DYNAMIC:
-            dynamic_flag = f"{challenge.dynamic_prefix}{secrets.token_hex(4)}"
 
         # 5) 启动容器（占位调用 docker_manager，如未实现则使用假 ID）
-        container_id = self._start_container(challenge_slug=challenge.slug, port=port, dynamic_flag=dynamic_flag)
+        container_id = self._start_container(challenge_slug=challenge.slug, port=port)
 
         # 6) 创建实例记录
         instance = self.machine_repo.create(
@@ -98,7 +94,6 @@ class MachineStartService(BaseService[MachineInstance]):
                 "container_id": container_id,
                 "host": "localhost",
                 "port": port,
-                "dynamic_flag": dynamic_flag,
                 "status": MachineInstance.Status.RUNNING,
             }
         )
@@ -110,7 +105,7 @@ class MachineStartService(BaseService[MachineInstance]):
         - 先从 redis 集合读占用，如果未配置则回退数据库检查。
         """
         used_db = self.machine_repo.running_ports()
-        key = "machines:ports:used"
+        key = machine_ports_key()
         used_redis = set(redis_client.get_json(key) or [])
         used = used_db.union(used_redis)
         for _ in range(200):
@@ -121,14 +116,10 @@ class MachineStartService(BaseService[MachineInstance]):
                 return port
         raise ConflictError(message="端口分配失败，请稍后重试")
 
-    def _start_container(self, challenge_slug: str, port: int, dynamic_flag: str) -> str:
+    def _start_container(self, challenge_slug: str, port: int) -> str:
         """
         启动容器并返回 ID，支持 mock。
-        - env 注入动态 flag（若存在）。
         """
-        env = {}
-        if dynamic_flag:
-            env["DYNAMIC_FLAG"] = dynamic_flag
         # 镜像名可通过环境变量前缀/标签定制，默认使用题目 slug
         image_prefix = docker_manager.IMAGE_PREFIX if hasattr(docker_manager, "IMAGE_PREFIX") else ""
         image_tag = docker_manager.IMAGE_TAG if hasattr(docker_manager, "IMAGE_TAG") else "latest"
@@ -137,7 +128,6 @@ class MachineStartService(BaseService[MachineInstance]):
             return docker_manager.start_container(
                 image,
                 port=port,
-                env=env,
                 container_port=getattr(docker_manager, "CONTAINER_PORT", None),
                 network=getattr(docker_manager, "DOCKER_NETWORK", None),
             )

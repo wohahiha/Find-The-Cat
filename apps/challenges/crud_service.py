@@ -1,0 +1,158 @@
+# apps/challenges/challenge_crud_service.py
+
+from __future__ import annotations
+
+from django.utils import timezone
+
+from apps.common.base.base_service import BaseService
+from apps.common.exceptions import ValidationError
+from apps.accounts.models import User
+from apps.contests.repo import ContestRepo
+
+from .models import Challenge
+from .repo import (
+    ChallengeRepo,
+    ChallengeCategoryRepo,
+    ChallengeTaskRepo,
+    ChallengeAttachmentRepo,
+    ChallengeHintRepo,
+)
+from .schemas import ChallengeCreateSchema, ChallengeUpdateSchema
+
+
+class ChallengeCreateService(BaseService[Challenge]):
+    """
+    创建题目服务：
+    - 校验并创建题目，同时写入子任务、附件与提示。
+    - 自动处理分类与作者关联。
+    """
+
+    def __init__(
+        self,
+        contest_repo: ContestRepo | None = None,
+        challenge_repo: ChallengeRepo | None = None,
+        category_repo: ChallengeCategoryRepo | None = None,
+        task_repo: ChallengeTaskRepo | None = None,
+        attachment_repo: ChallengeAttachmentRepo | None = None,
+        hint_repo: ChallengeHintRepo | None = None,
+    ):
+        self.contest_repo = contest_repo or ContestRepo()
+        self.challenge_repo = challenge_repo or ChallengeRepo()
+        self.category_repo = category_repo or ChallengeCategoryRepo()
+        self.task_repo = task_repo or ChallengeTaskRepo()
+        self.attachment_repo = attachment_repo or ChallengeAttachmentRepo()
+        self.hint_repo = hint_repo or ChallengeHintRepo()
+
+    def perform(self, user: User, schema: ChallengeCreateSchema) -> Challenge:
+        # 1) 获取比赛与分类（可选创建）
+        contest = self.contest_repo.get_by_slug(schema.contest_slug)
+        category = None
+        if schema.category:
+            category = self.category_repo.get_or_create_slug(schema.category)
+        # 2) 准备 payload 并剥离子任务/附件
+        payload = schema.to_dict(exclude_none=True)
+        payload.pop("contest_slug", None)
+        payload.update({"contest": contest, "category": category, "author": user})
+        # 动态计分默认最低分为基础分一半
+        if payload.get("min_score") is None:
+            payload["min_score"] = max(1, int(payload.get("base_points", 100)) // 2)
+        tasks = payload.pop("tasks", [])
+        attachments = payload.pop("attachments", [])
+        hints = payload.pop("hints", [])
+        # 3) 创建题目并同步子任务与附件
+        challenge = self.challenge_repo.create(payload)
+        self._sync_tasks(challenge, tasks)
+        self._sync_attachments(challenge, attachments)
+        self._sync_hints(challenge, hints)
+        return challenge
+
+    def _sync_tasks(self, challenge: Challenge, tasks_data: list) -> None:
+        """创建子任务列表。"""
+        for idx, task in enumerate(tasks_data, start=1):
+            self.task_repo.create(
+                {
+                    "challenge": challenge,
+                    "title": task.get("title", ""),
+                    "description": task.get("description", ""),
+                    "points": int(task.get("points", 0)),
+                    "order": int(task.get("order", idx)),
+                }
+            )
+
+    def _sync_attachments(self, challenge: Challenge, attachments_data: list) -> None:
+        """创建附件列表。"""
+        for idx, att in enumerate(attachments_data, start=1):
+            self.attachment_repo.create(
+                {
+                    "challenge": challenge,
+                    "name": att.get("name", f"附件{idx}"),
+                    "url": att.get("url", ""),
+                    "order": int(att.get("order", idx)),
+                }
+            )
+
+    def _sync_hints(self, challenge: Challenge, hints_data: list) -> None:
+        """创建提示列表。"""
+        for idx, hint in enumerate(hints_data, start=1):
+            self.hint_repo.create(
+                {
+                    "challenge": challenge,
+                    "title": hint.get("title", f"提示{idx}"),
+                    "content": hint.get("content", ""),
+                    "is_free": bool(hint.get("is_free", True)),
+                    "cost": int(hint.get("cost", 0)),
+                    "order": int(hint.get("order", idx)),
+                }
+            )
+
+
+class ChallengeUpdateService(BaseService[Challenge]):
+    """更新题目服务：支持分类替换、子任务/附件/提示全量替换。"""
+
+    def __init__(
+        self,
+        contest_repo: ContestRepo | None = None,
+        challenge_repo: ChallengeRepo | None = None,
+        category_repo: ChallengeCategoryRepo | None = None,
+        task_repo: ChallengeTaskRepo | None = None,
+        attachment_repo: ChallengeAttachmentRepo | None = None,
+        hint_repo: ChallengeHintRepo | None = None,
+    ):
+        self.contest_repo = contest_repo or ContestRepo()
+        self.challenge_repo = challenge_repo or ChallengeRepo()
+        self.category_repo = category_repo or ChallengeCategoryRepo()
+        self.task_repo = task_repo or ChallengeTaskRepo()
+        self.attachment_repo = attachment_repo or ChallengeAttachmentRepo()
+        self.hint_repo = hint_repo or ChallengeHintRepo()
+
+    def perform(self, schema: ChallengeUpdateSchema) -> Challenge:
+        # 1) 获取比赛与题目
+        contest = self.contest_repo.get_by_slug(schema.contest_slug)
+        challenge = self.challenge_repo.get_by_slug(contest=contest, slug=schema.slug)
+        # 2) 处理分类
+        category = challenge.category
+        if schema.category:
+            category = self.category_repo.get_or_create_slug(schema.category)
+        # 3) 更新字段并保存
+        payload = schema.to_dict(exclude_none=True)
+        payload.pop("contest_slug", None)
+        if payload.get("min_score") is None and "base_points" in payload:
+            payload["min_score"] = max(1, int(payload.get("base_points", 100)) // 2)
+        for field, value in payload.items():
+            if field in {"contest_slug", "category"}:
+                continue
+            setattr(challenge, field, value)
+        challenge.category = category
+        challenge.updated_at = timezone.now()
+        challenge.save()
+        # 如果请求传入 tasks/attachments，则全量替换
+        if "tasks" in payload:
+            challenge.tasks.all().delete()
+            self._sync_tasks(challenge, payload.get("tasks", []))
+        if "attachments" in payload:
+            challenge.attachments.all().delete()
+            self._sync_attachments(challenge, payload.get("attachments", []))
+        if "hints" in payload:
+            challenge.hints.all().delete()
+            self._sync_hints(challenge, payload.get("hints", []))
+        return challenge

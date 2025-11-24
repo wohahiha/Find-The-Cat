@@ -41,6 +41,15 @@ def _ensure_authenticated(request: Request) -> User:
 # 通用权限类
 # ======================
 
+class AllowAny(BasePermission):
+    """
+    允许任何请求通过（公开接口）。
+    """
+
+    def has_permission(self, request: Request, view: Any) -> bool:  # noqa: D401
+        return True
+
+
 class IsAuthenticated(BasePermission):
     """
     需要已登录用户。

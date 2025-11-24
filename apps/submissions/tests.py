@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.test import TestCase, override_settings
 from django.conf import settings
 from django.core.cache import cache
-from rest_framework.test import APITestCase, APIClient
+from rest_framework.test import APITestCase
 from django.utils import timezone
 
 from apps.accounts.models import User
@@ -12,9 +12,9 @@ from apps.contests.schemas import TeamCreateSchema
 from apps.contests.services import TeamCreateService
 from apps.challenges.schemas import ChallengeCreateSchema
 from apps.challenges.services import ChallengeCreateService
+from apps.challenges.repo import ChallengeRepo
 from apps.submissions.models import Submission
-from apps.machines.services import MachineStartService
-from apps.machines.schemas import MachineStartSchema
+from apps.common.tests_utils import AuthenticatedAPIMixin
 
 from .schemas import SubmissionCreateSchema
 from .services import SubmissionService
@@ -39,7 +39,8 @@ class SubmissionServiceTests(TestCase):
                 title="Warmup",
                 slug="warmup",
                 content="Find flag",
-                flag="flag{demo}",
+                flag="demo",
+                dynamic_prefix="flag",
             ),
         )
 
@@ -68,25 +69,24 @@ class SubmissionServiceTests(TestCase):
                 title="Dynamic",
                 slug="dyn",
                 content="dyn flag",
-                flag="flag{placeholder}",
+                flag="placeholder",
                 flag_type="dynamic",
-                dynamic_prefix="flag{",
+                dynamic_prefix="flag",
             ),
         )
-        # 未启动靶机直接提交应报错
-        schema = SubmissionCreateSchema(contest_slug="submit-ctf", challenge_slug="dyn", flag="flag{xxx}")
-        with self.assertRaises(Exception):
-            SubmissionService().execute(self.user, schema)
-        # 启动靶机后使用动态 flag 提交
-        instance = MachineStartService().execute(
+        # 按动态规则构造 flag 提交
+        expected_flag = self._build_dynamic_flag(self.contest, "dyn", self.user)
+        submission = SubmissionService().execute(
             self.user,
-            MachineStartSchema(contest_slug="submit-ctf", challenge_slug="dyn"),
+            SubmissionCreateSchema(contest_slug="submit-ctf", challenge_slug="dyn", flag=expected_flag),
         )
-        ok_schema = SubmissionCreateSchema(contest_slug="submit-ctf", challenge_slug="dyn", flag=instance.dynamic_flag)
-        submission = SubmissionService().execute(self.user, ok_schema)
         self.assertTrue(submission.is_correct)
-        self.assertEqual(submission.flag_submitted, instance.dynamic_flag)
+        self.assertEqual(submission.flag_submitted, expected_flag)
         self.assertEqual(submission.blood_rank, 1)
+
+    def _build_dynamic_flag(self, contest, challenge_slug: str, user):
+        challenge = ChallengeRepo().get_by_slug(contest=contest, slug=challenge_slug)
+        return challenge.build_expected_flag(user=user, secret=settings.SECRET_KEY)
 
 
 @override_settings(
@@ -99,7 +99,7 @@ class SubmissionServiceTests(TestCase):
         },
     }
 )
-class SubmissionsAPITestCase(APITestCase):
+class SubmissionsAPITestCase(AuthenticatedAPIMixin, APITestCase):
     """Submissions 接口冒烟：提交正确/错误及重复行为。"""
 
     @classmethod
@@ -120,25 +120,11 @@ class SubmissionsAPITestCase(APITestCase):
                 title="Warmup",
                 slug="warmup",
                 content="Find flag",
-                flag="flag{demo}",
+                flag="demo",
+                dynamic_prefix="flag",
             ),
         )
         TeamCreateService().execute(cls.user, TeamCreateSchema(contest_slug="api-submit", name="Solo"))
-
-    def _login(self, identifier: str, password: str) -> str:
-        resp = self.client.post(
-            "/api/accounts/auth/login/",
-            {"identifier": identifier, "password": password},
-            format="json",
-        )
-        self.assertEqual(resp.status_code, 200)
-        return resp.data["data"]["access"]
-
-    def _auth_client(self, identifier: str, password: str) -> APIClient:
-        token = self._login(identifier, password)
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-        return client
 
     def setUp(self):
         cache.clear()
@@ -169,30 +155,17 @@ class SubmissionsAPITestCase(APITestCase):
                 "title": "Dyn",
                 "slug": "dyn",
                 "content": "dyn",
-                "flag": "flag{placeholder}",
+                "flag": "placeholder",
                 "flag_type": "dynamic",
-                "dynamic_prefix": "flag{",
+                "dynamic_prefix": "flag",
             },
             format="json",
         )
         self.assertEqual(resp.status_code, 201, resp.content)
         player_client = self._auth_client("alice", "Passw0rd123")
-        # 未启动靶机提交，期望 400
-        resp = player_client.post(
-            "/api/submissions/",
-            {"contest_slug": self.contest.slug, "challenge_slug": "dyn", "flag": "flag{wrong}"},
-            format="json",
-        )
-        self.assertEqual(resp.status_code, 400)
-        # 启动靶机
-        resp = player_client.post(
-            "/api/machines/",
-            {"contest_slug": self.contest.slug, "challenge_slug": "dyn"},
-            format="json",
-        )
-        self.assertEqual(resp.status_code, 201, resp.content)
-        dyn_flag = resp.data["data"]["machine"]["dynamic_flag"]
-        # 提交动态 flag
+        # 直接按动态规则提交
+        challenge = ChallengeRepo().get_by_slug(contest=self.contest, slug="dyn")
+        dyn_flag = self._build_dynamic_flag(self.contest, challenge, self.user)
         resp = player_client.post(
             "/api/submissions/",
             {"contest_slug": self.contest.slug, "challenge_slug": "dyn", "flag": dyn_flag},
@@ -215,3 +188,6 @@ class SubmissionsAPITestCase(APITestCase):
             format="json",
         )
         self.assertEqual(resp.status_code, 400)
+
+    def _build_dynamic_flag(self, contest, challenge, user):
+        return challenge.build_expected_flag(user=user, membership=None, secret=settings.SECRET_KEY)

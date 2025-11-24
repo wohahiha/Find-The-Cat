@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -8,6 +7,7 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 from apps.common import response
+from apps.common.permissions import IsAuthenticated
 from apps.common.throttles import MachineStartRateThrottle
 
 from .schemas import MachineStartSchema, MachineStopSchema

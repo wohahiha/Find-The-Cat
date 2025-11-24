@@ -14,3 +14,29 @@ class SubmissionAdmin(admin.ModelAdmin):
     list_display = ("contest", "challenge", "user", "team", "status", "is_correct", "blood_rank", "awarded_points", "created_at")
     list_filter = ("contest", "challenge", "status", "is_correct")
     search_fields = ("user__username", "challenge__slug", "flag_submitted")
+
+    # 只读，禁止新增/修改/删除，管理员仅查看提交记录
+    readonly_fields = (
+        "contest",
+        "challenge",
+        "user",
+        "team",
+        "flag_submitted",
+        "status",
+        "is_correct",
+        "message",
+        "awarded_points",
+        "blood_rank",
+        "solve",
+        "created_at",
+        "judged_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

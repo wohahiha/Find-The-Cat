@@ -5,183 +5,493 @@ info:
 paths:
   /api/accounts/auth/login/:
     post:
-      summary: 用户登录
-      description: |-
-        登录流程：
+      operationId: accounts_auth_login_create
+      description: '登录流程：
+
         - 校验 identifier/password。
-        - 执行 LoginService 获取 JWT 刷新/访问令牌与用户信息。
-        - 在默认配置下会写入 HttpOnly JWT Cookie（可在 settings 关闭），前端也可直接使用响应体中的 token。
+
+        - 执行 LoginService 获取 token 与用户信息。
+
+        - 写入 HttpOnly JWT Cookie（可配置关闭）。'
       tags:
       - accounts
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              type: object
+              additionalProperties: {}
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              type: object
+              additionalProperties: {}
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              type: object
+              additionalProperties: {}
       security:
+      - JWTAuth: []
       - {}
       responses:
         '200':
-          description: 登录成功，返回 token 与用户资料。
           content:
             application/json:
               schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      $ref: '#/components/schemas/LoginResponse'
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 用户登录
   /api/accounts/auth/password/change/:
     post:
-      summary: 修改密码
-      description: |-
-        修改密码：
-        - 登录态下校验旧密码。
-        - 校验新密码复杂度与二次确认。
-        - 调用服务写入新密码。
+      operationId: accounts_auth_password_change_create
+      description: '修改密码：
+
+        - 校验旧密码、新密码与确认密码。
+
+        - 调用服务写入新密码。'
       tags:
       - accounts
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChangePasswordRequest'
+              type: object
+              additionalProperties: {}
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ChangePasswordRequest'
+              type: object
+              additionalProperties: {}
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ChangePasswordRequest'
+              type: object
+              additionalProperties: {}
       security:
       - JWTAuth: []
       responses:
         '200':
-          description: 修改成功，仅返回提示信息。
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
-  /api/contests/{slug}/:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 修改密码
+  /api/accounts/auth/password/reset/:
+    post:
+      operationId: accounts_auth_password_reset_create
+      description: '重置密码：
+
+        - 校验重置入参（邮箱/验证码/新密码）。
+
+        - 调用服务消费验证码并写入新密码。'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 验证码重置密码
+  /api/accounts/auth/password/reset/request/:
+    post:
+      operationId: accounts_auth_password_reset_request_create
+      description: '申请重置：
+
+        - 将场景设置为 RESET_PASSWORD。
+
+        - 调用发送验证码服务。'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 申请重置密码
+  /api/accounts/auth/register/:
+    post:
+      operationId: accounts_auth_register_create
+      description: '提交注册：
+
+        - 校验注册入参。
+
+        - 执行注册服务，创建用户并分配默认权限。'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 用户注册
+  /api/accounts/email/change/:
+    post:
+      operationId: accounts_email_change_create
+      description: '修改邮箱：
+
+        - 校验当前密码。
+
+        - 消费绑定邮箱验证码。
+
+        - 更新邮箱并返回最新资料。'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 修改邮箱
+  /api/accounts/email/verification/:
+    post:
+      operationId: accounts_email_verification_create
+      description: '发送验证码：
+
+        - 从请求体构建 SendEmailCodeSchema（自动校验）。
+
+        - 执行发送服务；DEBUG 下输出 debug_code 便于测试。'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 发送邮箱验证码
+  /api/accounts/me/:
     get:
+      operationId: accounts_me_retrieve
+      description: 获取当前用户资料。
+      tags:
+      - accounts
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 当前用户资料
+    patch:
+      operationId: accounts_me_partial_update
+      description: '部分更新个人资料：
+
+        - 校验至少包含一个可更新字段。
+
+        - 调用更新服务后返回最新用户信息。'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 更新个人资料
+  /api/accounts/me/deactivate/:
+    post:
+      operationId: accounts_me_deactivate_create
+      description: '注销流程：
+
+        - 校验当前密码。
+
+        - 调用服务进行软删除处理（禁用账号、清除可识别信息）。'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 注销账号
+  /api/contests/:
+    get:
+      operationId: contests_retrieve
+      description: 比赛列表/创建接口：GET 公共访问，POST 仅管理员。
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 比赛列表
+    post:
+      operationId: contests_create
+      description: 比赛列表/创建接口：GET 公共访问，POST 仅管理员。
+      tags:
+      - contests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 创建比赛
+  /api/contests/{contest_slug}/:
+    get:
+      operationId: contests_retrieve_2
+      description: 比赛详情接口：返回比赛、挑战、公告、记分板及我的队伍。
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
       summary: 比赛详情
-      description: |-
-        比赛详情接口：
-        - 返回比赛信息、题目列表、公告列表、记分板。
-        - 若用户已登录且加入队伍，附带 my_team 信息。
-        - 记分板在封榜时间后不再更新（仅统计封榜前解题）。
+  /api/contests/{contest_slug}/announcements/:
+    get:
+      operationId: contests_announcements_retrieve
+      description: '比赛公告接口：
+
+        - GET：任何人可查看比赛公告列表。
+
+        - POST：管理员创建公告。'
       parameters:
       - in: path
-        name: slug
+        name: contest_slug
         schema:
           type: string
         required: true
       tags:
       - contests
       security:
+      - JWTAuth: []
       - {}
       responses:
         '200':
-          description: 比赛上下文数据。
           content:
             application/json:
               schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      $ref: '#/components/schemas/ContestContextResponse'
-  /api/contests/{slug}/announcements/:
-    get:
+                type: object
+                additionalProperties: {}
+          description: ''
       summary: 公告列表
-      description: |-
-        比赛公告接口：
-        - GET：任何人可查看比赛有效公告列表。
+    post:
+      operationId: contests_announcements_create
+      description: '比赛公告接口：
+
+        - GET：任何人可查看比赛公告列表。
+
+        - POST：管理员创建公告。'
       parameters:
       - in: path
-        name: slug
+        name: contest_slug
         schema:
           type: string
         required: true
       tags:
       - contests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
       security:
+      - JWTAuth: []
       - {}
       responses:
         '200':
-          description: 公告列表。
           content:
             application/json:
               schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        items:
-                          type: array
-                          items:
-                            $ref: '#/components/schemas/Announcement'
-    post:
+                type: object
+                additionalProperties: {}
+          description: ''
       summary: 创建公告
-      description: |-
-        创建公告（管理员）：
-        - 绑定比赛后写入 title/content/is_active。
-      parameters:
-      - in: path
-        name: slug
-        schema:
-          type: string
-        required: true
-      tags:
-      - contests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AnnouncementCreateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/AnnouncementCreateRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/AnnouncementCreateRequest'
-      security:
-      - JWTAuth: []
-      responses:
-        '201':
-          description: 公告创建成功。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        announcement:
-                          $ref: '#/components/schemas/Announcement'
-  /api/contests/{slug}/teams/:
+  /api/contests/{contest_slug}/challenges/:
     get:
-      summary: 比赛队伍列表
-      description: 返回指定比赛的有效队伍列表（需登录）。
+      operationId: contests_challenges_retrieve
+      description: 题目列表/创建接口：GET 需登录，POST 需管理员。
       parameters:
       - in: path
-        name: slug
+        name: contest_slug
         schema:
           type: string
         required: true
@@ -191,135 +501,544 @@ paths:
       - JWTAuth: []
       responses:
         '200':
-          description: 队伍列表。
           content:
             application/json:
               schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        contest:
-                          type: string
-                          description: 比赛 slug
-                        teams:
-                          type: array
-                          items:
-                            $ref: '#/components/schemas/Team'
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 题目列表
     post:
-      summary: 创建队伍
-      description: |-
-        创建队伍（需登录）：
-        - 校验比赛允许组队且未结束。
-        - 创建者默认成为队长并加入队伍。
+      operationId: contests_challenges_create
+      description: 题目列表/创建接口：GET 需登录，POST 需管理员。
       parameters:
       - in: path
-        name: slug
+        name: contest_slug
         schema:
           type: string
         required: true
       tags:
       - contests
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TeamCreateRequest'
+              type: object
+              additionalProperties: {}
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TeamCreateRequest'
+              type: object
+              additionalProperties: {}
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TeamCreateRequest'
+              type: object
+              additionalProperties: {}
       security:
       - JWTAuth: []
       responses:
-        '201':
-          description: 队伍创建成功。
+        '200':
           content:
             application/json:
               schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        team:
-                          $ref: '#/components/schemas/Team'
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 创建题目
+  /api/contests/{contest_slug}/challenges/{challenge_slug}/:
+    get:
+      operationId: contests_challenges_retrieve_2
+      description: 题目详情/更新接口：GET 需登录，PATCH 需管理员。
+      parameters:
+      - in: path
+        name: challenge_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 题目详情
+    patch:
+      operationId: contests_challenges_partial_update
+      description: 题目详情/更新接口：GET 需登录，PATCH 需管理员。
+      parameters:
+      - in: path
+        name: challenge_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 更新题目
+  /api/contests/{contest_slug}/challenges/{challenge_slug}/hints/:
+    get:
+      operationId: contests_challenges_hints_retrieve
+      description: 题目提示列表：需登录，未解锁提示不返回内容。
+      parameters:
+      - in: path
+        name: challenge_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 题目提示列表
+  /api/contests/{contest_slug}/challenges/{challenge_slug}/hints/{hint_id}/unlock/:
+    post:
+      operationId: contests_challenges_hints_unlock_create
+      description: 解锁提示：需登录，扣分提示需先解锁。
+      parameters:
+      - in: path
+        name: challenge_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: hint_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - contests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 解锁提示
+  /api/contests/{contest_slug}/challenges/attachments/upload/:
+    post:
+      operationId: contests_challenges_attachments_upload_create
+      description: 管理员上传附件文件，返回存储路径与访问 URL（仅保存元信息，不包含文件内容）。
+      summary: 上传题目附件
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/contests/{contest_slug}/export/:
+    get:
+      operationId: contests_export_retrieve
+      description: 比赛数据导出接口：仅管理员可用，返回 JSON 数据快照。
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 比赛数据导出
+  /api/contests/{contest_slug}/teams/:
+    get:
+      operationId: contests_teams_retrieve
+      description: 比赛队伍列表 / 创建接口：需登录。
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 比赛队伍列表
+    post:
+      operationId: contests_teams_create
+      description: 比赛队伍列表 / 创建接口：需登录。
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 创建队伍
+  /api/contests/{contest_slug}/teams/join/:
+    post:
+      operationId: contests_teams_join_create
+      description: 加入队伍接口：需登录，通过邀请码加入。
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 加入队伍
+  /api/contests/{contest_slug}/teams/leave/:
+    post:
+      operationId: contests_teams_leave_create
+      description: 退出队伍接口：需登录，队长多人时需先转移/解散。
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 退出队伍
+  /api/contests/teams/{team_id}/disband/:
+    post:
+      operationId: contests_teams_disband_create
+      description: 解散队伍接口：需登录，队长或管理员可操作。
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - contests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 解散队伍
+  /api/contests/teams/{team_id}/invite/reset/:
+    post:
+      operationId: contests_teams_invite_reset_create
+      description: '重置队伍邀请码：
+
+        - 队长或管理员操作。'
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - contests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 重置队伍邀请码
+  /api/contests/teams/{team_id}/transfer/:
+    post:
+      operationId: contests_teams_transfer_create
+      description: '队长移交：
+
+        - 队长或管理员可操作，将队长角色转给指定队员。'
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - contests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 队长移交
   /api/machines/:
     get:
-      summary: 靶机列表
-      description: |-
-        靶机列表：
-        - 返回当前用户启动的靶机实例，按创建时间倒序。
+      operationId: machines_retrieve
+      description: '靶机列表/启动接口：
+
+        - GET：查询当前用户的靶机实例。
+
+        - POST：为指定比赛/题目启动靶机。'
       tags:
       - machines
       security:
       - JWTAuth: []
       responses:
         '200':
-          description: 当前用户的靶机实例。
           content:
             application/json:
               schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        items:
-                          type: array
-                          items:
-                            $ref: '#/components/schemas/Machine'
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 靶机列表
     post:
-      summary: 启动靶机
-      description: |-
-        启动靶机：
-        - 校验比赛进行中与题目开放。
-        - 防止重复实例；动态题生成实例专属 Flag。
+      operationId: machines_create
+      description: '靶机列表/启动接口：
+
+        - GET：查询当前用户的靶机实例。
+
+        - POST：为指定比赛/题目启动靶机。'
       tags:
       - machines
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MachineStartRequest'
+              type: object
+              additionalProperties: {}
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/MachineStartRequest'
+              type: object
+              additionalProperties: {}
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/MachineStartRequest'
+              type: object
+              additionalProperties: {}
       security:
       - JWTAuth: []
       responses:
-        '201':
-          description: 启动成功。
+        '200':
           content:
             application/json:
               schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        machine:
-                          $ref: '#/components/schemas/Machine'
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 启动靶机
   /api/machines/{machine_id}/stop/:
     post:
-      summary: 停止靶机
-      description: 停止指定靶机实例（创建者、同队成员或管理员可操作）。
+      operationId: machines_stop_create
+      description: '靶机停止接口：
+
+        - POST：停止指定实例。'
       parameters:
       - in: path
         name: machine_id
@@ -333,1491 +1052,63 @@ paths:
           application/json:
             schema:
               type: object
-              description: 预留扩展字段。
+              additionalProperties: {}
           application/x-www-form-urlencoded:
             schema:
               type: object
+              additionalProperties: {}
           multipart/form-data:
             schema:
               type: object
+              additionalProperties: {}
       security:
       - JWTAuth: []
       responses:
         '200':
-          description: 停止成功，返回最新实例状态。
           content:
             application/json:
               schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        machine:
-                          $ref: '#/components/schemas/Machine'
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 停止靶机
   /api/submissions/:
     post:
-      summary: 提交记录
-      description: |-
-        Flag 提交接口：
+      operationId: submissions_create
+      description: 'Flag 提交接口：
+
         - 需登录，校验比赛状态与题目开放性。
-        - 正确时创建 Submission + Solve；错误或重复也会创建 Submission 记录并通过 BizError 返回。
+
+        - 正确返回解题记录，错误也会落库提交记录。'
       tags:
       - submissions
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SubmissionCreateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SubmissionCreateRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SubmissionCreateRequest'
-      security:
-      - JWTAuth: []
-      responses:
-        '201':
-          description: 提交已记录且判定正确（错误/重复将由 BizError 描述）。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        submission:
-                          $ref: '#/components/schemas/Submission'
-  /api/contests/{slug}/teams/join/:
-    post:
-      summary: 加入队伍
-      description: |-
-        加入队伍：
-        - 需登录并提供邀请码。
-        - 校验比赛未结束、队伍未满、未在其他队伍。
-      parameters:
-      - in: path
-        name: slug
-        schema:
-          type: string
-        required: true
-      tags:
-      - contests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TeamJoinRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TeamJoinRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TeamJoinRequest'
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: 加入成功，返回队伍信息。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        team:
-                          $ref: '#/components/schemas/Team'
-  /api/contests/{slug}/teams/leave/:
-    post:
-      summary: 退出队伍
-      description: |-
-        退出队伍：
-        - 校验用户已在队伍中。
-        - 若为队长且队伍多人需先移交或解散。
-      parameters:
-      - in: path
-        name: slug
-        schema:
-          type: string
-        required: true
-      tags:
-      - contests
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: 退出结果。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-  /api/contests/teams/{team_id}/disband/:
-    post:
-      summary: 解散队伍
-      description: |-
-        解散队伍：
-        - 队长或管理员可操作。
-        - 逐个成员失效并重置邀请码。
-      parameters:
-      - in: path
-        name: team_id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - contests
-      requestBody:
         content:
           application/json:
             schema:
               type: object
-              description: 保留空体，后续可扩展需要的确认字段。
+              additionalProperties: {}
           application/x-www-form-urlencoded:
             schema:
               type: object
+              additionalProperties: {}
           multipart/form-data:
             schema:
               type: object
+              additionalProperties: {}
       security:
       - JWTAuth: []
       responses:
         '200':
-          description: 队伍已解散。
           content:
             application/json:
               schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        team:
-                          $ref: '#/components/schemas/Team'
-  /api/contests/teams/{team_id}/invite/reset/:
-    post:
-      summary: 重置队伍邀请码
-      description: 队长或管理员重置指定队伍的邀请码。
-      parameters:
-      - in: path
-        name: team_id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - contests
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              description: 预留扩展字段。
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-          multipart/form-data:
-            schema:
-              type: object
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: 重置成功，返回新邀请码。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        team:
-                          $ref: '#/components/schemas/Team'
-  /api/contests/teams/{team_id}/transfer/:
-    post:
-      summary: 队长移交
-      description: |-
-        队长移交：
-        - 队长或管理员将队长角色移交给指定成员（不存在时会自动加入为成员）。
-      parameters:
-      - in: path
-        name: team_id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - contests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TeamTransferRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TeamTransferRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TeamTransferRequest'
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: 移交结果（失败时 message 会提示原因，code 仍为 0 以保持前端兼容）。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        team:
-                          $ref: '#/components/schemas/Team'
-  /api/contests/:
-    get:
-      summary: 比赛列表
-      description: |-
-        比赛列表：
-        - 公共可见。
-        - 支持 status 查询参数：running/upcoming/ended。
-      tags:
-      - contests
-      parameters:
-      - in: query
-        name: status
-        schema:
-          type: string
-          enum:
-          - running
-          - upcoming
-          - ended
-        description: 按状态过滤比赛，可不传。
-      security:
-      - {}
-      responses:
-        '200':
-          description: 返回比赛列表。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        items:
-                          type: array
-                          items:
-                            $ref: '#/components/schemas/Contest'
-    post:
-      summary: 创建比赛
-      description: |-
-        创建比赛：
-        - 仅管理员调用。
-        - 校验时间顺序、封榜时间与队伍人数上限。
-      tags:
-      - contests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ContestCreateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ContestCreateRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ContestCreateRequest'
-      security:
-      - JWTAuth: []
-      responses:
-        '201':
-          description: 创建成功。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        contest:
-                          $ref: '#/components/schemas/Contest'
-  /api/contests/{contest_slug}/challenges/:
-    get:
-      summary: 题目列表
-      description: 返回指定比赛下已开放的题目列表（需登录）。
-      parameters:
-      - in: path
-        name: contest_slug
-        schema:
-          type: string
-        required: true
-      tags:
-      - contests
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: 题目列表。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        items:
-                          type: array
-                          items:
-                            $ref: '#/components/schemas/Challenge'
-    post:
-      summary: 创建题目
-      description: |-
-        创建题目（管理员）：
-        - 需传比赛标识，支持附带子任务与附件。
-        - flag_type 支持 static/dynamic；dynamic_prefix 可为空。
-      parameters:
-      - in: path
-        name: contest_slug
-        schema:
-          type: string
-        required: true
-      tags:
-      - contests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChallengeCreateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ChallengeCreateRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ChallengeCreateRequest'
-      security:
-      - JWTAuth: []
-      responses:
-        '201':
-          description: 创建成功。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        challenge:
-                          $ref: '#/components/schemas/Challenge'
-  /api/contests/{contest_slug}/challenges/{challenge_slug}/:
-    get:
-      summary: 题目详情
-      description: 获取题目详情（需登录）。
-      parameters:
-      - in: path
-        name: challenge_slug
-        schema:
-          type: string
-        required: true
-      - in: path
-        name: contest_slug
-        schema:
-          type: string
-        required: true
-      tags:
-      - contests
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: 题目详情。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        challenge:
-                          $ref: '#/components/schemas/Challenge'
-    patch:
-      summary: 更新题目
-      description: |-
-        更新题目（管理员）：
-        - 支持局部更新，若传 tasks/attachments 则全量替换。
-      parameters:
-      - in: path
-        name: challenge_slug
-        schema:
-          type: string
-        required: true
-      - in: path
-        name: contest_slug
-        schema:
-          type: string
-        required: true
-      tags:
-      - contests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChallengeUpdateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ChallengeUpdateRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ChallengeUpdateRequest'
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: 更新成功。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        challenge:
-                          $ref: '#/components/schemas/Challenge'
-  /api/contests/{contest_slug}/challenges/{challenge_slug}/submit/:
-    post:
-      summary: 提交 Flag
-      description: |-
-        提交 Flag：
-        - 校验比赛进行中与题目已开放。
-        - 静态题目直接校验；动态题需与当前运行靶机的动态 Flag 匹配。
-        - 已解出题目会返回业务错误（仍记录重复提交）。
-      parameters:
-      - in: path
-        name: challenge_slug
-        schema:
-          type: string
-        required: true
-      - in: path
-        name: contest_slug
-        schema:
-          type: string
-        required: true
-      tags:
-      - contests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChallengeSubmitRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ChallengeSubmitRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ChallengeSubmitRequest'
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: Flag 正确，返回得分。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      $ref: '#/components/schemas/ChallengeSubmitResponse'
-  /api/accounts/auth/password/reset/:
-    post:
-      summary: 验证码重置密码
-      description: |-
-        重置密码：
-        - 校验邮箱、验证码、新密码与确认密码。
-        - 消费验证码后写入新密码。
-      tags:
-      - accounts
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ResetPasswordRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ResetPasswordRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ResetPasswordRequest'
-      security:
-      - {}
-      responses:
-        '200':
-          description: 重置成功，前端可引导重新登录。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-  /api/accounts/auth/password/reset/request/:
-    post:
-      summary: 申请重置密码
-      description: |-
-        申请重置：
-        - 固定场景为 RESET_PASSWORD。
-        - 校验邮箱格式并触发发送验证码（包含频率限制）。
-      tags:
-      - accounts
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SendEmailCodeRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SendEmailCodeRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SendEmailCodeRequest'
-      security:
-      - {}
-      responses:
-        '200':
-          description: 验证码发送结果，DEBUG 环境附带 debug_code 便于测试。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      $ref: '#/components/schemas/SendEmailCodeResponse'
-  /api/accounts/auth/register/:
-    post:
-      summary: 用户注册
-      description: |-
-        提交注册：
-        - 校验用户名/邮箱唯一性与验证码。
-        - 创建用户并分配默认权限组，默认将邮箱标记为已验证。
-      tags:
-      - accounts
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-      security:
-      - {}
-      responses:
-        '201':
-          description: 注册成功，返回基础用户信息。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        user:
-                          $ref: '#/components/schemas/User'
-                      required:
-                      - user
-  /api/accounts/email/change/:
-    post:
-      summary: 修改邮箱
-      description: |-
-        修改邮箱：
-        - 登录态下校验当前密码。
-        - 校验新邮箱唯一性并消费绑定邮箱验证码。
-        - 更新邮箱并返回最新资料。
-      tags:
-      - accounts
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChangeEmailRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ChangeEmailRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ChangeEmailRequest'
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: 邮箱更新成功。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        user:
-                          $ref: '#/components/schemas/User'
-  /api/accounts/email/verification/:
-    post:
-      summary: 发送邮箱验证码
-      description: |-
-        发送验证码：
-        - 支持 register/reset_password/bind_email 三个场景。
-        - 60 秒冷却，10 分钟有效，DEBUG 环境返回 debug_code。
-      tags:
-      - accounts
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SendEmailCodeRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SendEmailCodeRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SendEmailCodeRequest'
-      security:
-      - {}
-      responses:
-        '200':
-          description: 发送结果。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      $ref: '#/components/schemas/SendEmailCodeResponse'
-  /api/accounts/me/:
-    get:
-      summary: 当前用户资料
-      description: 获取当前登录用户的完整资料。
-      tags:
-      - accounts
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: 返回用户资料。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        user:
-                          $ref: '#/components/schemas/User'
-    patch:
-      summary: 更新个人资料
-      description: |-
-        部分更新个人资料：
-        - 支持昵称、头像、简介、组织、国家、个人主页等字段。
-        - 至少包含一个字段，未传字段保持不变。
-      tags:
-      - accounts
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProfileUpdateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ProfileUpdateRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ProfileUpdateRequest'
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: 更新成功，返回最新资料。
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/StandardResponse'
-                - type: object
-                  properties:
-                    data:
-                      type: object
-                      properties:
-                        user:
-                          $ref: '#/components/schemas/User'
-  /api/accounts/me/deactivate/:
-    post:
-      summary: 注销账号
-      description: |-
-        注销流程：
-        - 校验当前密码。
-        - 软删除账号：重写用户名/邮箱，禁用账号并清空个人信息。
-      tags:
-      - accounts
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DeleteAccountRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/DeleteAccountRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/DeleteAccountRequest'
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          description: 注销结果，前端需清理登录态。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
+                type: object
+                additionalProperties: {}
+          description: ''
+      summary: 提交记录
 components:
   securitySchemes:
     JWTAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
-  schemas:
-    StandardResponse:
-      type: object
-      description: 统一返回格式，失败时由全局异常处理器填充 code/message/data/extra。
-      properties:
-        code:
-          type: integer
-          description: 0 表示成功；业务错误对齐 BizError.code。
-          example: 0
-        message:
-          type: string
-          description: 提示信息，给人看的描述。
-          example: OK
-        data:
-          description: 业务数据，结构随接口而定。
-        extra:
-          type: object
-          description: 附加元信息，如分页信息。
-          additionalProperties: true
-    User:
-      type: object
-      description: 用户公开资料，字段与 serialize_user 保持一致，可按需要扩展。
-      properties:
-        id:
-          type: integer
-        username:
-          type: string
-        nickname:
-          type: string
-        email:
-          type: string
-          format: email
-        avatar:
-          type: string
-          nullable: true
-        bio:
-          type: string
-          nullable: true
-        organization:
-          type: string
-          nullable: true
-        country:
-          type: string
-          nullable: true
-        website:
-          type: string
-          nullable: true
-        is_email_verified:
-          type: boolean
-        is_staff:
-          type: boolean
-        is_superuser:
-          type: boolean
-        date_joined:
-          type: string
-          format: date-time
-          nullable: true
-        updated_at:
-          type: string
-          format: date-time
-          nullable: true
-    Contest:
-      type: object
-      description: 比赛基础信息。
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        slug:
-          type: string
-        description:
-          type: string
-        visibility:
-          type: string
-        start_time:
-          type: string
-          format: date-time
-        end_time:
-          type: string
-          format: date-time
-        freeze_time:
-          type: string
-          format: date-time
-          nullable: true
-        is_team_based:
-          type: boolean
-        max_team_members:
-          type: integer
-        is_active:
-          type: boolean
-    Announcement:
-      type: object
-      description: 比赛公告。
-      properties:
-        id:
-          type: integer
-        contest:
-          type: string
-          description: 比赛 slug
-        title:
-          type: string
-        content:
-          type: string
-        is_active:
-          type: boolean
-        created_at:
-          type: string
-          format: date-time
-          nullable: true
-        updated_at:
-          type: string
-          format: date-time
-          nullable: true
-    Team:
-      type: object
-      description: 队伍信息。
-      properties:
-        id:
-          type: integer
-        contest:
-          type: string
-        name:
-          type: string
-        slug:
-          type: string
-        description:
-          type: string
-        captain_id:
-          type: integer
-        invite_token:
-          type: string
-          description: 邀请码，可能会重置。
-        member_count:
-          type: integer
-        is_active:
-          type: boolean
-    ChallengeTask:
-      type: object
-      properties:
-        id:
-          type: integer
-        title:
-          type: string
-        description:
-          type: string
-        points:
-          type: integer
-        order:
-          type: integer
-    ChallengeAttachment:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        url:
-          type: string
-        order:
-          type: integer
-    Challenge:
-      type: object
-      description: 题目信息（对外不返回标准 flag 值）。
-      properties:
-        id:
-          type: integer
-        contest:
-          type: string
-        title:
-          type: string
-        slug:
-          type: string
-        short_description:
-          type: string
-        content:
-          type: string
-        category:
-          type: string
-          nullable: true
-        difficulty:
-          type: string
-        base_points:
-          type: integer
-        flag_type:
-          type: string
-          enum:
-          - static
-          - dynamic
-        is_active:
-          type: boolean
-        tasks:
-          type: array
-          items:
-            $ref: '#/components/schemas/ChallengeTask'
-        attachments:
-          type: array
-          items:
-            $ref: '#/components/schemas/ChallengeAttachment'
-    ScoreboardSolve:
-      type: object
-      properties:
-        challenge:
-          type: string
-          description: 题目 slug
-        points:
-          type: integer
-        solved_at:
-          type: string
-          format: date-time
-    ScoreboardEntry:
-      type: object
-      description: 记分板条目，team/user 互斥，封榜后不会再追加新解题记录，便于后续扩展更多统计字段。
-      properties:
-        type:
-          type: string
-          enum:
-          - team
-          - user
-        team:
-          $ref: '#/components/schemas/Team'
-          nullable: true
-        user:
-          type: object
-          nullable: true
-          properties:
-            id:
-              type: integer
-            username:
-              type: string
-        score:
-          type: integer
-        rank:
-          type: integer
-        solves:
-          type: array
-          items:
-            $ref: '#/components/schemas/ScoreboardSolve'
-    Machine:
-      type: object
-      description: 靶机实例信息。
-      properties:
-        id:
-          type: integer
-        contest:
-          type: string
-        challenge:
-          type: string
-        user:
-          type: integer
-        team:
-          type: integer
-          nullable: true
-        container_id:
-          type: string
-        host:
-          type: string
-        port:
-          type: integer
-          nullable: true
-        dynamic_flag:
-          type: string
-          description: 动态题目时的专属 Flag，通常仅用于后台/判题。
-        status:
-          type: string
-          enum:
-          - running
-          - stopped
-          - error
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    Submission:
-      type: object
-      description: 提交记录，正确/错误/重复均会创建。
-      properties:
-        id:
-          type: integer
-        contest:
-          type: string
-        challenge:
-          type: string
-        user:
-          type: integer
-        team:
-          type: integer
-          nullable: true
-        status:
-          type: string
-          enum:
-          - accepted
-          - rejected
-          - duplicate
-        is_correct:
-          type: boolean
-        awarded_points:
-          type: integer
-        blood_rank:
-          type: integer
-        message:
-          type: string
-        solve_id:
-          type: integer
-          nullable: true
-        created_at:
-          type: string
-          format: date-time
-        judged_at:
-          type: string
-          format: date-time
-    LoginRequest:
-      type: object
-      required:
-      - identifier
-      - password
-      properties:
-        identifier:
-          type: string
-          description: 用户名或邮箱。
-        password:
-          type: string
-          format: password
-    LoginResponse:
-      type: object
-      properties:
-        access:
-          type: string
-        refresh:
-          type: string
-        user:
-          $ref: '#/components/schemas/User'
-    SendEmailCodeRequest:
-      type: object
-      required:
-      - email
-      - scene
-      properties:
-        email:
-          type: string
-          format: email
-        scene:
-          type: string
-          enum:
-          - register
-          - reset_password
-          - bind_email
-          description: 业务场景，不同场景会校验邮箱存在性。
-    SendEmailCodeResponse:
-      type: object
-      properties:
-        sent:
-          type: boolean
-          example: true
-        expires_at:
-          type: string
-          format: date-time
-        debug_code:
-          type: string
-          description: DEBUG 模式下返回，生产环境不会出现。
-    RegisterRequest:
-      type: object
-      required:
-      - username
-      - email
-      - password
-      - confirm_password
-      - email_code
-      properties:
-        username:
-          type: string
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-        confirm_password:
-          type: string
-          format: password
-        email_code:
-          type: string
-          description: 6 位数字验证码。
-        nickname:
-          type: string
-          nullable: true
-    ResetPasswordRequest:
-      type: object
-      required:
-      - email
-      - code
-      - new_password
-      - confirm_password
-      properties:
-        email:
-          type: string
-          format: email
-        code:
-          type: string
-          description: 6 位数字验证码。
-        new_password:
-          type: string
-          format: password
-        confirm_password:
-          type: string
-          format: password
-    ProfileUpdateRequest:
-      type: object
-      description: 任意字段可选，至少传一个；未传字段保持原值。
-      properties:
-        nickname:
-          type: string
-        avatar:
-          type: string
-        bio:
-          type: string
-        organization:
-          type: string
-        country:
-          type: string
-        website:
-          type: string
-    ChangePasswordRequest:
-      type: object
-      required:
-      - old_password
-      - new_password
-      - confirm_password
-      properties:
-        old_password:
-          type: string
-          format: password
-        new_password:
-          type: string
-          format: password
-        confirm_password:
-          type: string
-          format: password
-    ChangeEmailRequest:
-      type: object
-      required:
-      - new_email
-      - email_code
-      - current_password
-      properties:
-        new_email:
-          type: string
-          format: email
-        email_code:
-          type: string
-          description: 6 位数字验证码。
-        current_password:
-          type: string
-          format: password
-    DeleteAccountRequest:
-      type: object
-      required:
-      - password
-      properties:
-        password:
-          type: string
-          format: password
-    ContestCreateRequest:
-      type: object
-      required:
-      - name
-      - slug
-      - start_time
-      - end_time
-      properties:
-        name:
-          type: string
-        slug:
-          type: string
-        description:
-          type: string
-        visibility:
-          type: string
-          default: public
-        start_time:
-          type: string
-          format: date-time
-        end_time:
-          type: string
-          format: date-time
-        freeze_time:
-          type: string
-          format: date-time
-          nullable: true
-        is_team_based:
-          type: boolean
-          default: true
-        max_team_members:
-          type: integer
-          default: 4
-    AnnouncementCreateRequest:
-      type: object
-      required:
-      - title
-      - content
-      properties:
-        contest_slug:
-          type: string
-          description: 路径参数已传，这里预留给内部复用。
-        title:
-          type: string
-        content:
-          type: string
-        is_active:
-          type: boolean
-          default: true
-    TeamCreateRequest:
-      type: object
-      required:
-      - name
-      properties:
-        contest_slug:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-    TeamJoinRequest:
-      type: object
-      required:
-      - invite_token
-      properties:
-        contest_slug:
-          type: string
-        invite_token:
-          type: string
-          description: 队伍邀请码。
-    TeamTransferRequest:
-      type: object
-      required:
-      - new_captain_id
-      properties:
-        team_id:
-          type: integer
-          description: 路径参数已提供，schema 预留复用。
-        new_captain_id:
-          type: integer
-          description: 新队长的用户 ID。
-    ChallengeCreateRequest:
-      type: object
-      required:
-      - contest_slug
-      - title
-      - slug
-      - content
-      - flag
-      properties:
-        contest_slug:
-          type: string
-        title:
-          type: string
-        slug:
-          type: string
-        content:
-          type: string
-        category:
-          type: string
-        short_description:
-          type: string
-        difficulty:
-          type: string
-          default: medium
-        base_points:
-          type: integer
-          default: 100
-        flag:
-          type: string
-          description: 标准 Flag，动态题时为前缀参考，不会对外返回。
-        flag_case_insensitive:
-          type: boolean
-          default: true
-        flag_type:
-          type: string
-          enum:
-          - static
-          - dynamic
-          default: static
-        dynamic_prefix:
-          type: string
-          description: 动态 Flag 前缀，可为空。
-        tasks:
-          type: array
-          description: 子任务列表，order 可选；未传则按顺序补齐。
-          items:
-            type: object
-            properties:
-              title:
-                type: string
-              description:
-                type: string
-              points:
-                type: integer
-              order:
-                type: integer
-        attachments:
-          type: array
-          description: 附件列表，url 为外链或对象存储地址。
-          items:
-            type: object
-            properties:
-              name:
-                type: string
-              url:
-                type: string
-              order:
-                type: integer
-    ChallengeUpdateRequest:
-      allOf:
-      - $ref: '#/components/schemas/ChallengeCreateRequest'
-      description: 与创建一致，未传字段保持原值；传入 tasks/attachments 时会全量替换。
-    ChallengeSubmitRequest:
-      type: object
-      required:
-      - flag
-      properties:
-        flag:
-          type: string
-          description: 提交的 Flag。
-    ChallengeSubmitResponse:
-      type: object
-      properties:
-        challenge:
-          $ref: '#/components/schemas/Challenge'
-        awarded_points:
-          type: integer
-        solved_at:
-          type: string
-          format: date-time
-    ContestContextResponse:
-      type: object
-      properties:
-        contest:
-          $ref: '#/components/schemas/Contest'
-        my_team:
-          $ref: '#/components/schemas/Team'
-          nullable: true
-        challenges:
-          type: array
-          items:
-            $ref: '#/components/schemas/Challenge'
-        announcements:
-          type: array
-          items:
-            $ref: '#/components/schemas/Announcement'
-        scoreboard:
-          type: array
-          items:
-            $ref: '#/components/schemas/ScoreboardEntry'
-    MachineStartRequest:
-      type: object
-      required:
-      - contest_slug
-      - challenge_slug
-      properties:
-        contest_slug:
-          type: string
-        challenge_slug:
-          type: string
-    SubmissionCreateRequest:
-      type: object
-      required:
-      - contest_slug
-      - challenge_slug
-      - flag
-      properties:
-        contest_slug:
-          type: string
-        challenge_slug:
-          type: string
-        flag:
-          type: string

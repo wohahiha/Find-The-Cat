@@ -7,8 +7,11 @@ from rest_framework.test import APITestCase, APIClient
 from django.utils import timezone
 
 from apps.accounts.models import User
-from apps.challenges.schemas import ChallengeCreateSchema, ChallengeSubmitSchema
-from apps.challenges.services import ChallengeCreateService, ChallengeSubmitService
+from apps.challenges.schemas import ChallengeCreateSchema
+from apps.challenges.services import ChallengeCreateService
+from apps.common.tests_utils import AuthenticatedAPIMixin
+from apps.submissions.schemas import SubmissionCreateSchema
+from apps.submissions.services import SubmissionService
 
 from .models import Contest, Team
 from .schemas import (
@@ -84,15 +87,14 @@ class ContestServiceTests(TestCase):
                 title="Warmup",
                 slug="warmup",
                 content="Find flag",
-                flag="flag{123}",
+                flag="123",
+                dynamic_prefix="flag",
             ),
         )
         TeamCreateService().execute(self.user1, TeamCreateSchema(contest_slug="spring-ctf", name="Gamma"))
-        ChallengeSubmitService().execute(
+        SubmissionService().execute(
             self.user1,
-            contest_slug="spring-ctf",
-            challenge_slug="warmup",
-            schema=ChallengeSubmitSchema(flag="flag{123}"),
+            SubmissionCreateSchema(contest_slug="spring-ctf", challenge_slug="warmup", flag="flag{123}"),
         )
         scoreboard = ScoreboardService().execute(self.contest)
         self.assertGreaterEqual(len(scoreboard), 1)
@@ -109,7 +111,7 @@ class ContestServiceTests(TestCase):
         },
     }
 )
-class ContestsAPITestCase(APITestCase):
+class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
     """Contests 模块接口冒烟：比赛、公告、队伍全链路。"""
 
     @classmethod
@@ -121,23 +123,6 @@ class ContestsAPITestCase(APITestCase):
         )
         cls.user1 = User.objects.create_user(username="alice", email="alice@example.com", password="Passw0rd123")
         cls.user2 = User.objects.create_user(username="bob", email="bob@example.com", password="Passw0rd123")
-
-    def _login(self, identifier: str, password: str) -> str:
-        """登录并返回 JWT，期望 200。"""
-        resp = self.client.post(
-            "/api/accounts/auth/login/",
-            {"identifier": identifier, "password": password},
-            format="json",
-        )
-        self.assertEqual(resp.status_code, 200)
-        return resp.data["data"]["access"]
-
-    def _auth_client(self, identifier: str, password: str) -> APIClient:
-        """返回带认证头的客户端，便于后续接口调用。"""
-        token = self._login(identifier, password)
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-        return client
 
     def setUp(self):
         # 每个用例重置时间窗口并清理缓存，避免节流干扰

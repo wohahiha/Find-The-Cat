@@ -93,7 +93,7 @@ class JWTAuthentication(SimpleJWTAuthentication):
         except InvalidToken as exc:
             # Token 语法错误 / 过期 / 签名错误 / 被吊销等，统一为 TokenError
             # 具体错误原因不泄露给前端，只给出“登录状态失效”的友好提示
-            raise TokenError(message="Token 无效或已过期，请重新登录") from exc
+            raise TokenError(message="令牌无效或已过期，请重新登录") from exc
         except SimpleJWTAuthFailed as exc:
             # 其他认证失败情况（例如用户不存在、被禁用等）
             detail = getattr(exc, "detail", None)

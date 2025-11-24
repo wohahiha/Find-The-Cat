@@ -44,13 +44,20 @@ _PERMISSION_MODELS: Sequence[Tuple[str, str, str, str]] = (
     ("auth", "group", "系统配置", "权限组"),
     ("auth", "permission", "系统配置", "权限定义"),
     ("challenges", "challenge", "题目管理", "题目"),
+    ("challenges", "challengeattachment", "题目管理", "题目附件"),
+    ("challenges", "challengehint", "题目管理", "题目提示"),
+    ("challenges", "challengehintunlock", "题目管理", "提示解锁"),
+    ("challenges", "challengetask", "题目管理", "题目子任务"),
     ("challenges", "challengecategory", "题目管理", "题目分类"),
     ("challenges", "challengesolve", "题目管理", "解题记录"),
     ("contenttypes", "contenttype", "系统配置", "模型注册"),
     ("contests", "contest", "赛事管理", "比赛"),
+    ("contests", "contestannouncement", "赛事管理", "比赛公告"),
     ("contests", "team", "赛事管理", "战队"),
     ("contests", "teammember", "赛事管理", "队员"),
+    ("machines", "machineinstance", "靶机管理", "靶机实例"),
     ("sessions", "session", "系统配置", "会话记录"),
+    ("submissions", "submission", "提交计分", "提交记录"),
 )
 
 

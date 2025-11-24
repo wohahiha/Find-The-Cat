@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from django.utils import timezone
-from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -9,9 +8,10 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 from apps.common import response
-from apps.common.permissions import IsAuthenticated, IsAdmin
+from apps.common.permissions import IsAuthenticated, IsAdmin, AllowAny
 from apps.challenges.repo import ChallengeRepo
-from apps.challenges.services import serialize_challenge
+from apps.challenges.serializers import serialize_challenge
+from apps.submissions.services import SubmissionService
 
 from .repo import ContestRepo, TeamRepo, TeamMemberRepo
 from .services import (
@@ -34,6 +34,7 @@ from .schemas import (
 )
 from .services import (
     CreateContestService,
+    ContestExportService,
     TeamCreateService,
     TeamJoinService,
     TeamLeaveService,
@@ -83,11 +84,12 @@ class ContestDetailView(APIView):
     challenge_repo = ChallengeRepo()
     member_repo = TeamMemberRepo()
     scoreboard_service = ScoreboardService()
+    submit_service = SubmissionService()
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
-    def get(self, request: Request, slug: str) -> Response:
+    def get(self, request: Request, contest_slug: str) -> Response:
         # 获取比赛与基础信息
-        contest = self.context_service.get_contest(slug)
+        contest = self.context_service.get_contest(contest_slug)
         data = {
             "contest": serialize_contest(contest),
         }
@@ -99,13 +101,39 @@ class ContestDetailView(APIView):
 
         # 读取比赛下的有效题目列表
         challenges = self.challenge_repo.filter(contest=contest, is_active=True)
-        data["challenges"] = [serialize_challenge(ch) for ch in challenges]
+        membership = None
+        if request.user.is_authenticated:
+            membership = self.member_repo.get_membership(contest=contest, user=request.user)
+        data["challenges"] = [
+            serialize_challenge(
+                ch,
+                current_points=self.submit_service.visible_points_for_user(
+                    request.user if request.user.is_authenticated else None,
+                    contest,
+                    ch,
+                    membership=membership,
+                ),
+            )
+            for ch in challenges
+        ]
         # 公告：仅返回有效公告
         announcements = self.context_service.list_announcements(contest)
         data["announcements"] = [serialize_announcement(ann) for ann in announcements]
         # 计算记分板
         data["scoreboard"] = self.scoreboard_service.execute(contest)
         return response.success(data)
+
+
+class ContestExportView(APIView):
+    """比赛数据导出接口：仅管理员可用，返回 JSON 数据快照。"""
+
+    permission_classes = [IsAdmin]
+    export_service = ContestExportService()
+
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
+    def get(self, request: Request, contest_slug: str) -> Response:
+        payload = self.export_service.execute(contest_slug)
+        return response.success(payload, message="导出成功")
 
 
 class ContestTeamsView(APIView):
@@ -115,18 +143,18 @@ class ContestTeamsView(APIView):
     team_repo = TeamRepo()
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
-    def get(self, request: Request, slug: str) -> Response:
+    def get(self, request: Request, contest_slug: str) -> Response:
         # 查询比赛并返回所有有效队伍
-        contest = self.context_service.get_contest(slug)
+        contest = self.context_service.get_contest(contest_slug)
         teams = self.team_repo.filter(contest=contest, is_active=True).select_related("captain")
         data = [serialize_team(team) for team in teams]
         return response.success({"contest": contest.slug, "teams": data})
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
-    def post(self, request: Request, slug: str) -> Response:
+    def post(self, request: Request, contest_slug: str) -> Response:
         # 补充比赛标识后交由服务层创建队伍
         payload = dict(request.data)
-        payload["contest_slug"] = slug
+        payload["contest_slug"] = contest_slug
         schema = TeamCreateSchema.from_dict(payload, auto_validate=True)
         team = TeamCreateService().execute(request.user, schema)
         return response.created({"team": serialize_team(team)}, message="队伍已创建")
@@ -137,10 +165,10 @@ class ContestTeamJoinView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
-    def post(self, request: Request, slug: str) -> Response:
+    def post(self, request: Request, contest_slug: str) -> Response:
         # 补充比赛标识后交由服务层处理
         payload = dict(request.data)
-        payload["contest_slug"] = slug
+        payload["contest_slug"] = contest_slug
         schema = TeamJoinSchema.from_dict(payload, auto_validate=True)
         membership = TeamJoinService().execute(request.user, schema)
         return response.success(
@@ -154,8 +182,8 @@ class TeamLeaveView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
-    def post(self, request: Request, slug: str) -> Response:
-        schema = TeamLeaveSchema.from_dict({"contest_slug": slug}, auto_validate=True)
+    def post(self, request: Request, contest_slug: str) -> Response:
+        schema = TeamLeaveSchema.from_dict({"contest_slug": contest_slug}, auto_validate=True)
         TeamLeaveService().execute(request.user, schema)
         return response.success(message="已退出队伍")
 
@@ -216,18 +244,18 @@ class ContestAnnouncementView(APIView):
     service = ContestAnnouncementService()
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
-    def get(self, request: Request, slug: str) -> Response:
+    def get(self, request: Request, contest_slug: str) -> Response:
         # 获取比赛并返回有效公告列表
-        contest = self.context_service.get_contest(slug)
+        contest = self.context_service.get_contest(contest_slug)
         announcements = self.context_service.list_announcements(contest)
         return response.success({"items": [serialize_announcement(ann) for ann in announcements]})
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
-    def post(self, request: Request, slug: str) -> Response:
+    def post(self, request: Request, contest_slug: str) -> Response:
         # 运行时切换为管理员权限并创建公告
         self.permission_classes = [IsAdmin]  # type: ignore[assignment]
         payload = dict(request.data)
-        payload["contest_slug"] = slug
+        payload["contest_slug"] = contest_slug
         schema = AnnouncementCreateSchema.from_dict(payload, auto_validate=True)
         ann = self.service.execute(schema)
         return response.created({"announcement": serialize_announcement(ann)}, message="公告已发布")

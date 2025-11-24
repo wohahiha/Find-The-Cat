@@ -3,6 +3,7 @@ from __future__ import annotations
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+import hashlib
 
 # 模型文件：定义题目、分类、解题记录及子任务/附件的数据结构，不承载业务流程。
 
@@ -44,9 +45,11 @@ class Challenge(models.Model):
         HARD = "hard", "Hard"
 
     # 所属比赛
-    contest = models.ForeignKey("contests.Contest", verbose_name="所属比赛", related_name="challenges", on_delete=models.CASCADE)
+    contest = models.ForeignKey("contests.Contest", verbose_name="所属比赛", related_name="challenges",
+                                on_delete=models.CASCADE)
     # 分类，可为空
-    category = models.ForeignKey(ChallengeCategory, verbose_name="分类", related_name="challenges", on_delete=models.SET_NULL, null=True)
+    category = models.ForeignKey(ChallengeCategory, verbose_name="分类", related_name="challenges",
+                                 on_delete=models.SET_NULL, null=True)
     # 题目标题
     title = models.CharField("题目标题", max_length=200)
     # 题目标识 slug
@@ -59,6 +62,7 @@ class Challenge(models.Model):
     difficulty = models.CharField("难度", max_length=20, choices=Difficulty.choices, default=Difficulty.MEDIUM)
     # 基础分值
     base_points = models.PositiveIntegerField("基础分值", default=100)
+
     class FlagType(models.TextChoices):
         STATIC = "static", "静态 Flag"
         DYNAMIC = "dynamic", "动态 Flag"
@@ -69,12 +73,30 @@ class Challenge(models.Model):
     flag_case_insensitive = models.BooleanField("忽略大小写", default=True)
     # Flag 类型：静态/动态
     flag_type = models.CharField("Flag 类型", max_length=16, choices=FlagType.choices, default=FlagType.STATIC)
-    # 动态 Flag 前缀，占位字段
-    dynamic_prefix = models.CharField("动态 Flag 前缀", max_length=64, blank=True)
+    # Flag 前缀
+    dynamic_prefix = models.CharField("Flag 前缀", max_length=64, blank=True, default="FLAG")
     # 是否开放作答
     is_active = models.BooleanField("是否开放", default=True)
+
+    class ScoringMode(models.TextChoices):
+        FIXED = "fixed", "固定分值"
+        DYNAMIC = "dynamic", "动态分值"
+
+    class DecayType(models.TextChoices):
+        PERCENTAGE = "percentage", "按百分比衰减"
+        FIXED_STEP = "fixed_step", "固定分值递减"
+
+    # 计分模式：固定/动态衰减
+    scoring_mode = models.CharField("计分模式", max_length=16, choices=ScoringMode.choices, default=ScoringMode.FIXED)
+    # 衰减类型：百分比或固定扣分
+    decay_type = models.CharField("衰减类型", max_length=16, choices=DecayType.choices, default=DecayType.PERCENTAGE)
+    # 衰减因子：百分比衰减时为 0-1 浮点；固定扣分时为整数步长
+    decay_factor = models.FloatField("衰减因子", default=0.95)
+    # 最低分：动态计分时的下限，默认初始分一半
+    min_score = models.PositiveIntegerField("最低分", default=50)
     # 出题人
-    author = models.ForeignKey(User, verbose_name="出题人", related_name="challenges", on_delete=models.SET_NULL, null=True)
+    author = models.ForeignKey(User, verbose_name="出题人", related_name="challenges", on_delete=models.SET_NULL,
+                               null=True)
     # 创建时间
     created_at = models.DateTimeField("创建时间", auto_now_add=True)
     # 更新时间
@@ -93,18 +115,47 @@ class Challenge(models.Model):
         """按配置标准化输入 Flag（去空格/大小写）。"""
         return value.strip().lower() if self.flag_case_insensitive else value.strip()
 
-    def check_flag(self, submitted: str) -> bool:
+    def _assemble_flag(self, prefix: str, body: str) -> str:
+        """按约定包装前缀与 flag 主体，并做标准化。"""
+        normalized_prefix = (prefix or "").strip()
+        normalized_body = self.normalized_flag(body)
+        wrapped = f"{normalized_prefix}{{{normalized_body}}}"
+        return self.normalized_flag(wrapped)
+
+    def build_expected_flag(self, user=None, membership=None, secret: str | None = None) -> str:
+        """
+        构造当前提交者应持有的标准 Flag。
+        - 静态题目：flag_prefix + { + flag + }，前缀可为空。
+        - 动态题目：基于 contest/challenge/solver 组合和 SECRET_KEY 生成唯一摘要。
+        """
+        if self.flag_type != self.FlagType.DYNAMIC:
+            return self._assemble_flag(self.dynamic_prefix, self.flag)
+
+        if membership and getattr(membership, "team", None):
+            owner_id = membership.team.id
+        else:
+            owner_id = getattr(user, "id", None)
+        if owner_id is None:
+            return self._assemble_flag(self.dynamic_prefix, self.flag)
+
+        seed = secret or getattr(settings, "SECRET_KEY", "ftc-dynamic-flag")
+        raw = f"{seed}:{self.contest_id}:{self.id}:{owner_id}:{self.flag}"
+        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+        return self._assemble_flag(self.dynamic_prefix, digest)
+
+    def check_flag(self, submitted: str, *, user=None, membership=None, secret: str | None = None) -> bool:
         """
         Flag 校验：
-        - 静态模式：直接比对标准化后的 flag。
-        - 动态模式：当前版本仅比对前缀并回退标准化比较，未来可对接动态 flag 生成服务。
+        - 静态：直接比对包装后的 flag。
+        - 动态：基于用户/队伍生成期望值，再比对；若缺少身份则回退旧逻辑。
         """
-        if self.flag_type == self.FlagType.DYNAMIC:
-            # 动态模式占位：若配置前缀则需匹配前缀；其余部分暂与 flag 标准化比较
+        if self.flag_type == self.FlagType.DYNAMIC and user is None and membership is None:
             if self.dynamic_prefix and not submitted.startswith(self.dynamic_prefix):
                 return False
-            # TODO: 对接动态 flag 生成与验证逻辑
-        return self.normalized_flag(submitted) == self.normalized_flag(self.flag)
+            return self.normalized_flag(submitted) == self.normalized_flag(self.flag)
+
+        expected = self.build_expected_flag(user=user, membership=membership, secret=secret)
+        return self.normalized_flag(submitted) == expected
 
 
 class ChallengeSolve(models.Model):
@@ -118,7 +169,8 @@ class ChallengeSolve(models.Model):
     # 解题用户
     user = models.ForeignKey(User, verbose_name="选手", related_name="challenge_solves", on_delete=models.CASCADE)
     # 解题队伍，可为空（个人赛）
-    team = models.ForeignKey("contests.Team", verbose_name="队伍", related_name="challenge_solves", on_delete=models.SET_NULL, null=True, blank=True)
+    team = models.ForeignKey("contests.Team", verbose_name="队伍", related_name="challenge_solves",
+                             on_delete=models.SET_NULL, null=True, blank=True)
     # 最终得分（含动态计分时可能调整）
     awarded_points = models.PositiveIntegerField("得分", default=0)
     # 解题时间戳
@@ -176,3 +228,68 @@ class ChallengeAttachment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.challenge.slug} - {self.name}"
+
+
+class ChallengeHint(models.Model):
+    """
+    题目提示：
+    - 支持免费提示与扣分提示。
+    - order 控制展示顺序。
+    """
+
+    # 关联题目
+    challenge = models.ForeignKey(Challenge, verbose_name="题目", related_name="hints", on_delete=models.CASCADE)
+    # 提示标题
+    title = models.CharField("提示标题", max_length=200)
+    # 提示内容
+    content = models.TextField("提示内容")
+    # 是否免费提示
+    is_free = models.BooleanField("是否免费", default=True)
+    # 扣分成本（仅在 is_free=False 时有效）
+    cost = models.PositiveIntegerField("扣分成本", default=0)
+    # 排序
+    order = models.PositiveIntegerField("排序", default=1)
+    # 创建时间
+    created_at = models.DateTimeField("创建时间", auto_now_add=True)
+    # 更新时间
+    updated_at = models.DateTimeField("更新时间", auto_now=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+        verbose_name = "题目提示"
+        verbose_name_plural = "题目提示"
+
+    def __str__(self) -> str:
+        return f"{self.challenge.slug} - {self.title}"
+
+
+class ChallengeHintUnlock(models.Model):
+    """
+    提示解锁记录：
+    - 关联用户/队伍，便于后续扣分或审计。
+    """
+
+    # 提示
+    hint = models.ForeignKey(ChallengeHint, verbose_name="提示", related_name="unlocks", on_delete=models.CASCADE)
+    # 提示所属题目（冗余便于查询）
+    challenge = models.ForeignKey(Challenge, verbose_name="题目", related_name="hint_unlocks", on_delete=models.CASCADE)
+    # 解锁用户
+    user = models.ForeignKey(User, verbose_name="用户", related_name="hint_unlocks", on_delete=models.CASCADE)
+    # 解锁队伍，可为空（个人赛）
+    team = models.ForeignKey(
+        "contests.Team", verbose_name="队伍", related_name="hint_unlocks", on_delete=models.SET_NULL, null=True,
+        blank=True
+    )
+    # 解锁成本（扣分值），与提示 cost 一致
+    cost = models.PositiveIntegerField("扣分成本", default=0)
+    # 解锁时间
+    unlocked_at = models.DateTimeField("解锁时间", auto_now_add=True)
+
+    class Meta:
+        unique_together = ("hint", "user")
+        ordering = ["-unlocked_at"]
+        verbose_name = "提示解锁"
+        verbose_name_plural = "提示解锁"
+
+    def __str__(self) -> str:
+        return f"{self.user} unlocked {self.hint}"

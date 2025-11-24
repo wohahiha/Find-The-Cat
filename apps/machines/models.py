@@ -34,8 +34,6 @@ class MachineInstance(models.Model):
     host = models.CharField("主机地址", max_length=128, default="localhost")
     # 映射端口
     port = models.PositiveIntegerField("端口", null=True, blank=True)
-    # 动态 Flag（实例专属）
-    dynamic_flag = models.CharField("动态 Flag", max_length=256, blank=True, default="")
     # 实例状态
     status = models.CharField("状态", max_length=20, choices=Status.choices, default=Status.RUNNING)
     # 启动时间

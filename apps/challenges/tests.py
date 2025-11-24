@@ -3,17 +3,23 @@ from __future__ import annotations
 from django.test import TestCase, override_settings
 from django.conf import settings
 from django.core.cache import cache
-from rest_framework.test import APITestCase, APIClient
+from rest_framework.test import APITestCase
 from django.utils import timezone
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from apps.accounts.models import User
 from apps.contests.models import Contest
 from apps.contests.schemas import TeamCreateSchema
 from apps.contests.services import TeamCreateService
+from apps.common.exceptions import WrongFlagError, ChallengeAlreadySolvedError
+from apps.common.exceptions import ValidationError
+from apps.common.tests_utils import AuthenticatedAPIMixin
 
-from .schemas import ChallengeCreateSchema, ChallengeSubmitSchema
-from .services import ChallengeCreateService, ChallengeSubmitService
+from .schemas import ChallengeCreateSchema
+from .services import ChallengeCreateService
 from .repo import ChallengeRepo
+from apps.submissions.schemas import SubmissionCreateSchema
+from apps.submissions.services import SubmissionService
 
 # 测试用例：覆盖题目创建/提交的服务逻辑与 API 冒烟。
 
@@ -39,7 +45,8 @@ class ChallengeServiceTests(TestCase):
             title="Warmup",
             slug="warmup",
             content="Find the flag",
-            flag="flag{demo}",
+            flag="demo",
+            dynamic_prefix="flag",
             category="Misc",
         )
         challenge = ChallengeCreateService().execute(self.author, schema)
@@ -57,7 +64,8 @@ class ChallengeServiceTests(TestCase):
                 title="Warmup",
                 slug="warmup",
                 content="Find the flag",
-                flag="flag{demo}",
+                flag="demo",
+                dynamic_prefix="flag",
                 category="Misc",
             ),
         )
@@ -65,15 +73,74 @@ class ChallengeServiceTests(TestCase):
             self.player,
             TeamCreateSchema(contest_slug="autumn-ctf", name="Solo"),
         )
-        schema = ChallengeSubmitSchema(flag="flag{demo}")
-        solve = ChallengeSubmitService().execute(
-            self.player,
-            contest_slug="autumn-ctf",
-            challenge_slug="warmup",
-            schema=schema,
+        schema = SubmissionCreateSchema(contest_slug="autumn-ctf", challenge_slug="warmup", flag="flag{demo}")
+        submission = SubmissionService().execute(self.player, schema)
+        self.assertEqual(submission.user, self.player)
+        self.assertEqual(submission.challenge.slug, "warmup")
+        self.assertIsNotNone(submission.solve)
+
+    def test_flag_schema_validation(self):
+        """Flag 相关校验：静态必须有 flag，静态不允许动态前缀，动态缺种子报错。"""
+        with self.assertRaises(ValidationError):
+            ChallengeCreateSchema(
+                contest_slug="autumn-ctf",
+                title="NoFlag",
+                slug="noflag",
+                content="empty",
+                flag="",
+            ).validate()
+        with self.assertRaises(ValidationError):
+            ChallengeCreateSchema(
+                contest_slug="autumn-ctf",
+                title="StaticWithPrefix",
+                slug="static-prefix",
+                content="xx",
+                flag="demo",
+                flag_type="static",
+                dynamic_prefix="flag{",
+            ).validate()
+        with self.assertRaises(ValidationError):
+            ChallengeCreateSchema(
+                contest_slug="autumn-ctf",
+                title="DynNoSeed",
+                slug="dyn-no-seed",
+                content="xx",
+                flag="",
+                flag_type="dynamic",
+            ).validate()
+
+    def test_dynamic_flag_generation_and_check(self):
+        """动态 Flag：按用户生成唯一 Flag，校验通过，错误 Flag 抛错。"""
+        challenge = ChallengeCreateService().execute(
+            self.author,
+            ChallengeCreateSchema(
+                contest_slug="autumn-ctf",
+                title="DynFlag",
+                slug="dyn-flag",
+                content="动态 flag 测试",
+                flag="secret-seed",
+                flag_type="dynamic",
+                dynamic_prefix="flag",
+            ),
         )
-        self.assertEqual(solve.user, self.player)
-        self.assertEqual(solve.challenge.slug, "warmup")
+        expected_flag = self._build_expected_flag(challenge, self.player)
+        # 正确 flag 提交通过
+        submission = SubmissionService().execute(
+            self.player,
+            SubmissionCreateSchema(contest_slug="autumn-ctf", challenge_slug="dyn-flag", flag=expected_flag),
+        )
+        self.assertEqual(submission.challenge_id, challenge.id)
+        self.assertIsNotNone(submission.solve)
+        # 已解出后再次提交应提示重复
+        with self.assertRaises(ChallengeAlreadySolvedError):
+            SubmissionService().execute(
+                self.player,
+                SubmissionCreateSchema(contest_slug="autumn-ctf", challenge_slug="dyn-flag", flag="flag{wrong}"),
+            )
+
+    def _build_expected_flag(self, challenge, user):
+        """按照服务端逻辑构造动态 flag，供断言使用。"""
+        return challenge.build_expected_flag(user=user, secret=settings.SECRET_KEY)
 
 
 @override_settings(
@@ -86,11 +153,12 @@ class ChallengeServiceTests(TestCase):
         },
     }
 )
-class ChallengesAPITestCase(APITestCase):
+class ChallengesAPITestCase(AuthenticatedAPIMixin, APITestCase):
     """Challenges 模块接口冒烟：题目 CRUD、提交 Flag。"""
 
     @classmethod
     def setUpTestData(cls):
+        cache.clear()
         cls.admin = User.objects.create_superuser(
             username="wohahiha",
             email="admin@example.com",
@@ -105,22 +173,8 @@ class ChallengesAPITestCase(APITestCase):
             end_time=now + timezone.timedelta(hours=1),
         )
 
-    def _login(self, identifier: str, password: str) -> str:
-        """登录获取 JWT。"""
-        resp = self.client.post(
-            "/api/accounts/auth/login/",
-            {"identifier": identifier, "password": password},
-            format="json",
-        )
-        self.assertEqual(resp.status_code, 200)
-        return resp.data["data"]["access"]
-
-    def _auth_client(self, identifier: str, password: str) -> APIClient:
-        """返回带 Authorization 的客户端。"""
-        token = self._login(identifier, password)
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-        return client
+    def setUp(self):
+        cache.clear()
 
     def test_challenge_crud_and_submit(self):
         """接口链路冒烟：创建题目、列表/详情查看、提交 Flag 与重复提交校验。"""
@@ -134,7 +188,8 @@ class ChallengesAPITestCase(APITestCase):
                 "title": "Warmup",
                 "slug": "warmup",
                 "content": "Find flag",
-                "flag": "flag{demo}",
+                "flag": "demo",
+                "dynamic_prefix": "flag",
                 "base_points": 200,
                 "tasks": [
                     {"title": "Step1", "points": 50},
@@ -152,23 +207,81 @@ class ChallengesAPITestCase(APITestCase):
         resp = player_client.get(f"/api/contests/{self.contest.slug}/challenges/")
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(any(ch["slug"] == "warmup" for ch in resp.data["data"]["items"]))
+        self.assertIn("current_points", resp.data["data"]["items"][0])
 
         # 详情
         resp = player_client.get(f"/api/contests/{self.contest.slug}/challenges/warmup/")
         self.assertEqual(resp.status_code, 200)
         self.assertIn("tasks", resp.data["data"]["challenge"])
+        self.assertIn("current_points", resp.data["data"]["challenge"])
 
-        # 提交正确 Flag
+        # 提交正确 Flag（统一使用 submissions 接口）
         resp = player_client.post(
-            f"/api/contests/{self.contest.slug}/challenges/warmup/submit/",
-            {"flag": "flag{demo}"},
+            "/api/submissions/",
+            {"contest_slug": self.contest.slug, "challenge_slug": "warmup", "flag": "flag{demo}"},
             format="json",
         )
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(
+            resp.data["data"]["challenge"]["current_points"],
+            resp.data["data"]["awarded_points"],
+        )
         # 重复提交应返回业务错误
         resp = player_client.post(
-            f"/api/contests/{self.contest.slug}/challenges/warmup/submit/",
-            {"flag": "flag{demo}"},
+            "/api/submissions/",
+            {"contest_slug": self.contest.slug, "challenge_slug": "warmup", "flag": "flag{demo}"},
             format="json",
         )
         self.assertEqual(resp.status_code, 400)
+
+    def test_dynamic_flag_submit_api(self):
+        """接口层动态 Flag：按用户生成唯一值，正确通过，错误返回业务错误。"""
+        admin_client = self._auth_client("wohahiha", "stevenxu5190")
+        player_client = self._auth_client("alice", "Passw0rd123")
+
+        # 创建动态 Flag 题目
+        resp = admin_client.post(
+            f"/api/contests/{self.contest.slug}/challenges/",
+            {
+                "title": "DynAPI",
+                "slug": "dyn-api",
+                "content": "动态 flag API 测试",
+                "flag": "seed-api",
+                "flag_type": "dynamic",
+                "dynamic_prefix": "flag",
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 201)
+        challenge = ChallengeRepo().get_by_slug(contest=self.contest, slug="dyn-api")
+
+        expected_flag = self._build_dynamic_flag(challenge, self.player)
+        ok_resp = player_client.post(
+            "/api/submissions/",
+            {"contest_slug": self.contest.slug, "challenge_slug": "dyn-api", "flag": expected_flag},
+            format="json",
+        )
+        self.assertEqual(ok_resp.status_code, 201)
+
+        bad_resp = player_client.post(
+            "/api/submissions/",
+            {"contest_slug": self.contest.slug, "challenge_slug": "dyn-api", "flag": "flag{wrong}"},
+            format="json",
+        )
+        self.assertEqual(bad_resp.status_code, 400)
+
+    def test_attachment_upload_api(self):
+        """管理员上传附件，返回路径与 URL。"""
+        admin_client = self._auth_client("wohahiha", "stevenxu5190")
+        file = SimpleUploadedFile("readme.txt", b"hello", content_type="text/plain")
+        resp = admin_client.post(
+            f"/api/contests/{self.contest.slug}/challenges/attachments/upload/",
+            {"file": file, "contest_slug": self.contest.slug, "challenge_slug": "warmup"},
+            format="multipart",
+        )
+        self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertIn("attachment", resp.data["data"])
+
+    def _build_dynamic_flag(self, challenge, user):
+        """复用服务端规则构造动态 Flag，便于接口断言。"""
+        return challenge.build_expected_flag(user=user, secret=settings.SECRET_KEY)

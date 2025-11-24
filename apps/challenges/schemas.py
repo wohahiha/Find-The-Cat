@@ -7,6 +7,7 @@ from typing import ClassVar, Optional, List, Dict
 
 from apps.common.base.base_schema import BaseSchema
 from apps.common.exceptions import ValidationError
+from apps.common.utils.validators import validate_slug
 
 # Schema 层：定义题目创建/更新/提交的入参结构与校验逻辑。
 
@@ -15,7 +16,7 @@ from apps.common.exceptions import ValidationError
 class ChallengeCreateSchema(BaseSchema[None]):
     """
     创建题目入参：
-    - 覆盖题目信息、Flag、分类、子任务与附件。
+    - 覆盖题目信息、Flag、分类、子任务、附件与提示。
     - 自动校验必填字段、分值与子任务/附件合法性。
     """
     auto_validate: ClassVar[bool] = True
@@ -35,18 +36,28 @@ class ChallengeCreateSchema(BaseSchema[None]):
     difficulty: str = "medium"
     # 基础分值
     base_points: int = 100
-    # 标准 Flag
+    # Flag 类型：static/dynamic（静态/动态均可搭配前缀）
+    flag_type: str = "static"
+    # 标准 Flag（静态题必填；动态题用作种子，不含花括号）
     flag: str = ""
+    # Flag 前缀（可选，最终 flag=前缀 + '{' + flag + '}'，静态/动态均可用）
+    dynamic_prefix: str = ""
     # 是否忽略大小写
     flag_case_insensitive: bool = True
-    # Flag 类型：static/dynamic
-    flag_type: str = "static"
-    # 动态 Flag 前缀
-    dynamic_prefix: str = ""
     # 子任务列表
     tasks: List[Dict] = field(default_factory=list)
     # 附件列表
     attachments: List[Dict] = field(default_factory=list)
+    # 提示列表
+    hints: List[Dict] = field(default_factory=list)
+    # 计分模式：fixed/dynamic
+    scoring_mode: str = "fixed"
+    # 衰减类型：percentage/fixed_step
+    decay_type: str = "percentage"
+    # 衰减因子：百分比 <1，固定扣分>0
+    decay_factor: float = 0.95
+    # 最低分：默认初始分一半，需小于 base_points
+    min_score: Optional[int] = None
 
     def validate(self) -> None:
         """校验题目必填字段、分值、子任务与附件。"""
@@ -54,14 +65,21 @@ class ChallengeCreateSchema(BaseSchema[None]):
             raise ValidationError(message="题目标题不能为空")
         if not self.slug:
             raise ValidationError(message="题目标识不能为空")
+        else:
+            validate_slug(self.slug)
         if not self.content:
             raise ValidationError(message="题目内容不能为空")
-        if not self.flag:
-            raise ValidationError(message="必须设置 Flag")
         if self.base_points <= 0:
             raise ValidationError(message="分值必须大于 0")
         if self.flag_type not in {"static", "dynamic"}:
-            raise ValidationError(message="Flag 类型不正确")
+            raise ValidationError(message="提交类型无效，请选择静态或动态")
+        if not self.flag:
+            if self.flag_type == "static":
+                raise ValidationError(message="静态题的答案不能为空")
+            else:
+                raise ValidationError(message="动态题的种子不能为空")
+        if any(ch in (self.dynamic_prefix or "") for ch in ["{", "}"]):
+            raise ValidationError(message="前缀无需包含花括号，系统会自动拼接为 前缀{flag}")
         for task in self.tasks:
             if not task.get("title"):
                 raise ValidationError(message="子任务标题不能为空")
@@ -70,6 +88,27 @@ class ChallengeCreateSchema(BaseSchema[None]):
         for attach in self.attachments:
             if not attach.get("name") or not attach.get("url"):
                 raise ValidationError(message="附件名称和链接均不能为空")
+        for hint in self.hints:
+            if not hint.get("title"):
+                raise ValidationError(message="提示标题不能为空")
+            cost_val = int(hint.get("cost", 0))
+            if cost_val < 0:
+                raise ValidationError(message="提示扣分必须大于等于 0")
+        if self.scoring_mode not in {"fixed", "dynamic"}:
+            raise ValidationError(message="计分模式不正确")
+        if self.decay_type not in {"percentage", "fixed_step"}:
+            raise ValidationError(message="衰减类型不正确")
+        if self.decay_type == "percentage":
+            if not (0 < float(self.decay_factor) < 1):
+                raise ValidationError(message="百分比衰减因子需在 0-1 之间")
+        else:
+            if float(self.decay_factor) <= 0:
+                raise ValidationError(message="固定扣分必须大于 0")
+        # 最低分默认半分
+        if self.min_score is None:
+            self.min_score = max(1, self.base_points // 2)
+        if self.min_score <= 0 or self.min_score >= self.base_points:
+            raise ValidationError(message="最低分需大于 0 且小于初始分值")
 
 
 @dataclass
@@ -89,3 +128,29 @@ class ChallengeSubmitSchema(BaseSchema[None]):
         """校验 Flag 非空。"""
         if not self.flag:
             raise ValidationError(message="请输入 Flag")
+
+
+@dataclass
+class HintUnlockSchema(BaseSchema[None]):
+    """解锁提示入参：无额外字段，预留扩展。"""
+    auto_validate: ClassVar[bool] = True
+
+
+@dataclass
+class AttachmentUploadSchema(BaseSchema[None]):
+    """附件上传入参：支持可选比赛/题目标识用于归档路径。"""
+    auto_validate: ClassVar[bool] = True
+    # 可选：归档到具体比赛
+    contest_slug: Optional[str] = None
+    # 可选：归档到具体题目
+    challenge_slug: Optional[str] = None
+    # 上传的原始文件名
+    filename: str = ""
+
+    def validate(self) -> None:
+        if self.contest_slug:
+            validate_slug(self.contest_slug)
+        if self.challenge_slug:
+            validate_slug(self.challenge_slug)
+        if not self.filename:
+            raise ValidationError(message="请提供文件名")

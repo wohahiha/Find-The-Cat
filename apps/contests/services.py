@@ -15,6 +15,11 @@ from apps.common.exceptions import (
 from django.db import transaction
 from apps.accounts.models import User
 from apps.challenges.models import ChallengeSolve
+from apps.challenges.repo import ChallengeRepo, ChallengeSolveRepo, ChallengeHintUnlockRepo
+from apps.challenges.serializers import serialize_challenge
+from apps.submissions.repo import SubmissionRepo
+from apps.common.infra import redis_client
+from apps.common.utils.redis_keys import scoreboard_key
 
 from .models import Contest, Team, TeamMember, ContestAnnouncement
 from .repo import ContestRepo, TeamRepo, TeamMemberRepo, ContestAnnouncementRepo
@@ -127,6 +132,17 @@ class ContestContextService(BaseService[Contest]):
     def list_announcements(self, contest: Contest):
         """获取比赛公告列表（仅返回有效公告）。"""
         return self.announcement_repo.list_active(contest)
+
+
+def serialize_team_member(member: TeamMember) -> dict:
+    """队伍成员序列化：导出场景下附带用户基础标识。"""
+    return {
+        "user_id": member.user_id,
+        "username": member.user.username if member.user_id else None,
+        "role": member.role,
+        "is_active": member.is_active,
+        "joined_at": member.joined_at,
+    }
 
 
 class CreateContestService(BaseService[Contest]):
@@ -366,9 +382,15 @@ class TeamTransferService(BaseService[Team]):
 
 class ScoreboardService(BaseService[list[dict]]):
     atomic_enabled = False
+    cache_ttl_seconds: int = 30
 
     def perform(self, contest: Contest) -> list[dict]:
         """计算记分板：汇总解题记录并排序。"""
+        cache_key = self.cache_key(contest.id)
+        cached = redis_client.get_json(cache_key)
+        if isinstance(cached, list):
+            return cached
+
         # 1) 计算封榜/截止时间，封榜后只统计封榜前的解题；否则以比赛结束时间为上限
         now = timezone.now()
         cutoff = contest.end_time
@@ -429,7 +451,142 @@ class ScoreboardService(BaseService[list[dict]]):
             board.values(),
             key=lambda item: (-item["score"], item["last_solve"]),
         )
+        result: list[dict] = []
         for idx, entry in enumerate(sorted_entries, start=1):
-            entry["rank"] = idx
-            entry.pop("last_solve", None)
-        return sorted_entries
+            solves_payload = []
+            for solve in entry.get("solves", []):
+                solved_at = solve.get("solved_at")
+                solved_at_str = solved_at.isoformat() if hasattr(solved_at, "isoformat") else str(solved_at)
+                solves_payload.append(
+                    {
+                        "challenge": solve.get("challenge"),
+                        "points": solve.get("points"),
+                        "solved_at": solved_at_str,
+                    }
+                )
+            payload = {
+                **{k: v for k, v in entry.items() if k not in {"solves", "last_solve"}},
+                "rank": idx,
+                "solves": solves_payload,
+            }
+            result.append(payload)
+        redis_client.set_json(cache_key, result, ex=self.cache_ttl_seconds)
+        return result
+
+    @staticmethod
+    def cache_key(contest_id: int) -> str:
+        return scoreboard_key(contest_id)
+
+    @classmethod
+    def invalidate_cache(cls, contest_id: int) -> None:
+        redis_client.delete(cls.cache_key(contest_id))
+
+
+class ContestExportService(BaseService[dict]):
+    """
+    比赛数据导出服务：
+    - 提供比赛基础信息、队伍成员、题目、解题记录与提交记录。
+    - 管理端使用，用于备份或运营分析。
+    """
+
+    atomic_enabled = False
+
+    def __init__(
+        self,
+        contest_repo: ContestRepo | None = None,
+        team_repo: TeamRepo | None = None,
+        member_repo: TeamMemberRepo | None = None,
+        challenge_repo: ChallengeRepo | None = None,
+        solve_repo: ChallengeSolveRepo | None = None,
+        submission_repo: SubmissionRepo | None = None,
+        scoreboard_service: ScoreboardService | None = None,
+        hint_unlock_repo: ChallengeHintUnlockRepo | None = None,
+    ):
+        self.contest_repo = contest_repo or ContestRepo()
+        self.team_repo = team_repo or TeamRepo()
+        self.member_repo = member_repo or TeamMemberRepo()
+        self.challenge_repo = challenge_repo or ChallengeRepo()
+        self.solve_repo = solve_repo or ChallengeSolveRepo()
+        self.submission_repo = submission_repo or SubmissionRepo()
+        self.scoreboard_service = scoreboard_service or ScoreboardService()
+        self.hint_unlock_repo = hint_unlock_repo or ChallengeHintUnlockRepo()
+
+    def perform(self, contest_slug: str) -> dict:
+        """导出指定比赛的数据快照。"""
+        contest = self.contest_repo.get_by_slug(contest_slug)
+
+        # 队伍与成员
+        teams_payload = []
+        teams = self.team_repo.filter(contest=contest).select_related("captain")
+        members_qs = self.member_repo.filter(team__contest=contest).select_related("user", "team")
+        members_by_team: dict[int, list[TeamMember]] = {}
+        for member in members_qs:
+            members_by_team.setdefault(member.team_id, []).append(member)
+
+        for team in teams:
+            payload = serialize_team(team)
+            payload["members"] = [serialize_team_member(m) for m in members_by_team.get(team.id, [])]
+            teams_payload.append(payload)
+
+        # 题目列表
+        challenges = (
+            self.challenge_repo.filter(contest=contest)
+            .select_related("category", "author")
+            .prefetch_related("tasks", "attachments", "hints")
+        )
+        challenges_payload = [serialize_challenge(ch) for ch in challenges]
+
+        # 解题记录（供榜单或统计使用）
+        solves = (
+            self.solve_repo.filter(challenge__contest=contest)
+            .select_related("challenge", "user", "team")
+            .order_by("solved_at")
+        )
+        solves_payload = [
+            {
+                "challenge": solve.challenge.slug,
+                "user": solve.user_id,
+                "username": solve.user.username if solve.user_id else None,
+                "team": solve.team_id,
+                "awarded_points": solve.awarded_points,
+                "solved_at": solve.solved_at,
+            }
+            for solve in solves
+        ]
+
+        # 提交记录（包含正确/错误/重复）
+        submissions = (
+            self.submission_repo.filter(contest=contest)
+            .select_related("challenge", "user", "team")
+            .order_by("-created_at")
+        )
+        submissions_payload = [
+            {
+                "id": sub.id,
+                "contest": sub.contest.slug,
+                "challenge": sub.challenge.slug,
+                "user": sub.user_id,
+                "team": sub.team_id,
+                "status": sub.status,
+                "is_correct": sub.is_correct,
+                "awarded_points": sub.awarded_points,
+                "blood_rank": sub.blood_rank,
+                "message": sub.message,
+                "solve_id": sub.solve_id,
+                "created_at": sub.created_at,
+                "judged_at": sub.judged_at,
+            }
+            for sub in submissions
+        ]
+
+        # 记分板快照（与详情页相同计算逻辑）
+        scoreboard_payload = self.scoreboard_service.execute(contest)
+
+        return {
+            "contest": serialize_contest(contest),
+            "teams": teams_payload,
+            "challenges": challenges_payload,
+            "solves": solves_payload,
+            "submissions": submissions_payload,
+            "scoreboard": scoreboard_payload,
+        }

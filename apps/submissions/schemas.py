@@ -27,4 +27,4 @@ class SubmissionCreateSchema(BaseSchema[None]):
         if not self.challenge_slug:
             raise ValidationError(message="缺少题目标识")
         if not self.flag:
-            raise ValidationError(message="Flag 不能为空")
+            raise ValidationError(message="请填写提交内容（Flag）")

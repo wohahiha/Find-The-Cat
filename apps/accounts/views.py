@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 from django.conf import settings
-from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -17,7 +16,7 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 from apps.common import response
-from apps.common.permissions import IsAuthenticated
+from apps.common.permissions import IsAuthenticated, AllowAny
 from apps.common.throttles import LoginRateThrottle, UserPostRateThrottle
 
 from .models import EmailVerificationCode

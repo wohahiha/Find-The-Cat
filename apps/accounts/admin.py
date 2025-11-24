@@ -55,7 +55,31 @@ class FTCAdminAuthenticationForm(AdminAuthenticationForm):
 admin.site.login_form = FTCAdminAuthenticationForm
 
 
-class PlayerUserChangeForm(UserChangeForm):
+class BaseAccountChangeForm(UserChangeForm):
+    """
+    账户变更表单基类：统一邮箱必填与默认分组校验。
+
+    - 子类通过 enforce_account_flags 写入账号类型与权限标志。
+    """
+
+    def __init__(self, *args, **kwargs):
+        """初始化时标记邮箱必填并确保默认分组存在。"""
+        super().__init__(*args, **kwargs)
+        if "email" in self.fields:
+            self.fields["email"].required = True
+        ensure_builtin_groups()
+
+    def enforce_account_flags(self, cleaned: dict) -> dict:
+        """子类需实现：写入 account_type/is_staff/is_superuser 标志。"""
+        return cleaned
+
+    def clean(self):
+        """调用子类钩子写入账号标志，保持统一清洗流程。"""
+        cleaned = super().clean()
+        return self.enforce_account_flags(cleaned)
+
+
+class PlayerUserChangeForm(BaseAccountChangeForm):
     """
     普通用户变更表单：强制保持普通用户身份。
 
@@ -69,33 +93,40 @@ class PlayerUserChangeForm(UserChangeForm):
         model = PlayerUser
         fields = "__all__"
 
-    def clean(self):
-        """
-        清洗表单数据时强制写入普通用户标志。
-
-        - account_type 设为 USER，锁定普通用户身份。
-        - is_staff/is_superuser 设为 False，避免后台误操作导致越权。
-        """
-        cleaned = super().clean()  # 先复用默认校验，确保密码/邮箱等合法
+    def enforce_account_flags(self, cleaned: dict) -> dict:
+        """锁定普通用户身份并关闭后台权限标志。"""
         cleaned["account_type"] = User.AccountType.USER
         cleaned["is_staff"] = False
         cleaned["is_superuser"] = False
         return cleaned
 
-    def __init__(self, *args, **kwargs):
+
+class BaseAccountCreationForm(UserCreationForm):
+    """
+    账户创建表单基类：统一字段范围与账号标志写入。
+    """
+
+    class Meta(UserCreationForm.Meta):  # type: ignore[misc]
+        """表单元信息：创建账户时仅采集用户名和邮箱。"""
+        model = User
+        fields = ("username", "email")
+
+    def set_account_flags(self, user: User) -> User:
+        """子类覆盖账号类型与权限标志设置。"""
+        return user
+
+    def save(self, commit: bool = True):
         """
-        初始化表单时追加邮箱必填和分组检查。
-
-        - 若存在 email 字段，标记 required=True。
-        - 调用 ensure_builtin_groups 创建或校验默认用户/管理员分组。
+        保存时调用 set_account_flags，保持账号标志一致。
         """
-        super().__init__(*args, **kwargs)
-        if "email" in self.fields:
-            self.fields["email"].required = True
-        ensure_builtin_groups()
+        user = super().save(commit=False)
+        user = self.set_account_flags(user)
+        if commit:
+            user.save()
+        return user
 
 
-class PlayerUserCreationForm(UserCreationForm):
+class PlayerUserCreationForm(BaseAccountCreationForm):
     """
     普通用户创建表单：控制创建流程中的权限标志。
 
@@ -108,23 +139,15 @@ class PlayerUserCreationForm(UserCreationForm):
         model = PlayerUser
         fields = ("username", "email")
 
-    def save(self, commit: bool = True):
-        """
-        保存时补充账号类型与权限标志。
-
-        - 使用 commit=False 先获取实例，锁定 account_type/is_staff/is_superuser。
-        - commit=True 时再落库，返回最终用户对象。
-        """
-        user = super().save(commit=False)  # 不立即写库，先调整关键字段
+    def set_account_flags(self, user: User) -> User:
+        """写入普通用户标志。"""
         user.account_type = User.AccountType.USER
         user.is_staff = False
         user.is_superuser = False
-        if commit:
-            user.save()
         return user
 
 
-class StaffUserChangeForm(UserChangeForm):
+class StaffUserChangeForm(BaseAccountChangeForm):
     """
     管理员变更表单：保持管理员身份并清理队伍信息。
 
@@ -137,32 +160,14 @@ class StaffUserChangeForm(UserChangeForm):
         model = StaffUser
         fields = "__all__"
 
-    def clean(self):
-        """
-        清洗表单时固定管理员身份与权限标志。
-
-        - 设定 account_type=ADMIN、is_staff=True，保证后台登录权限。
-        - 移除队伍相关标志，管理员不持有队伍角色。
-        """
-        cleaned = super().clean()  # 先调用父类校验，保持基础验证
+    def enforce_account_flags(self, cleaned: dict) -> dict:
+        """锁定管理员身份与后台登录标志。"""
         cleaned["account_type"] = User.AccountType.ADMIN
         cleaned["is_staff"] = True
         return cleaned
 
-    def __init__(self, *args, **kwargs):
-        """
-        初始化时强制邮箱必填并检查默认分组。
 
-        - 邮箱用于审计与通知，后台必须填写。
-        - ensure_builtin_groups 确保存量/新增管理员均有默认权限组可选。
-        """
-        super().__init__(*args, **kwargs)
-        if "email" in self.fields:
-            self.fields["email"].required = True
-        ensure_builtin_groups()
-
-
-class StaffUserCreationForm(UserCreationForm):
+class StaffUserCreationForm(BaseAccountCreationForm):
     """
     管理员创建表单：限制创建时的权限范围。
 
@@ -175,19 +180,11 @@ class StaffUserCreationForm(UserCreationForm):
         model = StaffUser
         fields = ("username", "email")
 
-    def save(self, commit: bool = True):
-        """
-        保存管理员时的标志设置。
-
-        - 设定 account_type=ADMIN，开启 is_staff 便于后台登录。
-        - 默认关闭 superuser，避免创建超管入口过多。
-        """
-        user = super().save(commit=False)  # 先拿到实例，填好关键标志再落库
+    def set_account_flags(self, user: User) -> User:
+        """写入管理员标志并默认关闭超管。"""
         user.account_type = User.AccountType.ADMIN
         user.is_staff = True
         user.is_superuser = False
-        if commit:
-            user.save()
         return user
 
 
@@ -201,9 +198,19 @@ class BaseUserAdmin(DjangoUserAdmin):
     - list_display/search_fields：统一列表展示与搜索入口。
     """
 
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        获取后台表单时统一设置密码字段的中文标签。
+        """
+        form = super().get_form(request, obj, **kwargs)
+        password_field = form.base_fields.get("password")
+        if password_field:
+            password_field.label = "密码"
+        return form
+
     # 详情页字段布局：基础信息/个人信息/状态
     fieldsets = (
-        (None, {"fields": ("username", "password", "email")}),
+        ("基础信息", {"fields": ("username", "password", "email")}),
         (
             "个人信息",
             {
@@ -221,12 +228,12 @@ class BaseUserAdmin(DjangoUserAdmin):
         (
             "账户状态",
             {
-                "fields": ("is_active", "last_login", "date_joined"),
+                "fields": ("is_active", "display_last_login", "display_date_joined"),
             },
         ),
     )
     # 只读字段：登陆时间/注册时间与权限汇总，避免被编辑
-    readonly_fields = ("last_login", "date_joined", "display_effective_permissions")
+    readonly_fields = ("display_last_login", "display_date_joined", "display_effective_permissions")
     # 新增表单布局：限制字段，降低误填
     add_fieldsets = (
         (
@@ -239,8 +246,8 @@ class BaseUserAdmin(DjangoUserAdmin):
     )
     # 列表展示：核心身份信息 + 状态
     list_display = (
-        "username",
-        "email",
+        "display_username",
+        "display_email",
         "nickname",
         "display_active",
         "display_email_verified",
@@ -279,35 +286,63 @@ class BaseUserAdmin(DjangoUserAdmin):
             )
         return fieldsets
 
+    @admin.display(description="上次登录")
+    def display_last_login(self, obj: User | None):
+        """只读展示上次登录时间。"""
+        return obj.last_login if obj else None
+
+    @admin.display(description="加入日期")
+    def display_date_joined(self, obj: User | None):
+        """只读展示加入时间。"""
+        return obj.date_joined if obj else None
+
+    @admin.display(boolean=True, description="超级用户状态")
+    def display_is_superuser(self, obj: User | None):
+        """只读展示超级用户标志。"""
+        return obj.is_superuser if obj else False
+
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         """
-        为关键布尔字段提供中文标签，降低后台理解成本。
+        为关键字段提供中文标签，降低后台理解成本。
         """
         # db_field: 模型字段对象，用于生成表单字段
         # request: 当前管理员请求
         # kwargs: 透传给父类的其他表单参数
         field = super().formfield_for_dbfield(db_field, request, **kwargs)
         if field:
-            if db_field.name == "is_staff":
-                field.label = "管理员"  # 更符合后台操作习惯
+            if db_field.name == "username":
+                field.label = "用户名"
+            elif db_field.name == "password":
+                field.label = "密码"
+            elif db_field.name == "is_staff":
+                field.label = "管理员"
             elif db_field.name == "is_active":
-                field.label = "有效"  # 账号状态清晰可见
+                field.label = "有效"
+            elif db_field.name == "is_superuser":
+                field.label = "超级用户状态"
+            elif db_field.name == "last_login":
+                field.label = "上次登录"
+            elif db_field.name == "date_joined":
+                field.label = "加入日期"
         return field
 
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):
         """
-        为权限多选字段添加中文友好标签，方便快速勾选。
+        为权限多选字段添加中文标签，方便快速勾选。
         """
         # db_field: 多对多字段（此处关注 user_permissions）
         # request: 当前管理员请求（可为空，兼容 Django 调用）
         # kwargs: 额外表单配置，保持透传
         field = super().formfield_for_manytomany(db_field, request=request, **kwargs)
         if field and db_field.name == "user_permissions":
+            field.label = "用户权限"
             field.label_from_instance = (
                 lambda perm: get_permission_label(
                     f"{perm.content_type.app_label}.{perm.codename}"
                 )
             )
+        if field and db_field.name == "groups":
+            field.label = "用户组"
         return field
 
     @admin.display(description="实际权限")
@@ -345,7 +380,7 @@ class BaseUserAdmin(DjangoUserAdmin):
             lines.append(f"<strong>{category}</strong><br>" + "<br>".join(sub_lines))
         return mark_safe("<br>".join(lines))
 
-    # admin.display：布尔展示账号有效状态并提供中文列名
+    # admin.display：布尔展示账号有效状态并提供中英列名
     @admin.display(boolean=True, description="有效")
     def display_active(self, obj: User) -> bool:
         """列表显示账号有效状态，便于快速筛选停用账号。"""
@@ -356,6 +391,14 @@ class BaseUserAdmin(DjangoUserAdmin):
     def display_email_verified(self, obj: User) -> bool:
         """列表显示邮箱是否已完成验证。"""
         return obj.is_email_verified
+
+    @admin.display(description="用户名")
+    def display_username(self, obj: User) -> str:
+        return obj.username
+
+    @admin.display(description="邮箱")
+    def display_email(self, obj: User) -> str:
+        return obj.email
 
 
 # @admin.register：将普通用户的管理配置注册到后台站点
@@ -461,6 +504,7 @@ class PlayerUserAdmin(BaseUserAdmin):
             initial["groups"] = [default_group.pk]
         return initial
 
+
 # @admin.register：将管理员账户的管理配置注册到后台站点
 @admin.register(StaffUser)
 class StaffUserAdmin(BaseUserAdmin):
@@ -492,11 +536,11 @@ class StaffUserAdmin(BaseUserAdmin):
         ),
     )
     # 只读字段：继承基础只读字段并附加 is_superuser，避免被修改
-    readonly_fields = BaseUserAdmin.readonly_fields + ("is_superuser",)
+    readonly_fields = BaseUserAdmin.readonly_fields + ("display_is_superuser",)
     # 列表展示：额外展示超级管理员标志
     list_display = (
-        "username",
-        "email",
+        "display_username",
+        "display_email",
         "nickname",
         "display_active",
         "display_email_verified",
@@ -548,9 +592,9 @@ class StaffUserAdmin(BaseUserAdmin):
         if obj is None:
             return self.add_fieldsets
         fieldsets = list(super().get_fieldsets(request, obj))
-        permission_fields = ("is_superuser", "groups", "user_permissions")
+        permission_fields = ("display_is_superuser", "groups", "user_permissions")
         if obj and obj.is_superuser:
-            permission_fields = ("is_superuser",)
+            permission_fields = ("display_is_superuser",)
         fieldsets.append(("权限", {"fields": permission_fields}))
         return tuple(fieldsets)
 
@@ -600,6 +644,18 @@ class EmailVerificationCodeAdmin(admin.ModelAdmin):
     list_filter = ("scene", "is_used", "created_at")
     # 搜索字段：支持按邮箱或验证码查找
     search_fields = ("email", "code")
+    # 详情页只读，防止误改历史验证码
+    readonly_fields = ("email", "scene", "code", "is_used", "expires_at", "verified_at", "created_at", "updated_at")
+
+    # 阻止新增/修改/删除，保持审计只读
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 # @admin.register：注册邮件账号配置的后台管理

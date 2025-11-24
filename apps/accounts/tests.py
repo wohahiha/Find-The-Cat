@@ -6,9 +6,10 @@ from django.core.cache import cache
 from django.utils import timezone
 from django.conf import settings
 from django.test import override_settings
-from rest_framework.test import APITestCase, APIClient
+from rest_framework.test import APITestCase
 
 from apps.accounts.models import User, EmailVerificationCode
+from apps.common.tests_utils import AuthenticatedAPIMixin
 
 
 @override_settings(
@@ -21,7 +22,7 @@ from apps.accounts.models import User, EmailVerificationCode
         },
     }
 )
-class AccountsAPITestCase(APITestCase):
+class AccountsAPITestCase(AuthenticatedAPIMixin, APITestCase):
     """账户模块接口冒烟测试：注册、登录、资料、密码/邮箱、注销全链路。"""
 
     @classmethod
@@ -38,24 +39,6 @@ class AccountsAPITestCase(APITestCase):
             email="tester@example.com",
             password="Passw0rd123",
         )
-
-    def api_login(self, username_or_email: str, password: str) -> str:
-        """登录并返回 access token。"""
-        client = APIClient()
-        resp = client.post(
-            "/api/accounts/auth/login/",
-            {"identifier": username_or_email, "password": password},
-            format="json",
-        )
-        self.assertEqual(resp.status_code, 200)
-        return resp.data["data"]["access"]
-
-    def auth_client(self, username_or_email: str, password: str) -> APIClient:
-        """返回带 Authorization 头的客户端。"""
-        token = self.api_login(username_or_email, password)
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-        return client
 
     def setUp(self):
         # 清理 throttle 缓存，避免跨用例触发限流
