@@ -145,3 +145,1136 @@
 {"time":"2025-11-25 22:51:50,815","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
 {"time":"2025-11-25 22:55:39,152","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\Config\settings.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
 {"time":"2025-11-25 22:55:41,466","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:50:56,472","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\models.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:50:58,938","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:51:02,401","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\models.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:51:04,601","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:52:03,416","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:52:05,616","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:52:14,403","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\crud_service.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:52:16,617","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:52:21,398","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\crud_service.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:52:23,678","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:52:27,029","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\serializers.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:52:29,253","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:52:32,675","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\submissions\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:52:34,904","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:53:22,811","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\submissions\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:53:25,072","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:53:29,781","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\submissions\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:53:31,966","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:53:43,341","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\submissions\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:53:45,616","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:53:58,437","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\submissions\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:54:00,644","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:54:14,801","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\contests\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:54:16,986","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:54:24,375","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\contests\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:54:26,634","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:55:05,103","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\contests\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:55:07,343","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:55:20,164","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\submissions\views.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:55:22,418","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:55:36,122","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\submissions\admin.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:55:37,994","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:55:45,335","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\admin.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:55:47,576","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:55:58,995","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\admin.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:56:01,212","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:56:07,143","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\admin.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:56:09,473","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:56:16,845","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\admin.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:56:19,066","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:56:26,450","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\admin.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 23:56:28,717","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:05:18,936","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\migrations\0004_challenge_blood_reward.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:05:20,225","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:09:25,665","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\admin.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:09:27,033","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:09:31,376","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\admin.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:09:32,555","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:14:37,946","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\admin.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:14:39,114","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:20:41,963","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\common\throttles.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:20:43,323","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:20:45,414","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:20:46,982","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:21:40,060","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\submissions\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:21:41,435","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:21:49,381","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:21:50,752","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:21:56,400","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:21:57,704","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:22:01,008","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\models.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:22:02,190","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:22:15,864","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\submissions\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:22:16,983","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:22:35,049","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\attachment_service.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:22:36,178","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:22:47,345","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\attachment_service.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:22:48,517","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:23:25,004","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\submissions\views.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:23:26,229","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:23:40,985","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\challenges\views.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:23:42,147","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:23:55,769","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:23:57,969","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:09,605","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"dedc7b6e94c0","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:09,608","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:09,621","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"a3211f80ce3c","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:09,622","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:09,632","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"317573194bd1","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:09,633","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:10,960","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"709b64390cba","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/request/","method":"POST"}
+{"time":"2025-11-26 00:26:11,243","level":"INFO","logger":"apps.accounts.services","message":"重置密码成功","request_id":"cc5bd96ade4d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/","method":"POST"}
+{"time":"2025-11-26 00:26:11,247","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"dfc9091ba15b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:11,248","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:11,253","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"c05a97d17832","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:11,253","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:11,611","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"bfdb75d21f3b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 00:26:11,619","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"54e380cd0769","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:11,620","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:11,629","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"dfd2488e8e28","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/verification/","method":"POST"}
+{"time":"2025-11-26 00:26:12,174","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:12,747","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:12,749","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:12,766","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:13,347","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:14,500","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"ffe287ecc88e","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:14,501","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:14,504","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"6f2068120eed","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:14,505","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:14,508","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"099898a7c7d2","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:14,509","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:15,090","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:15,092","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:15,107","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:15,686","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:16,246","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:16,247","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:16,250","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:16,251","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:16,802","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:16,804","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:17,625","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"ecc90b219584","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:17,625","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:17,629","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"71a96de93589","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:17,630","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:17,906","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:18,476","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:18,480","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"998aecde1287","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:18,481","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:18,757","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:18,757","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:19,032","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:19,313","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:19,879","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:19,881","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:19,890","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"e3d17188814e","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:19,891","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:19,899","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"038320392361","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:19,899","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:26:19,903","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"48cb3ef0495e","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:26:19,903","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:28:06,535","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"10fdae0e6e4c","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 00:28:06,539","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"92e88dcc3244","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:28:06,541","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:29:21,823","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"a0ded2c9ef84","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\accounts\views.py", line 172, in post
+    schema = LoginSchema.from_dict(_to_payload(request.data), auto_validate=True)
+  File "D:\Py_ff\Project\FTC\apps\common\base\base_schema.py", line 125, in from_dict
+    instance = cls(**data)  # type: ignore[arg-type]
+TypeError: LoginSchema.__init__() missing 2 required positional arguments: 'captcha_key' and 'captcha_code'
+{"time":"2025-11-26 00:29:21,825","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:33:02,610","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\machines\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:33:03,839","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:33:09,315","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\submissions\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:33:10,474","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:33:21,740","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:33:22,931","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:33:27,219","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:33:28,400","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:33:47,718","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:33:48,939","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:34:09,339","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:34:10,512","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:34:14,805","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:34:15,909","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:34:22,433","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"286f42621e12","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 00:34:22,446","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:34:29,806","level":"WARNING","logger":"apps.accounts.services","message":"登录失败：账号不存在","request_id":"95cf90417c9d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:34:29,808","level":"WARNING","logger":"django.request","message":"Unauthorized: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:35:48,621","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:35:49,856","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:35:59,187","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"b0944072afac","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 00:35:59,192","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:44,481","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:44,485","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:44,488","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:45,789","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"8816d151427d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/request/","method":"POST"}
+{"time":"2025-11-26 00:36:46,081","level":"INFO","logger":"apps.accounts.services","message":"重置密码成功","request_id":"c42f2ae23d8c","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/","method":"POST"}
+{"time":"2025-11-26 00:36:46,084","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:46,087","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:46,428","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"6554225c1a5c","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 00:36:46,436","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:46,448","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"3924f96e1a5d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/verification/","method":"POST"}
+{"time":"2025-11-26 00:36:46,995","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:47,549","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:47,551","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:47,569","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:48,159","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:48,179","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:48,182","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:49,345","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:49,348","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:49,351","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:49,926","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:49,928","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:49,956","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:50,547","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:51,099","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:51,100","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:51,102","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:51,104","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:51,660","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:51,662","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:52,497","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:52,503","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:52,780","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:52,791","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:52,792","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:53,330","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:53,335","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:53,604","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:53,604","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:53,668","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:53,969","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:53,981","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:54,255","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:54,258","level":"INFO","logger":"apps.submissions.services","message":"判题-错误提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:54,809","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:54,811","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:54,827","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:54,841","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:36:54,845","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:37:59,688","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"57dfaba7e0f2","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 00:37:59,692","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:11,533","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:12,770","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:21,255","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"8aefcfe6820a","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 00:38:21,533","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"71f8d9f8ce62","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:33,126","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"3c89849cb980","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:33,417","level":"INFO","logger":"apps.accounts.services","message":"修改邮箱成功","request_id":"3745ae9f89d9","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/change/","method":"POST"}
+{"time":"2025-11-26 00:38:33,701","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"8a45ce52a0d0","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:34,249","level":"INFO","logger":"apps.accounts.services","message":"修改密码成功","request_id":"6b419d325e34","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/change/","method":"POST"}
+{"time":"2025-11-26 00:38:34,539","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"859504fbef6c","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:34,837","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"f3837d2e0d28","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:35,136","level":"INFO","logger":"apps.accounts.services","message":"用户已注销","request_id":"7cd58978ad07","user_id":"","ip":"127.0.0.1","path":"/api/accounts/me/deactivate/","method":"POST"}
+{"time":"2025-11-26 00:38:36,433","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"0637334f317b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/request/","method":"POST"}
+{"time":"2025-11-26 00:38:36,714","level":"INFO","logger":"apps.accounts.services","message":"重置密码成功","request_id":"956d8185f338","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/","method":"POST"}
+{"time":"2025-11-26 00:38:37,006","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"b3065db1839f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:37,294","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"f76f165d35c5","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:37,658","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"e38f882c0287","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 00:38:37,946","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"b25197431048","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:37,953","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"ad76496ef374","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/verification/","method":"POST"}
+{"time":"2025-11-26 00:38:38,501","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:39,056","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:39,059","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:39,071","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:39,613","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:39,628","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:39,631","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:40,963","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"16cddaf39bab","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:41,353","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"1045d1f5cb84","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:41,646","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"e6e78c0803fb","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:41,649","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"01e4c7475121","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 00:38:41,678","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"54289b54a317","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:38:41,686","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"3ce95d2f341a","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:38:41,687","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:41,987","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"f43168c83d8b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:42,294","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"2091c7071688","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:42,296","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"c5cf09437ed2","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 00:38:42,315","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"c7da8a00ed44","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:38:42,320","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"4c7d8bccebe0","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:38:42,320","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:42,927","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:42,929","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:42,960","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:43,642","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:44,239","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:44,240","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:44,242","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:44,243","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:44,869","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:44,871","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:46,198","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"0ae886259e0a","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:46,200","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"41e6bfa91cae","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:38:46,201","level":"INFO","logger":"apps.contests.services","message":"创建比赛公告","request_id":"fac780e30382","user_id":"","ip":"127.0.0.1","path":"/api/contests/spring-open/announcements/","method":"POST"}
+{"time":"2025-11-26 00:38:46,203","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"113c4d947c6f","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\contests\views.py", line 74, in get
+    return paginator.get_paginated_response({"items": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:38:46,205","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/contests/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:46,534","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"540be3a28ec6","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:46,536","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"b053afff757d","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:38:46,851","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"ba2c73b7c212","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:47,195","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"a3a9715d0a28","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:47,199","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"c128dd245c91","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"POST"}
+{"time":"2025-11-26 00:38:47,206","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"91bb57d57b0a","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\contests\views.py", line 170, in get
+    return paginator.get_paginated_response({"contest": contest.slug, "teams": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:38:47,207","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/contests/team-contest/teams/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:47,504","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:47,520","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:47,521","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:48,106","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:48,397","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"96d268f47cb4","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:48,417","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"69ed787eb2ce","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"POST"}
+{"time":"2025-11-26 00:38:48,421","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"74150a186be7","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\machines\views.py", line 44, in get
+    return paginator.get_paginated_response({"items": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:38:48,424","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/machines/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:48,753","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:48,754","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:48,769","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:49,070","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:49,086","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:49,392","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:49,396","level":"INFO","logger":"apps.submissions.services","message":"判题-错误提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:49,977","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:49,980","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:50,287","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"d16b2f33c38f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:50,450","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"facd65370d4e","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:38:50,470","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"d63588dacd22","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:38:50,470","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:38:50,792","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"27dd2e97eda6","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:50,794","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"87cbc2199083","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-submit/challenges/","method":"POST"}
+{"time":"2025-11-26 00:38:51,098","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"d4528c324414","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:51,257","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"8ab301502e10","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:38:51,617","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"3f2d8b69690b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:38:51,813","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"cab71a85f982","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:38:51,838","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"06c424a6c306","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:38:51,838","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:40:06,501","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"95e1600947a1","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:40:06,513","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"5405335fc478","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:40:06,514","level":"INFO","logger":"apps.contests.services","message":"创建比赛公告","request_id":"f75f666b7ba2","user_id":"","ip":"127.0.0.1","path":"/api/contests/spring-open/announcements/","method":"POST"}
+{"time":"2025-11-26 00:40:06,517","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"3f8352001b00","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\contests\views.py", line 74, in get
+    return paginator.get_paginated_response({"items": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:40:06,518","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/contests/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:40:06,809","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"9740de3ad45b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:40:06,810","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"c4a56a40b0ef","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:40:07,103","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"2b428459d125","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:40:07,379","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"7d81859ce1f1","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:40:07,383","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"6686b30792bb","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"POST"}
+{"time":"2025-11-26 00:40:07,387","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"0b3bd4e884bb","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\contests\views.py", line 170, in get
+    return paginator.get_paginated_response({"contest": contest.slug, "teams": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:40:07,388","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/contests/team-contest/teams/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:40:08,006","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:40:08,338","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"1bdb56d9a37f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:40:08,354","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"f8090cb0c3f3","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"POST"}
+{"time":"2025-11-26 00:40:08,358","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"591b55c7a5cd","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\machines\views.py", line 44, in get
+    return paginator.get_paginated_response({"items": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:40:08,360","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/machines/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:25,495","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"003492ab4c43","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:25,811","level":"INFO","logger":"apps.accounts.services","message":"修改邮箱成功","request_id":"00a1e986bfef","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/change/","method":"POST"}
+{"time":"2025-11-26 00:41:26,113","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"ed4adea1b3c5","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:26,714","level":"INFO","logger":"apps.accounts.services","message":"修改密码成功","request_id":"b4a4c4207193","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/change/","method":"POST"}
+{"time":"2025-11-26 00:41:27,022","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"aea17065265d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:27,366","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"521e2fdc2beb","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:27,680","level":"INFO","logger":"apps.accounts.services","message":"用户已注销","request_id":"67fbb8713c30","user_id":"","ip":"127.0.0.1","path":"/api/accounts/me/deactivate/","method":"POST"}
+{"time":"2025-11-26 00:41:28,716","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"3c1bbcc504c9","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:28,735","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"73df31a7c2e9","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:41:28,737","level":"INFO","logger":"apps.contests.services","message":"创建比赛公告","request_id":"51b4217681b6","user_id":"","ip":"127.0.0.1","path":"/api/contests/spring-open/announcements/","method":"POST"}
+{"time":"2025-11-26 00:41:28,741","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"b9468087eff2","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\contests\views.py", line 74, in get
+    return paginator.get_paginated_response({"items": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:41:28,743","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/contests/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:28,972","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"9b0ab9bfba3b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/request/","method":"POST"}
+{"time":"2025-11-26 00:41:29,030","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"222d26194a5d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:29,032","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"184e1a0442b9","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:41:29,269","level":"INFO","logger":"apps.accounts.services","message":"重置密码成功","request_id":"5d7796a4a332","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/","method":"POST"}
+{"time":"2025-11-26 00:41:29,340","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"e8718c13062e","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:29,569","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"a19252e396ab","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:29,661","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"5d3011a12487","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:29,665","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"6e758a0de809","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"POST"}
+{"time":"2025-11-26 00:41:29,668","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"733f159ca0c9","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\contests\views.py", line 170, in get
+    return paginator.get_paginated_response({"contest": contest.slug, "teams": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:41:29,669","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/contests/team-contest/teams/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:29,879","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"b65b7721643d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:30,249","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:30,257","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"770fcdc3fd95","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 00:41:30,574","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"f8b4b9322936","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:30,582","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"9dfa757ad915","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:30,593","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"c87e96ffdc42","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/verification/","method":"POST"}
+{"time":"2025-11-26 00:41:30,597","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"521d419ece66","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"POST"}
+{"time":"2025-11-26 00:41:30,601","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"c10bb8016d62","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\machines\views.py", line 44, in get
+    return paginator.get_paginated_response({"items": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:41:30,602","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/machines/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:31,179","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:31,765","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:31,768","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:31,781","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:32,372","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:32,386","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:32,394","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:33,911","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"e9ebf3061a3f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:34,215","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"9a558ee39a5e","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:34,539","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"46b659846b1b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:34,541","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"d1167f9d2ed9","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 00:41:34,566","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"e72f1d18b8e5","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:41:34,576","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"a5a7ca4ec7d2","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:41:34,583","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:34,882","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"b0f8360bce52","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:35,190","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"55f328b5648f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:35,192","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"72f15eaa56d7","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 00:41:35,208","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"ed05d497b8c9","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:41:35,215","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"11a664046127","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:41:35,215","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:35,798","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:35,800","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:35,821","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:36,426","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:37,002","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:37,003","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:37,005","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:37,007","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:37,581","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:37,584","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:38,754","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"8cf14d1084aa","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:38,755","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"c61226441cb1","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:41:38,757","level":"INFO","logger":"apps.contests.services","message":"创建比赛公告","request_id":"477eaa611aac","user_id":"","ip":"127.0.0.1","path":"/api/contests/spring-open/announcements/","method":"POST"}
+{"time":"2025-11-26 00:41:38,758","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"7e8e8baaffe3","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\contests\views.py", line 74, in get
+    return paginator.get_paginated_response({"items": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:41:38,760","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/contests/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:39,065","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"25d20eae3d8d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:39,066","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"d565b4b51f89","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:41:39,350","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"c6b7b92e35a3","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:39,642","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"abb655b07fd5","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:39,645","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"8a80b55c9446","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"POST"}
+{"time":"2025-11-26 00:41:39,648","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"e10bb484ad9b","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\contests\views.py", line 170, in get
+    return paginator.get_paginated_response({"contest": contest.slug, "teams": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:41:39,649","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/contests/team-contest/teams/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:39,937","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:39,947","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:39,948","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:40,533","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:40,836","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"d1ee96e2deff","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:40,847","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"f240e694f050","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"POST"}
+{"time":"2025-11-26 00:41:40,850","level":"ERROR","logger":"apps.common.exception_handler","message":"Unhandled exception in API","request_id":"0df7f555c2c8","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"GET"}
+Traceback (most recent call last):
+  File "D:\Py_ff\Project\FTC\FTCVenv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\Py_ff\Project\FTC\apps\machines\views.py", line 44, in get
+    return paginator.get_paginated_response({"items": data})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Py_ff\Project\FTC\apps\common\pagination.py", line 44, in get_paginated_response
+    return page_success(
+        items=data,  # 当前页数据列表
+    ...<7 lines>...
+        previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
+    )
+TypeError: page_success() got an unexpected keyword argument 'total_pages'
+{"time":"2025-11-26 00:41:40,851","level":"ERROR","logger":"django.request","message":"Internal Server Error: /api/machines/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:41,162","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:41,162","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:41,179","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:41,486","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:41,498","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:41,801","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:41,804","level":"INFO","logger":"apps.submissions.services","message":"判题-错误提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:42,402","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:42,404","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:42,693","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"cdadd178197a","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:42,709","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"2d66a7f9eb66","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:41:42,715","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"4dcf5bd45bfd","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:41:42,715","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:41:43,009","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"1292712bdf06","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:43,011","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"29116ab3cfef","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-submit/challenges/","method":"POST"}
+{"time":"2025-11-26 00:41:43,309","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"76835ae9fe1b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:43,325","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"1fc541506d33","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:41:43,633","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"a0ce2def3cb0","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:41:43,645","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"972c263f5ecd","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:41:43,652","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"ac86dbe713de","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:41:43,652","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:11,594","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\common\response.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:12,657","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:20,244","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"665ca8fc90eb","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:20,257","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"94ecd83857b2","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:42:20,258","level":"INFO","logger":"apps.contests.services","message":"创建比赛公告","request_id":"87aa5a96d4ee","user_id":"","ip":"127.0.0.1","path":"/api/contests/spring-open/announcements/","method":"POST"}
+{"time":"2025-11-26 00:42:20,538","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"42d21d059940","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:20,540","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"c4a0a926fca0","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:42:20,804","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"4a15214b2346","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:21,081","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"c2f4c2d05546","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:21,084","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"3440c078b14b","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"POST"}
+{"time":"2025-11-26 00:42:21,090","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"fbdf033cd8e9","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/join/","method":"POST"}
+{"time":"2025-11-26 00:42:21,095","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"db026a4021b9","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/transfer/","method":"POST"}
+{"time":"2025-11-26 00:42:21,096","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"52a91ac50231","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/invite/reset/","method":"POST"}
+{"time":"2025-11-26 00:42:21,099","level":"INFO","logger":"apps.contests.services","message":"解散队伍","request_id":"ac6abbc60b71","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/disband/","method":"POST"}
+{"time":"2025-11-26 00:42:21,636","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:21,921","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"6d94e041fe86","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:21,943","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"8d9239a65fdd","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"POST"}
+{"time":"2025-11-26 00:42:21,948","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"61c04ca0c567","user_id":"","ip":"127.0.0.1","path":"/api/machines/1/stop/","method":"POST"}
+{"time":"2025-11-26 00:42:30,941","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"65e8ed0598fa","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:31,234","level":"INFO","logger":"apps.accounts.services","message":"修改邮箱成功","request_id":"d763d8f9d529","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/change/","method":"POST"}
+{"time":"2025-11-26 00:42:31,499","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"8e4a212f66ed","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:32,046","level":"INFO","logger":"apps.accounts.services","message":"修改密码成功","request_id":"9ae875bf4925","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/change/","method":"POST"}
+{"time":"2025-11-26 00:42:32,309","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"e6f124c130a3","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:32,591","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"4f2ab580429a","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:32,863","level":"INFO","logger":"apps.accounts.services","message":"用户已注销","request_id":"e96d08bd8e65","user_id":"","ip":"127.0.0.1","path":"/api/accounts/me/deactivate/","method":"POST"}
+{"time":"2025-11-26 00:42:34,161","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"6ab765cb8000","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/request/","method":"POST"}
+{"time":"2025-11-26 00:42:34,436","level":"INFO","logger":"apps.accounts.services","message":"重置密码成功","request_id":"67df9d5dd9a8","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/","method":"POST"}
+{"time":"2025-11-26 00:42:34,703","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"8cd5dfe8d2cf","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:34,982","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"b405cea1fb45","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:35,348","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"7fd42bf32f61","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 00:42:35,631","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"b6136463a078","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:35,637","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"b1ee7ade6b0f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/verification/","method":"POST"}
+{"time":"2025-11-26 00:42:36,182","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:36,733","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:36,736","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:36,750","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:37,290","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:37,306","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:37,310","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:38,657","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"9e69ac907e7f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:38,934","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"8245e364dab6","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:39,197","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"f3fbab090f08","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:39,199","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"34c934b08fe6","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 00:42:39,227","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"a595781380ea","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:42:39,233","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"b89fc2e67d92","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:42:39,235","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:39,503","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"1ab39c991d59","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:39,768","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"7c851525bf84","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:39,770","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"ae59cea08d97","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 00:42:39,792","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"a696b3102bdf","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:42:39,797","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"0d18b52cda68","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:42:39,797","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:40,338","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:40,340","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:40,354","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:40,899","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:41,454","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:41,455","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:41,457","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:41,459","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:42,069","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:42,072","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:43,244","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"0f3291892f91","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:43,246","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"aabbf11e3b12","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:42:43,247","level":"INFO","logger":"apps.contests.services","message":"创建比赛公告","request_id":"4d0fe1c7136a","user_id":"","ip":"127.0.0.1","path":"/api/contests/spring-open/announcements/","method":"POST"}
+{"time":"2025-11-26 00:42:43,553","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"84c64cdc81fd","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:43,555","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"d9cb175cc64b","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:42:43,879","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"a4422a754c1d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:44,183","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"8c070cd1ece2","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:44,188","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"55105e930323","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"POST"}
+{"time":"2025-11-26 00:42:44,194","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"ef3d632c7949","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/join/","method":"POST"}
+{"time":"2025-11-26 00:42:44,201","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"c15d83e763c3","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/transfer/","method":"POST"}
+{"time":"2025-11-26 00:42:44,203","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"870237a32b07","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/invite/reset/","method":"POST"}
+{"time":"2025-11-26 00:42:44,209","level":"INFO","logger":"apps.contests.services","message":"解散队伍","request_id":"eb61027a98f5","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/disband/","method":"POST"}
+{"time":"2025-11-26 00:42:44,513","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:44,526","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:44,528","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:45,086","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:45,380","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"f9111cd48272","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:45,396","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"7e66056bcd8c","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"POST"}
+{"time":"2025-11-26 00:42:45,400","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"9bbd38dde7e0","user_id":"","ip":"127.0.0.1","path":"/api/machines/1/stop/","method":"POST"}
+{"time":"2025-11-26 00:42:45,734","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:45,735","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:45,750","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:46,020","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:46,035","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:46,321","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:46,324","level":"INFO","logger":"apps.submissions.services","message":"判题-错误提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:46,854","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:46,856","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:47,124","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"45ad19015137","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:47,139","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"e0b83fcc6b74","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:42:47,145","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"491a33fbbfee","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:42:47,145","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:42:47,414","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"030efda17c4f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:47,416","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"0922dfe4df68","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-submit/challenges/","method":"POST"}
+{"time":"2025-11-26 00:42:47,687","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"7f1725bb233d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:47,702","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"7c00dfe71558","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:42:47,971","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"20b96013ddda","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:42:47,988","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"1e394de6da13","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:42:48,000","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"1495ca1a8956","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:42:48,000","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:17,335","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"90232bee3bbb","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:17,659","level":"INFO","logger":"apps.accounts.services","message":"修改邮箱成功","request_id":"033e47b5de4d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/change/","method":"POST"}
+{"time":"2025-11-26 00:45:17,982","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"0f5c8e33b3f5","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:18,554","level":"INFO","logger":"apps.accounts.services","message":"修改密码成功","request_id":"81f5e041377e","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/change/","method":"POST"}
+{"time":"2025-11-26 00:45:18,830","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"ca64d8a5ae85","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:19,126","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"2ddecfdc56eb","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:19,410","level":"INFO","logger":"apps.accounts.services","message":"用户已注销","request_id":"12b23eabdd21","user_id":"","ip":"127.0.0.1","path":"/api/accounts/me/deactivate/","method":"POST"}
+{"time":"2025-11-26 00:45:20,695","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"e2def3cba783","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/request/","method":"POST"}
+{"time":"2025-11-26 00:45:20,983","level":"INFO","logger":"apps.accounts.services","message":"重置密码成功","request_id":"c9fa066f1dd9","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/","method":"POST"}
+{"time":"2025-11-26 00:45:21,262","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"0c0559977389","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:21,563","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"45aa589cc102","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:21,926","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"127563892a61","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 00:45:22,207","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"068faa5d6102","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:22,212","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"05c6f12e88c8","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/verification/","method":"POST"}
+{"time":"2025-11-26 00:45:22,784","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:23,362","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:23,364","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:23,378","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:23,950","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:23,966","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:23,970","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:25,445","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"be935d98af48","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:25,742","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"a5eaf4c460ae","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:26,033","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"c5272ba9ed9b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:26,036","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"a7f02bb20d48","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 00:45:26,068","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"45ceaf165197","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:45:26,074","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"bd4a32bc0654","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:45:26,075","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:26,381","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"845997bd70c2","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:26,681","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"b9b1126b3099","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:26,683","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"cbe890ccf420","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 00:45:26,707","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"a674705a8c66","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:45:26,714","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"0b3aa9868beb","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:45:26,715","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:27,316","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:27,319","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:27,331","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:27,931","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:28,518","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:28,519","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:28,521","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:28,522","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:29,085","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:29,087","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:30,224","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"56ab67285dea","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:30,226","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"62f70c441e30","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:45:30,228","level":"INFO","logger":"apps.contests.services","message":"创建比赛公告","request_id":"45f7c4617196","user_id":"","ip":"127.0.0.1","path":"/api/contests/spring-open/announcements/","method":"POST"}
+{"time":"2025-11-26 00:45:30,528","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"e8c78692ab56","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:30,530","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"6a555f23b398","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:45:30,823","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"7bba58caf121","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:31,108","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"751a0c00b91e","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:31,111","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"627c5d91b097","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"POST"}
+{"time":"2025-11-26 00:45:31,119","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"a798c021773b","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/join/","method":"POST"}
+{"time":"2025-11-26 00:45:31,126","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"e76ead0e1f53","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/transfer/","method":"POST"}
+{"time":"2025-11-26 00:45:31,128","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"5faff29537c4","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/invite/reset/","method":"POST"}
+{"time":"2025-11-26 00:45:31,131","level":"INFO","logger":"apps.contests.services","message":"解散队伍","request_id":"9038bd460e64","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/disband/","method":"POST"}
+{"time":"2025-11-26 00:45:31,412","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:31,422","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:31,423","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:32,001","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:32,292","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"3b2cc4b7a3fe","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:32,307","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"4c3f70b234e5","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"POST"}
+{"time":"2025-11-26 00:45:32,312","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"b7924a63ffb6","user_id":"","ip":"127.0.0.1","path":"/api/machines/1/stop/","method":"POST"}
+{"time":"2025-11-26 00:45:32,605","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:32,606","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:32,631","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:32,919","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:32,961","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:33,289","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:33,293","level":"INFO","logger":"apps.submissions.services","message":"判题-错误提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:33,882","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:33,885","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:34,221","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"59e3d3e3b820","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:34,238","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"8dcaa60e57df","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:45:34,244","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"f656e6a201ff","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:45:34,245","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:45:34,546","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"b245400fc464","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:34,551","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"4f4a6e7454bd","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-submit/challenges/","method":"POST"}
+{"time":"2025-11-26 00:45:34,842","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"ae3d4ef3422f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:34,867","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"d41ea50ca917","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:45:35,182","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"a5235719ddd2","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:45:35,207","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"4b6abf56a524","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:45:35,216","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"f9b7f70f6a3f","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 00:45:35,216","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:47:32,641","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\contests\views.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:47:33,977","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:47:41,216","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"846ee2aa1506","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:47:41,230","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"92747e36673f","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 00:47:41,535","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"d9cb2f89495a","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:47:41,855","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"9562e6b0d7f9","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 00:47:41,859","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"a1246875a17b","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"POST"}
+{"time":"2025-11-26 00:47:41,865","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"f0ca3642145a","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/join/","method":"POST"}
+{"time":"2025-11-26 00:47:41,872","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"c70cd7dae962","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/transfer/","method":"POST"}
+{"time":"2025-11-26 00:47:41,873","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"2448bba18222","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/invite/reset/","method":"POST"}
+{"time":"2025-11-26 00:47:41,876","level":"INFO","logger":"apps.contests.services","message":"解散队伍","request_id":"b50ded625fc9","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/disband/","method":"POST"}
+{"time":"2025-11-26 00:48:56,272","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:48:57,467","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:49:21,364","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 00:49:22,364","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:48,917","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:48,922","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:48,924","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:50,234","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"2fd496907e46","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/request/","method":"POST"}
+{"time":"2025-11-26 01:11:50,556","level":"INFO","logger":"apps.accounts.services","message":"重置密码成功","request_id":"5ef6782f6f1a","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/","method":"POST"}
+{"time":"2025-11-26 01:11:50,558","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:50,562","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:50,927","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"11762c95d4ed","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 01:11:50,931","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:50,936","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"60304f7b2206","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/verification/","method":"POST"}
+{"time":"2025-11-26 01:11:51,528","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:52,112","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:52,115","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:52,138","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:52,751","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:52,762","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:52,765","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:54,014","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:54,017","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:54,021","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:54,621","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:54,622","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:54,646","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:55,276","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:55,873","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:55,874","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:55,876","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:55,878","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:56,472","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:56,474","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:57,355","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:57,358","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:57,655","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:57,670","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:57,672","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:58,290","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:58,293","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:58,579","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:58,579","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:58,597","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:58,872","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:58,883","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:59,164","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:59,174","level":"INFO","logger":"apps.submissions.services","message":"判题-错误提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:59,751","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:59,753","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:59,757","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:59,760","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:11:59,763","level":"WARNING","logger":"django.request","message":"Bad Request: /api/accounts/auth/login/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:14:43,343","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\Config\settings.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:14:44,629","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:14:58,437","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\schemas.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:14:59,567","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:12,230","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\accounts\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:13,400","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:28,852","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"22a9cb8d5bcb","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:29,175","level":"INFO","logger":"apps.accounts.services","message":"修改邮箱成功","request_id":"41bc5f7066fa","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/change/","method":"POST"}
+{"time":"2025-11-26 01:15:29,479","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"bb9d77386975","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:30,085","level":"INFO","logger":"apps.accounts.services","message":"修改密码成功","request_id":"5f6f18ab0eb4","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/change/","method":"POST"}
+{"time":"2025-11-26 01:15:30,396","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"a2159bf05269","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:30,703","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"af23daa7419e","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:31,014","level":"INFO","logger":"apps.accounts.services","message":"用户已注销","request_id":"0cd96372ef8b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/me/deactivate/","method":"POST"}
+{"time":"2025-11-26 01:15:32,327","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"09643aa26459","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/request/","method":"POST"}
+{"time":"2025-11-26 01:15:32,631","level":"INFO","logger":"apps.accounts.services","message":"重置密码成功","request_id":"7aa09c24570f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/","method":"POST"}
+{"time":"2025-11-26 01:15:32,927","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"95efc1a7d91e","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:33,233","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"576cde0da56b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:33,615","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"5b8ad3a9dee5","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 01:15:33,917","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"5186c9bc5e83","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:33,927","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"00f9f85c56fd","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/verification/","method":"POST"}
+{"time":"2025-11-26 01:15:34,491","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:35,078","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:35,080","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:35,095","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:35,718","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:35,732","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:35,736","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:37,313","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"26e89afe563a","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:37,636","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"82ea8d428efa","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:37,964","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"d254f7d75f4c","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:37,967","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"897306a30271","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 01:15:38,000","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"59d94189408a","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:15:38,008","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"0cc856565b42","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:15:38,013","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:38,342","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"a8fcd2facb87","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:38,680","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"8cc1da76be90","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:38,682","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"50ca73918385","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 01:15:38,703","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"b50f25bcc18c","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:15:38,711","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"b40f48f2e5ae","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:15:38,712","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:39,288","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:39,290","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:39,301","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:39,888","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:40,494","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:40,495","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:40,497","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:40,498","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:41,088","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:41,090","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:42,290","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"5f140c65f9e7","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:42,292","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"b0a94a19b9aa","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 01:15:42,293","level":"INFO","logger":"apps.contests.services","message":"创建比赛公告","request_id":"7ce5ad18c983","user_id":"","ip":"127.0.0.1","path":"/api/contests/spring-open/announcements/","method":"POST"}
+{"time":"2025-11-26 01:15:42,601","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"8029a907da18","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:42,602","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"88f0d7ae461a","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 01:15:42,885","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"ae3838347d15","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:43,180","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"6ed8d732e75e","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:43,183","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"f5117e262a13","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"POST"}
+{"time":"2025-11-26 01:15:43,189","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"2ca5a2143a5b","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/join/","method":"POST"}
+{"time":"2025-11-26 01:15:43,194","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"960f629ba898","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/transfer/","method":"POST"}
+{"time":"2025-11-26 01:15:43,196","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"efb987b1451d","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/invite/reset/","method":"POST"}
+{"time":"2025-11-26 01:15:43,198","level":"INFO","logger":"apps.contests.services","message":"解散队伍","request_id":"d7decabb0aee","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/disband/","method":"POST"}
+{"time":"2025-11-26 01:15:43,485","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:43,495","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:43,496","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:44,096","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:44,403","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"1e0b739381cd","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:44,418","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"480a73db038a","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"POST"}
+{"time":"2025-11-26 01:15:44,424","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"597e4fa37ece","user_id":"","ip":"127.0.0.1","path":"/api/machines/1/stop/","method":"POST"}
+{"time":"2025-11-26 01:15:44,743","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:44,744","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:44,764","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:45,073","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:45,090","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:45,391","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:45,395","level":"INFO","logger":"apps.submissions.services","message":"判题-错误提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:46,034","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:46,036","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:46,358","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"a952cc7e7132","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:46,379","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"2d3063f5685e","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:15:46,386","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"900a4f434444","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:15:46,386","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:15:46,694","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"de153b62a049","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:46,699","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"9ccb2205a8b2","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-submit/challenges/","method":"POST"}
+{"time":"2025-11-26 01:15:47,033","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"c136f55280c7","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:47,054","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"baec9b0a643d","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:15:47,359","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"e9a766dead5a","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:15:47,377","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"9c8de8c10404","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:15:47,383","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"5f51fc49e507","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:15:47,383","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:17:51,155","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"234f721d62f2","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:17:51,472","level":"INFO","logger":"apps.accounts.services","message":"修改邮箱成功","request_id":"eb560cd4e13f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/change/","method":"POST"}
+{"time":"2025-11-26 01:17:51,779","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"b0f72e132c87","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:17:52,396","level":"INFO","logger":"apps.accounts.services","message":"修改密码成功","request_id":"0aafd02f05c7","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/change/","method":"POST"}
+{"time":"2025-11-26 01:17:52,694","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"2a879d22299b","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:17:53,012","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"79c3d6105878","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:17:53,320","level":"INFO","logger":"apps.accounts.services","message":"用户已注销","request_id":"09a8e1c1a9a2","user_id":"","ip":"127.0.0.1","path":"/api/accounts/me/deactivate/","method":"POST"}
+{"time":"2025-11-26 01:17:54,603","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"ca8e5ed578ee","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/request/","method":"POST"}
+{"time":"2025-11-26 01:17:54,914","level":"INFO","logger":"apps.accounts.services","message":"重置密码成功","request_id":"a37f932cca3f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/password/reset/","method":"POST"}
+{"time":"2025-11-26 01:17:55,206","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"e0355613cb65","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:17:55,487","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"c0ab3cf58a0f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:17:55,888","level":"INFO","logger":"apps.accounts.services","message":"注册成功","request_id":"553bc52f422f","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/register/","method":"POST"}
+{"time":"2025-11-26 01:17:56,186","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"99c96345bb04","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:17:56,192","level":"INFO","logger":"apps.accounts.services","message":"发送邮箱验证码","request_id":"eaf4c51d2ac3","user_id":"","ip":"127.0.0.1","path":"/api/accounts/email/verification/","method":"POST"}
+{"time":"2025-11-26 01:17:56,810","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:17:57,404","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:17:57,407","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:17:57,417","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:17:58,021","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:17:58,035","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:17:58,039","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:17:59,476","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"9949230f5236","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:17:59,760","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"1ab27278b13a","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:00,045","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"f64236634b08","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:00,048","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"66baa2f2775d","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 01:18:00,077","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"fc0b87d1251f","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:18:00,083","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"4f66c8f0c767","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:18:00,085","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:00,362","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"333a00ee99ac","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:00,674","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"7e6f3e1603b1","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:00,676","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"3d2e87f86aae","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-ctf/challenges/","method":"POST"}
+{"time":"2025-11-26 01:18:00,706","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"e6775c8f44d0","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:18:00,712","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"be672f263c0a","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:18:00,712","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:01,279","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:01,281","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:01,293","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:01,891","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:02,491","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:02,492","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:02,494","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:02,496","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:03,109","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:03,113","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:04,313","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"95f3aa6ed1d4","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:04,314","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"5d542abd618d","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 01:18:04,316","level":"INFO","logger":"apps.contests.services","message":"创建比赛公告","request_id":"fe18af5f905e","user_id":"","ip":"127.0.0.1","path":"/api/contests/spring-open/announcements/","method":"POST"}
+{"time":"2025-11-26 01:18:04,643","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"fb6bff45d4f2","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:04,645","level":"INFO","logger":"apps.contests.services","message":"创建比赛","request_id":"9a14858b017a","user_id":"","ip":"127.0.0.1","path":"/api/contests/","method":"POST"}
+{"time":"2025-11-26 01:18:04,946","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"f0b70d6387a0","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:05,247","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"851cba8b38dd","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:05,250","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"021310a2b7d6","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/","method":"POST"}
+{"time":"2025-11-26 01:18:05,256","level":"INFO","logger":"apps.contests.services","message":"加入队伍","request_id":"25ab87638dfb","user_id":"","ip":"127.0.0.1","path":"/api/contests/team-contest/teams/join/","method":"POST"}
+{"time":"2025-11-26 01:18:05,260","level":"INFO","logger":"apps.contests.services","message":"移交队长","request_id":"8f5a979daf4d","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/transfer/","method":"POST"}
+{"time":"2025-11-26 01:18:05,262","level":"INFO","logger":"apps.contests.services","message":"重置队伍邀请码","request_id":"502fb71ebcde","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/invite/reset/","method":"POST"}
+{"time":"2025-11-26 01:18:05,264","level":"INFO","logger":"apps.contests.services","message":"解散队伍","request_id":"11c237134cd0","user_id":"","ip":"127.0.0.1","path":"/api/contests/teams/1/disband/","method":"POST"}
+{"time":"2025-11-26 01:18:05,562","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:05,571","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:05,572","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:06,188","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:06,477","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"109d25629f6a","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:06,488","level":"INFO","logger":"apps.machines.services","message":"靶机启动成功","request_id":"c28fc37def49","user_id":"","ip":"127.0.0.1","path":"/api/machines/","method":"POST"}
+{"time":"2025-11-26 01:18:06,493","level":"INFO","logger":"apps.machines.services","message":"靶机停止","request_id":"07ed16193088","user_id":"","ip":"127.0.0.1","path":"/api/machines/1/stop/","method":"POST"}
+{"time":"2025-11-26 01:18:06,789","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:06,790","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:06,829","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:07,130","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:07,143","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:07,445","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:07,449","level":"INFO","logger":"apps.submissions.services","message":"判题-错误提交","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:08,017","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:08,019","level":"INFO","logger":"apps.contests.services","message":"创建队伍","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:08,304","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"14d9d36edc28","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:08,319","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"424c8b137169","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:18:08,326","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"140e72752269","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:18:08,326","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-26 01:18:08,617","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"7d8e6ed4a2bb","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:08,619","level":"INFO","logger":"apps.challenges.crud_service","message":"创建题目","request_id":"76c25995fff0","user_id":"","ip":"127.0.0.1","path":"/api/contests/api-submit/challenges/","method":"POST"}
+{"time":"2025-11-26 01:18:08,898","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"2b876bcb2c4a","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:08,934","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"06961e27ae46","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:18:09,213","level":"INFO","logger":"apps.accounts.services","message":"登录成功","request_id":"09ee65f2406d","user_id":"","ip":"127.0.0.1","path":"/api/accounts/auth/login/","method":"POST"}
+{"time":"2025-11-26 01:18:09,227","level":"INFO","logger":"apps.submissions.services","message":"判题-正确提交","request_id":"127a6261b862","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:18:09,233","level":"INFO","logger":"apps.submissions.services","message":"判题-重复提交","request_id":"dbc057935b05","user_id":"","ip":"127.0.0.1","path":"/api/submissions/","method":"POST"}
+{"time":"2025-11-26 01:18:09,233","level":"WARNING","logger":"django.request","message":"Bad Request: /api/submissions/","request_id":"","user_id":"","ip":"","path":"","method":""}

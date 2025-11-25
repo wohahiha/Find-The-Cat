@@ -34,6 +34,8 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = 'django-insecure-a!(0n*euw%0(fy%sq*v#n8j2+0klghi^4oxsavef1u8$fcs@!l'
 DEBUG = True
 ALLOWED_HOSTS = ["*"]  # 允许访问的域名/IP
+# 是否允许登录不带图形验证码（生产建议 False；测试/DEBUG 可设 True）
+ALLOW_LOGIN_WITHOUT_CAPTCHA: bool = DEBUG
 
 # 生产环境（部署时启用）
 # SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-a!(0n*euw%0(fy%sq*v#n8j2+0klghi^4oxsavef1u8$fcs@!l")
@@ -238,6 +240,7 @@ REST_FRAMEWORK = {
         'flag_submit': '10/min',
         'machine_start': '3/min',
         'user_post': '30/min',
+        'attachment_upload': '10/min',
     },
 
     # 自动生成 API 文档：

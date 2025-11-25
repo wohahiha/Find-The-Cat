@@ -29,3 +29,5 @@ class SubmissionCreateSchema(BaseSchema[None]):
             raise ValidationError(message="缺少题目标识")
         if not self.flag:
             raise ValidationError(message="请填写提交内容（Flag）")
+        if len(self.flag) > 1024:
+            raise ValidationError(message="提交内容过长，请控制在 1024 字以内")

@@ -12,6 +12,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 from django.utils import timezone
+from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from captcha.models import CaptchaStore
 
@@ -251,7 +252,12 @@ class LoginService(BaseService[dict[str, object]]):
         - 校验图形验证码。
         - 颁发 JWT Refresh 与 Access。
         """
-        self._verify_captcha(schema.captcha_key, schema.captcha_code)
+        allow_without_captcha = getattr(settings, "ALLOW_LOGIN_WITHOUT_CAPTCHA", False)
+        if schema.captcha_key and schema.captcha_code:
+            self._verify_captcha(schema.captcha_key, schema.captcha_code)
+        elif not allow_without_captcha:
+            # 理论上 Schema 已阻止，但此处兜底，防止绕过校验
+            raise CaptchaValidationError(message="请完成图形验证码")
         identifier = schema.identifier
         user = self.user_repo.get_by_identifier(identifier)
         if user is None:

@@ -58,6 +58,12 @@ class ChallengeCreateSchema(BaseSchema[None]):
     decay_factor: float = 0.95
     # 最低分：默认初始分一半，需小于 base_points
     min_score: Optional[int] = None
+    # n 血奖励类型：none/bonus/no_decay
+    blood_reward_type: str = "none"
+    # n 血数量
+    blood_reward_count: int = 0
+    # n 血加分列表（按名次排序）
+    blood_bonus_points: List[int] = field(default_factory=list)
 
     def validate(self) -> None:
         """校验题目必填字段、分值、子任务与附件，确保创建请求符合业务约束。"""
@@ -109,6 +115,30 @@ class ChallengeCreateSchema(BaseSchema[None]):
             self.min_score = max(1, self.base_points // 2)
         if self.min_score <= 0 or self.min_score >= self.base_points:
             raise ValidationError(message="最低分需大于 0 且小于初始分值")
+        # n 血奖励校验
+        if self.blood_reward_type not in {"none", "bonus", "no_decay"}:
+            raise ValidationError(message="n血奖励类型不正确")
+        self.blood_reward_count = int(self.blood_reward_count or 0)
+        if self.blood_reward_type == "none":
+            self.blood_reward_count = 0
+            self.blood_bonus_points = []
+        elif self.blood_reward_count <= 0:
+            raise ValidationError(message="请填写 n 血数量")
+        elif self.blood_reward_type == "bonus":
+            cleaned_bonus: list[int] = []
+            for idx in range(self.blood_reward_count):
+                try:
+                    bonus_val = int(self.blood_bonus_points[idx])
+                except Exception:
+                    raise ValidationError(message=f"请填写第 {idx + 1} 血的加分")
+                if bonus_val < 0:
+                    raise ValidationError(message="加分需大于等于 0")
+                cleaned_bonus.append(bonus_val)
+            self.blood_bonus_points = cleaned_bonus
+        else:
+            if self.scoring_mode != "dynamic":
+                raise ValidationError(message="仅动态分值支持前 n 血不衰减")
+            self.blood_bonus_points = []
 
 
 @dataclass

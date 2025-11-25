@@ -94,10 +94,51 @@ class ChallengeAdminForm(forms.ModelForm):
         label="题目内容",
         help_text="完整题面描述，包含环境信息、要求、附件说明等。",
     )
+    blood_bonus_points = forms.CharField(
+        required=False,
+        label="n血加分列表",
+        help_text="仅在选择“加分”时有效，自动按血次生成输入行。",
+        widget=forms.HiddenInput(),
+    )
 
     class Meta:
         model = Challenge
         fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 将 JSON 列表转为按行文本，便于录入
+        bonus_list = self.instance.blood_bonus_points if getattr(self, "instance", None) else None
+        if isinstance(bonus_list, list):
+            self.initial["blood_bonus_points"] = "\n".join(str(item) for item in bonus_list)
+
+    def clean_blood_bonus_points(self):
+        """将换行/逗号分隔的加分转换为整数列表。"""
+        raw = self.cleaned_data.get("blood_bonus_points") or ""
+        if isinstance(raw, list):
+            return raw
+        segments = [seg.strip() for seg in str(raw).replace(",", "\n").splitlines() if seg.strip()]
+        result: list[int] = []
+        for idx, seg in enumerate(segments, start=1):
+            try:
+                val = int(seg)
+            except Exception:
+                raise forms.ValidationError(f"第 {idx} 行需为整数")
+            if val < 0:
+                raise forms.ValidationError("加分需大于等于 0")
+            result.append(val)
+        return result
+
+    def clean(self):
+        """校验加分数量与 n 值一致，避免遗漏。"""
+        cleaned = super().clean()
+        reward_type = cleaned.get("blood_reward_type")
+        reward_count = int(cleaned.get("blood_reward_count") or 0)
+        bonus_list = cleaned.get("blood_bonus_points") or []
+        if reward_type == Challenge.BloodRewardType.BONUS and reward_count > 0:
+            if len(bonus_list) < reward_count:
+                raise forms.ValidationError("请填写足够的加分行数，与 n 血数量一致")
+        return cleaned
 
 # 后台注册：配置题目、分类与解题记录的 Django Admin 展示。
 
@@ -156,6 +197,9 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
         "dynamic_prefix": "可选前缀，最终 Flag = 前缀 + '{' + Flag 值 + '}'；无需手写花括号。",
         "flag": "静态：填写完整 Flag 值；动态：填写种子，系统按赛题/解题人生成唯一值。",
         "flag_case_insensitive": "勾选后校验时不区分大小写。",
+        "blood_reward_type": "n 血奖励：无/加分/前 n 血不衰减（仅动态计分可选）。",
+        "blood_reward_count": "前 n 名解题享受奖励的数量，设置为 0 关闭。",
+        "blood_bonus_points": "仅在选择“加分”时填写，按行输入每一血的额外加分值。",
     }
     fieldsets = (
         (
@@ -178,6 +222,13 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
             {
                 "fields": ("base_points", "scoring_mode", "decay_type", "decay_factor", "min_score"),
                 "description": "动态计分会按解出次数衰减至最低分；固定分值时衰减相关字段不会生效。",
+            },
+        ),
+        (
+            "n血奖励",
+            {
+                "fields": ("blood_reward_type", "blood_reward_count", "blood_bonus_points"),
+                "description": "配置前 n 名解题的加分或不衰减，不衰减仅支持动态分值。",
             },
         ),
         (
@@ -259,11 +310,11 @@ class ChallengeSolveAdmin(admin.ModelAdmin):
     """解题记录后台：查看得分与解题时间，保持只读。"""
     list_select_related = ("challenge", "challenge__contest", "user", "team")
     # 列表展示解题核心信息
-    list_display = ("challenge", "user", "team", "awarded_points", "solved_at")
+    list_display = ("challenge", "user", "team", "awarded_points", "bonus_points", "solved_at")
     # 过滤：按所属比赛
     list_filter = ("challenge__contest",)
     # 所有字段只读，防止后台修改历史记录
-    readonly_fields = ("challenge", "user", "team", "awarded_points", "solved_at")
+    readonly_fields = ("challenge", "user", "team", "awarded_points", "bonus_points", "solved_at")
 
     def get_form(self, request, obj=None, **kwargs):
         """为解题记录详情页字段添加说明，方便审计。"""
@@ -272,7 +323,8 @@ class ChallengeSolveAdmin(admin.ModelAdmin):
             "challenge": "对应的题目，决定分值与所属比赛。",
             "user": "解题的用户，个人赛必填。",
             "team": "解题所属队伍，组队赛使用。",
-            "awarded_points": "当次解题获得的分值（已含动态衰减）。",
+            "awarded_points": "当次解题获得的总分值（已含动态衰减和加分）。",
+            "bonus_points": "若配置 n 血加分，则记录额外得分。",
             "solved_at": "解题时间，用于榜单排序与血次序。",
         }
         for name, text in help_texts.items():

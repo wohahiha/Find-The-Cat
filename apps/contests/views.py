@@ -163,6 +163,7 @@ class ContestTeamsView(APIView):
         teams = (
             self.team_repo.filter_with_related(contest=contest, is_active=True)
             .annotate(active_member_count=Count("members", filter=Q(members__is_active=True)))
+            .order_by("name", "id")
         )
         paginator = StandardPagination()
         page = paginator.paginate_queryset(teams, request)

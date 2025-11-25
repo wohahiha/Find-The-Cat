@@ -34,6 +34,7 @@ def serialize_submission(submission: Submission) -> dict:
         "status": submission.status,
         "is_correct": submission.is_correct,
         "awarded_points": submission.awarded_points,
+        "bonus_points": getattr(submission, "bonus_points", 0),
         "blood_rank": submission.blood_rank,
         "message": submission.message,
         "solve_id": submission.solve_id,
@@ -155,11 +156,17 @@ class SubmissionService(BaseService[Submission]):
             )
             raise WrongFlagError(message="提交内容不正确")
 
-        # 6) 正确提交：动态计分 + 提示扣分 + 血次序
-        awarded_points = self._calc_dynamic_points(challenge, contest, membership)
-        hint_cost = self._calc_hint_cost(challenge, user)
-        awarded_points = max(0, awarded_points - hint_cost)
+        # 6) 正确提交：动态计分 + 提示扣分 + 血次序 + n 血奖励
         blood_rank = self._next_blood_rank(challenge)
+        solved_count = self._solved_count(challenge, contest)
+        base_points = self._calc_dynamic_points(challenge, solved_count)
+        base_override, bonus_points = self._apply_blood_reward(
+            challenge, blood_rank, include_bonus=True
+        )
+        if base_override is not None:
+            base_points = base_override
+        hint_cost = self._calc_hint_cost(challenge, user)
+        awarded_points = max(0, base_points - hint_cost) + bonus_points
         expected_flag = challenge.build_expected_flag(user=user, membership=membership, secret=secret)
 
         # 7) 事务内写入提交记录与解题记录
@@ -176,6 +183,7 @@ class SubmissionService(BaseService[Submission]):
                     "blood_rank": blood_rank,
                     "message": "提交正确",
                     "awarded_points": awarded_points,
+                    "bonus_points": bonus_points,
                     "judged_at": timezone.now(),
                 }
             )
@@ -185,6 +193,7 @@ class SubmissionService(BaseService[Submission]):
                 "user": user,
                 "team": membership.team if membership else None,
                 "awarded_points": awarded_points,
+                "bonus_points": bonus_points,
             }
         )
         submission.solve = solve
@@ -202,6 +211,7 @@ class SubmissionService(BaseService[Submission]):
                     "team_id": getattr(membership, "team_id", None),
                     "awarded_points": awarded_points,
                     "blood_rank": blood_rank,
+                    "bonus_points": bonus_points,
                 }
             ),
         )
@@ -215,11 +225,18 @@ class SubmissionService(BaseService[Submission]):
         # 若未传 membership，尝试在已登录上下文下查队伍关系
         if membership is None and user is not None and getattr(user, "is_authenticated", False):
             membership = self.member_repo.get_membership(contest=contest, user=user)
-        awarded_points = self._calc_dynamic_points(challenge, contest, membership)
+        solved_count = self._solved_count(challenge, contest)
+        predicted_rank = solved_count + 1
+        base_points = self._calc_dynamic_points(challenge, solved_count)
+        base_override, _ = self._apply_blood_reward(
+            challenge, predicted_rank, include_bonus=False
+        )
+        if base_override is not None:
+            base_points = base_override
         hint_cost = 0
         if user is not None and getattr(user, "is_authenticated", False):
             hint_cost = self._calc_hint_cost(challenge, user)
-        return max(0, awarded_points - hint_cost)
+        return max(0, base_points - hint_cost)
 
     def _next_blood_rank(self, challenge) -> int:
         """
@@ -252,7 +269,57 @@ class SubmissionService(BaseService[Submission]):
                 return 0
         return 0
 
-    def _calc_dynamic_points(self, challenge, contest, membership) -> int:
+    def _solved_count(self, challenge, contest) -> int:
+        """
+        统计当前题目已解出的数量：
+        - 组队赛按队伍去重。
+        - 个人赛按用户去重。
+        """
+        if contest.is_team_based:
+            return (
+                ChallengeSolve.objects.filter(challenge=challenge)
+                .exclude(team_id=None)
+                .values("team_id")
+                .distinct()
+                .count()
+            )
+        return (
+            ChallengeSolve.objects.filter(challenge=challenge)
+            .values("user_id")
+            .distinct()
+            .count()
+        )
+
+    def _apply_blood_reward(self, challenge, blood_rank: int | None, *, include_bonus: bool) -> tuple[int | None, int]:
+        """
+        n 血奖励处理：
+        - 返回 base_points 覆盖值（用于不衰减）与额外加分。
+        - include_bonus=False 时，仅处理不衰减，不计算加分。
+        """
+        if not blood_rank or blood_rank <= 0:
+            return None, 0
+        reward_type = getattr(challenge, "blood_reward_type", None)
+        reward_count = int(getattr(challenge, "blood_reward_count", 0) or 0)
+        if reward_type in (None, challenge.BloodRewardType.NONE) or reward_count <= 0:
+            return None, 0
+        # 不衰减：仅动态分值生效
+        if (
+            reward_type == challenge.BloodRewardType.NO_DECAY
+            and challenge.scoring_mode == challenge.ScoringMode.DYNAMIC
+            and blood_rank <= reward_count
+        ):
+            return challenge.base_points, 0
+        # 加分模式
+        if include_bonus and reward_type == challenge.BloodRewardType.BONUS and blood_rank <= reward_count:
+            bonuses = list(getattr(challenge, "blood_bonus_points", []) or [])
+            try:
+                bonus_points = int(bonuses[blood_rank - 1])
+            except Exception:
+                bonus_points = 0
+            return None, max(0, bonus_points)
+        return None, 0
+
+    def _calc_dynamic_points(self, challenge, solved_count: int) -> int:
         """
         根据计分模式计算得分：
         - 固定模式：直接 base_points。
@@ -260,23 +327,6 @@ class SubmissionService(BaseService[Submission]):
         """
         if challenge.scoring_mode == challenge.ScoringMode.FIXED:
             return challenge.base_points
-
-        # 按团队/个人计算已解出数量
-        if contest.is_team_based:
-            solved_count = (
-                ChallengeSolve.objects.filter(challenge=challenge)
-                .exclude(team_id=None)
-                .values("team_id")
-                .distinct()
-                .count()
-            )
-        else:
-            solved_count = (
-                ChallengeSolve.objects.filter(challenge=challenge)
-                .values("user_id")
-                .distinct()
-                .count()
-            )
 
         if challenge.decay_type == challenge.DecayType.PERCENTAGE:
             score = challenge.base_points * (challenge.decay_factor ** solved_count)

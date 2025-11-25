@@ -93,6 +93,7 @@ def _handle_unexpected_exception(exc: Exception, context: dict) -> Response:
         extra={
             "view": context.get("view").__class__.__name__ if context.get("view") else None,
             "request_path": getattr(context.get("request"), "path", None),
+            "error": str(exc),
         },
     )
 

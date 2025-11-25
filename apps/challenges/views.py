@@ -9,6 +9,7 @@ from drf_spectacular.types import OpenApiTypes
 
 from apps.common import response
 from apps.common.permissions import IsAdmin, IsAuthenticated
+from apps.common.throttles import AttachmentUploadRateThrottle
 
 from .schemas import ChallengeCreateSchema, ChallengeUpdateSchema, HintUnlockSchema
 from .services import ChallengeCreateService, ChallengeUpdateService, ChallengeHintService, AttachmentUploadService
@@ -137,6 +138,7 @@ class AttachmentUploadView(APIView):
 
     permission_classes = [IsAuthenticated, IsAdmin]
     parser_classes = [MultiPartParser, FormParser]
+    throttle_classes = [AttachmentUploadRateThrottle]
     service = AttachmentUploadService()
 
     @extend_schema(

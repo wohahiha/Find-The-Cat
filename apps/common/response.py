@@ -80,19 +80,29 @@ def build_page_extra(
         total: int,
         has_next: bool,
         has_previous: bool,
+        total_pages: int | None = None,
+        next_page: int | None = None,
+        previous_page: int | None = None,
 ) -> Mapping[str, Any]:
     """
     简单的分页元信息构造器。
 
     后续根据需要调整。
     """
-    return {
+    extra = {
         "page": page,
         "page_size": page_size,
         "total": total,
         "has_next": has_next,
         "has_previous": has_previous,
     }
+    if total_pages is not None:
+        extra["total_pages"] = total_pages
+    if next_page is not None:
+        extra["next_page"] = next_page
+    if previous_page is not None:
+        extra["previous_page"] = previous_page
+    return extra
 
 
 # ======================
@@ -205,6 +215,9 @@ def page_success(
         total: int,
         has_next: bool,
         has_previous: bool,
+        total_pages: int | None = None,
+        next_page: int | None = None,
+        previous_page: int | None = None,
 
 ) -> Response:
     """
@@ -230,6 +243,9 @@ def page_success(
         total=total,
         has_next=has_next,
         has_previous=has_previous,
+        total_pages=total_pages,
+        next_page=next_page,
+        previous_page=previous_page,
     )
     return api_response(
         code=SUCCESS_CODE,

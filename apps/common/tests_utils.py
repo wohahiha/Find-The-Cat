@@ -21,7 +21,8 @@ class AuthenticatedAPIMixin:
             {"identifier": identifier, "password": password},
             format="json",
         )
-        self.assertEqual(resp.status_code, expect_status)
+        if resp.status_code != expect_status:
+            raise AssertionError(f"登录接口返回 {resp.status_code}，期望 {expect_status}，响应：{resp.content}")
         return resp.data["data"]["access"]
 
     def auth_client(self, identifier: str, password: str) -> APIClient:

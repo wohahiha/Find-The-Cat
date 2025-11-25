@@ -12,7 +12,7 @@ class SubmissionAdmin(admin.ModelAdmin):
     """提交记录后台：便于运营查看判题与得分。"""
 
     # 列表展示提交关联信息与得分，便于筛查
-    list_display = ("contest", "challenge", "user", "team", "status", "is_correct", "blood_rank", "awarded_points", "created_at")
+    list_display = ("contest", "challenge", "user", "team", "status", "is_correct", "blood_rank", "awarded_points", "bonus_points", "created_at")
     # 可按比赛/题目/状态/正确性过滤
     list_filter = ("contest", "challenge", "status", "is_correct")
     # 支持按用户名、题目 slug、提交内容搜索
@@ -29,6 +29,7 @@ class SubmissionAdmin(admin.ModelAdmin):
         "is_correct",
         "message",
         "awarded_points",
+        "bonus_points",
         "blood_rank",
         "solve",
         "created_at",
@@ -48,6 +49,7 @@ class SubmissionAdmin(admin.ModelAdmin):
             "is_correct": "判题是否正确的布尔标志。",
             "message": "判题提示信息，展示给运营或前台。",
             "awarded_points": "本次提交获得的分值，仅正确时有值。",
+            "bonus_points": "符合 n 血加分规则时的额外得分。",
             "blood_rank": "解题血次序，0 表示非正确提交。",
             "solve": "关联的解题记录，错误/重复为空。",
             "created_at": "提交时间戳，记录选手提交时刻。",

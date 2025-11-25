@@ -60,6 +60,16 @@ class ChallengeCreateService(BaseService[Challenge]):
         # 动态计分默认最低分为基础分一半
         if payload.get("min_score") is None:
             payload["min_score"] = max(1, int(payload.get("base_points", 100)) // 2)
+        # 规范 n 血奖励配置
+        reward_type = payload.get("blood_reward_type")
+        reward_count = int(payload.get("blood_reward_count") or 0)
+        bonus_list = list(payload.get("blood_bonus_points") or [])
+        if reward_type != Challenge.BloodRewardType.BONUS:
+            payload["blood_bonus_points"] = []
+        else:
+            payload["blood_bonus_points"] = bonus_list[:reward_count]
+        if reward_type == Challenge.BloodRewardType.NONE:
+            payload["blood_reward_count"] = 0
         tasks = payload.pop("tasks", [])
         attachments = payload.pop("attachments", [])
         hints = payload.pop("hints", [])
@@ -148,6 +158,15 @@ class ChallengeUpdateService(BaseService[Challenge]):
         payload.pop("contest_slug", None)
         if payload.get("min_score") is None and "base_points" in payload:
             payload["min_score"] = max(1, int(payload.get("base_points", 100)) // 2)
+        reward_type = payload.get("blood_reward_type", challenge.blood_reward_type)
+        reward_count = int(payload.get("blood_reward_count", challenge.blood_reward_count) or 0)
+        bonus_list = payload.get("blood_bonus_points", list(challenge.blood_bonus_points))
+        if reward_type != Challenge.BloodRewardType.BONUS:
+            payload["blood_bonus_points"] = []
+        else:
+            payload["blood_bonus_points"] = list(bonus_list)[:reward_count]
+        if reward_type == Challenge.BloodRewardType.NONE:
+            payload["blood_reward_count"] = 0
         for field, value in payload.items():
             if field in {"contest_slug", "category"}:
                 continue

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from apps.common.base.base_service import BaseService
+from apps.common.exceptions import ValidationError
 from apps.common.infra.file_storage import default_storage
 
 from .schemas import AttachmentUploadSchema
@@ -18,6 +19,18 @@ class AttachmentUploadService(BaseService[dict]):
     atomic_enabled = False
 
     def perform(self, schema: AttachmentUploadSchema, *, content: bytes) -> dict:
+        # 限制文件大小与类型，防止滥用存储
+        max_size = 10 * 1024 * 1024  # 10MB
+        if len(content) > max_size:
+            raise ValidationError(message="附件过大，单个文件请控制在 10MB 内")
+        allowed_suffix = {".zip", ".tar", ".gz", ".tgz", ".bz2", ".7z", ".txt", ".pdf", ".md", ".json"}
+        lower_name = schema.filename.lower()
+        if "." in lower_name:
+            suffix = "." + lower_name.split(".")[-1]
+        else:
+            suffix = ""
+        if suffix and suffix not in allowed_suffix:
+            raise ValidationError(message="不支持的附件类型，请打包为 zip/tar 或提供文本类文件")
         parts = ["attachments"]
         if schema.contest_slug:
             parts.append(schema.contest_slug)

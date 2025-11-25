@@ -169,3 +169,30 @@ class UserPostRateThrottle(SimpleRateThrottle):
     def throttle_failure(self):
         exc = Throttled(detail="操作过于频繁，请稍后再试")
         raise_rate_limit(exc)
+
+
+# ======================
+# 附件上传限速
+# ======================
+
+class AttachmentUploadRateThrottle(SimpleRateThrottle):
+    """
+    附件上传限速：
+    - 防止大规模上传耗尽带宽与存储。
+    """
+
+    scope = "attachment_upload"
+
+    def get_cache_key(self, request, view) -> Optional[str]:
+        # 仅限 POST 上传
+        if request.method != "POST":
+            return None
+        user = getattr(request, "user", None)
+        if user and user.is_authenticated:
+            return f"throttle_attach_user_{user.pk}"
+        ip = self.get_ident(request)
+        return f"throttle_attach_ip_{ip}"
+
+    def throttle_failure(self):
+        exc = Throttled(detail="上传过于频繁，请稍后再试")
+        raise_rate_limit(exc)

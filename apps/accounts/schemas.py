@@ -9,6 +9,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Optional, ClassVar
 
+from django.conf import settings
 from django.core.validators import validate_email as django_validate_email
 from django.core.exceptions import ValidationError as DjangoValidationError
 
@@ -54,6 +55,7 @@ class SendEmailCodeSchema(BaseSchema[None]):
     - 自动执行 validate，确保邮箱格式正确且场景受支持。
     """
     auto_validate: ClassVar[bool] = True
+
     # 邮箱地址：验证码接收目标
     email: str
     # 业务场景：限定 EmailVerificationCode.Scene
@@ -117,9 +119,9 @@ class LoginSchema(BaseSchema[None]):
     # 登录密码
     password: str
     # 图形验证码 key（后端生成）
-    captcha_key: str
+    captcha_key: str = ""
     # 图形验证码用户输入
-    captcha_code: str
+    captcha_code: str = ""
 
     def validate(self) -> None:
         """校验登录凭据与图形验证码字段非空，identifier 长度需至少 3。"""
@@ -127,8 +129,10 @@ class LoginSchema(BaseSchema[None]):
             raise ValidationError(message="请输入正确的用户名或邮箱")
         if not self.password:
             raise ValidationError(message="请输入密码")
-        if not self.captcha_key or not self.captcha_code:
-            raise ValidationError(message="请完成图形验证码")
+        allow_without_captcha = getattr(settings, "ALLOW_LOGIN_WITHOUT_CAPTCHA", False)
+        if not allow_without_captcha:
+            if not self.captcha_key or not self.captcha_code:
+                raise ValidationError(message="请完成图形验证码")
 
 
 @dataclass
@@ -139,7 +143,7 @@ class ResetPasswordSchema(BaseSchema[None]):
     - 校验新密码复杂度与两次输入一致性。
     """
     auto_validate: ClassVar[bool] = True
-    
+
     # 目标邮箱
     email: str
     # 邮箱验证码
@@ -204,6 +208,7 @@ class ChangePasswordSchema(BaseSchema[None]):
     - 校验新密码复杂度、与旧密码不同且两次一致。
     """
     auto_validate: ClassVar[bool] = True
+
     # 旧密码：用于身份验证
     old_password: str
     # 新密码
@@ -230,6 +235,7 @@ class ChangeEmailSchema(BaseSchema[None]):
     - 校验邮箱格式与验证码格式。
     """
     auto_validate: ClassVar[bool] = True
+
     # 新邮箱
     new_email: str
     # 邮箱验证码
@@ -253,6 +259,7 @@ class DeleteAccountSchema(BaseSchema[None]):
     - 需要用户输入当前密码作为二次确认。
     """
     auto_validate: ClassVar[bool] = True
+
     # 当前密码：确认身份
     password: str
 

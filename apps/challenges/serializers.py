@@ -46,6 +46,9 @@ def serialize_challenge(challenge: Challenge, *, current_points: int | None = No
         "decay_type": challenge.decay_type,
         "decay_factor": challenge.decay_factor,
         "min_score": challenge.min_score,
+        "blood_reward_type": challenge.blood_reward_type,
+        "blood_reward_count": challenge.blood_reward_count,
+        "blood_bonus_points": challenge.blood_bonus_points,
         "tasks": [
             {
                 "id": task.id,

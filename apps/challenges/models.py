@@ -88,6 +88,11 @@ class Challenge(models.Model):
         PERCENTAGE = "percentage", "按百分比衰减"
         FIXED_STEP = "fixed_step", "固定分值递减"
 
+    class BloodRewardType(models.TextChoices):
+        NONE = "none", "无奖励"
+        BONUS = "bonus", "加分奖励"
+        NO_DECAY = "no_decay", "前 n 血不衰减"
+
     # 计分模式：固定/动态衰减
     scoring_mode = models.CharField("计分模式", max_length=16, choices=ScoringMode.choices, default=ScoringMode.FIXED)
     # 衰减类型：百分比或固定扣分
@@ -96,6 +101,17 @@ class Challenge(models.Model):
     decay_factor = models.FloatField("衰减因子", default=0.95)
     # 最低分：动态计分时的下限，默认初始分一半
     min_score = models.PositiveIntegerField("最低分", default=50)
+    # n 血奖励类型：无/加分/不衰减
+    blood_reward_type = models.CharField(
+        "n血奖励类型",
+        max_length=16,
+        choices=BloodRewardType.choices,
+        default=BloodRewardType.NONE,
+    )
+    # n 血数量，决定前几名生效
+    blood_reward_count = models.PositiveIntegerField("n血数量", default=0)
+    # n 血加分列表，仅在奖励类型为加分时使用
+    blood_bonus_points = models.JSONField("n血加分列表", default=list, blank=True)
     # 出题人
     author = models.ForeignKey(User, verbose_name="出题人", related_name="challenges", on_delete=models.SET_NULL,
                                null=True)
@@ -152,9 +168,8 @@ class Challenge(models.Model):
         - 动态：基于用户/队伍生成期望值，再比对；若缺少身份则回退旧逻辑。
         """
         if self.flag_type == self.FlagType.DYNAMIC and user is None and membership is None:
-            if self.dynamic_prefix and not submitted.startswith(self.dynamic_prefix):
-                return False
-            return self.normalized_flag(submitted) == self.normalized_flag(self.flag)
+            # 动态 flag 必须绑定用户或队伍身份，缺失时直接判错以避免被伪造
+            return False
 
         expected = self.build_expected_flag(user=user, membership=membership, secret=secret)
         return self.normalized_flag(submitted) == expected
@@ -175,6 +190,8 @@ class ChallengeSolve(models.Model):
                              on_delete=models.SET_NULL, null=True, blank=True)
     # 最终得分（含动态计分时可能调整）
     awarded_points = models.PositiveIntegerField("得分", default=0)
+    # 额外加分（n 血加分配置产生）
+    bonus_points = models.PositiveIntegerField("额外加分", default=0)
     # 解题时间戳
     solved_at = models.DateTimeField("解题时间", default=timezone.now)
 

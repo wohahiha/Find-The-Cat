@@ -3,6 +3,7 @@ from __future__ import annotations
 import secrets
 import random
 from typing import Optional
+from django.conf import settings
 
 from apps.common.base.base_service import BaseService
 from apps.common.exceptions import ConflictError, PermissionDeniedError, NotFoundError, ValidationError

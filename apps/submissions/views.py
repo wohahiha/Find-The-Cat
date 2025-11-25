@@ -8,6 +8,7 @@ from drf_spectacular.types import OpenApiTypes
 
 from apps.common import response
 from apps.common.permissions import IsAuthenticated
+from apps.common.throttles import FlagSubmitRateThrottle
 from apps.challenges.serializers import serialize_challenge
 
 from .schemas import SubmissionCreateSchema
@@ -24,6 +25,7 @@ class SubmissionCreateView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [FlagSubmitRateThrottle]
     service = SubmissionService()
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
@@ -31,12 +33,14 @@ class SubmissionCreateView(APIView):
         # Schema 校验入参后，调用服务完成判题与记录
         schema = SubmissionCreateSchema.from_dict(request.data, auto_validate=True)
         submission = self.service.execute(request.user, schema)
-        challenge_payload = serialize_challenge(submission.challenge, current_points=submission.awarded_points)
+        base_points = max(0, submission.awarded_points - getattr(submission, "bonus_points", 0))
+        challenge_payload = serialize_challenge(submission.challenge, current_points=base_points)
         return response.created(
             {
                 "submission": serialize_submission(submission),
                 "challenge": challenge_payload,
                 "awarded_points": submission.awarded_points,
+                "bonus_points": getattr(submission, "bonus_points", 0),
                 "solved_at": getattr(submission.solve, "solved_at", None),
             },
             message="提交已记录",

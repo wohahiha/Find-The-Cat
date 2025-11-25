@@ -165,12 +165,12 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
 
         # 列表 running 应包含该比赛
         resp = self.client.get("/api/contests/?status=running")
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200, resp.content)
         self.assertTrue(any(item["slug"] == slug for item in resp.data["data"]["items"]))
 
         # 详情包含公告与挑战列表字段
         resp = self.client.get(f"/api/contests/{slug}/")
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200, resp.content)
         self.assertIn("announcements", resp.data["data"])
 
     def test_team_lifecycle(self):
@@ -192,7 +192,7 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
 
         # 队伍列表
         resp = self.client.get(f"/api/contests/{slug}/teams/")
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200, resp.content)
 
         # 加入队伍
         resp = c2.post(

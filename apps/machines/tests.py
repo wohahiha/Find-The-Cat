@@ -109,8 +109,8 @@ class MachinesAPITestCase(AuthenticatedAPIMixin, APITestCase):
         machine_id = resp.data["data"]["machine"]["id"]
         # 列表
         resp = client.get("/api/machines/")
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200, resp.content)
         self.assertTrue(len(resp.data["data"]["items"]) >= 1)
         # 停止
         resp = client.post(f"/api/machines/{machine_id}/stop/", {}, format="json")
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200, resp.content)

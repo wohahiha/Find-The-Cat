@@ -496,6 +496,7 @@ class ScoreboardService(BaseService[list[dict]]):
                 "team_id",
                 "user_id",
                 "awarded_points",
+                "bonus_points",
                 "solved_at",
                 "team__slug",
                 "team__name",
@@ -520,6 +521,7 @@ class ScoreboardService(BaseService[list[dict]]):
                             "slug": solve["team__slug"],
                         },
                         "score": 0,
+                        "bonus_score": 0,
                         "last_solve": solve["solved_at"],
                         "solves": [],
                     },
@@ -536,16 +538,21 @@ class ScoreboardService(BaseService[list[dict]]):
                             "username": solve["user__username"],
                         },
                         "score": 0,
+                        "bonus_score": 0,
                         "last_solve": solve["solved_at"],
                         "solves": [],
                     },
                 )
+            bonus_points = solve.get("bonus_points") or 0
             entry["score"] += solve["awarded_points"]
+            entry["bonus_score"] += bonus_points
             entry["last_solve"] = solve["solved_at"]
             entry["solves"].append(
                 {
                     "challenge": solve["challenge__slug"],
                     "points": solve["awarded_points"],
+                    "bonus_points": bonus_points,
+                    "base_points": solve["awarded_points"] - bonus_points,
                     "solved_at": solve["solved_at"],
                 }
             )
@@ -565,6 +572,8 @@ class ScoreboardService(BaseService[list[dict]]):
                     {
                         "challenge": solve.get("challenge"),
                         "points": solve.get("points"),
+                        "bonus_points": solve.get("bonus_points", 0),
+                        "base_points": solve.get("base_points"),
                         "solved_at": solved_at_str,
                     }
                 )
@@ -659,6 +668,7 @@ class ContestExportService(BaseService[dict]):
                 "username": solve.user.username if solve.user_id else None,
                 "team": solve.team_id,
                 "awarded_points": solve.awarded_points,
+                "bonus_points": getattr(solve, "bonus_points", 0),
                 "solved_at": solve.solved_at,
             }
             for solve in solves
@@ -680,6 +690,7 @@ class ContestExportService(BaseService[dict]):
                 "status": sub.status,
                 "is_correct": sub.is_correct,
                 "awarded_points": sub.awarded_points,
+                "bonus_points": getattr(sub, "bonus_points", 0),
                 "blood_rank": sub.blood_rank,
                 "message": sub.message,
                 "solve_id": sub.solve_id,
