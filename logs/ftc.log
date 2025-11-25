@@ -143,3 +143,5 @@
 {"time":"2025-11-25 22:49:42,095","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
 {"time":"2025-11-25 22:51:49,672","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\apps\contests\services.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
 {"time":"2025-11-25 22:51:50,815","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 22:55:39,152","level":"INFO","logger":"django.utils.autoreload","message":"D:\Py_ff\Project\FTC\Config\settings.py changed, reloading.","request_id":"","user_id":"","ip":"","path":"","method":""}
+{"time":"2025-11-25 22:55:41,466","level":"INFO","logger":"django.utils.autoreload","message":"Watching for file changes with StatReloader","request_id":"","user_id":"","ip":"","path":"","method":""}

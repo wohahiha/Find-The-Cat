@@ -293,20 +293,20 @@ CACHES = {
 # --------------------------------------------------------------------------------------
 # Docker 配置（用于靶机容器）
 # --------------------------------------------------------------------------------------
-DOCKER_HOST = os.getenv("DOCKER_HOST", None)  # 默认 None，走本机 /var/run/docker.sock 或 Windows 管道
-DOCKER_TLS_VERIFY = os.getenv("DOCKER_TLS_VERIFY", "0")  # 远程 TLS 场景再用
-DOCKER_CERT_PATH = os.getenv("DOCKER_CERT_PATH", None)  # 同上
-DOCKER_USE_MOCK = os.getenv("DOCKER_USE_MOCK", "0") == "1"
-DOCKER_IMAGE_PREFIX = os.getenv("DOCKER_IMAGE_PREFIX", "")
-DOCKER_IMAGE_TAG = os.getenv("DOCKER_IMAGE_TAG", "latest")
-DOCKER_CONTAINER_PORT = int(os.getenv("DOCKER_CONTAINER_PORT", "80"))
-DOCKER_NETWORK = os.getenv("DOCKER_NETWORK", None)
+DOCKER_HOST = os.getenv("DOCKER_HOST", None)  # Docker API endpoint，None 则用本地 socket/管道
+DOCKER_TLS_VERIFY = os.getenv("DOCKER_TLS_VERIFY", "0")  # 远程 TLS 校验开关
+DOCKER_CERT_PATH = os.getenv("DOCKER_CERT_PATH", None)  # TLS 证书路径（包含 ca/cert/key）
+DOCKER_USE_MOCK = os.getenv("DOCKER_USE_MOCK", "0") == "1"  # 是否启用 mock Docker
+DOCKER_IMAGE_PREFIX = os.getenv("DOCKER_IMAGE_PREFIX", "")  # 镜像前缀（如私有仓库）
+DOCKER_IMAGE_TAG = os.getenv("DOCKER_IMAGE_TAG", "latest")  # 镜像标签
+DOCKER_CONTAINER_PORT = int(os.getenv("DOCKER_CONTAINER_PORT", "80"))  # 容器内服务端口
+DOCKER_NETWORK = os.getenv("DOCKER_NETWORK", None)  # 可选 Docker 网络
 
 # 靶机运行时长（分钟）与清理间隔（秒）
-MACHINE_MAX_RUNTIME_MINUTES = int(os.getenv("MACHINE_MAX_RUNTIME_MINUTES", "30"))
-MACHINE_CLEAN_INTERVAL_SECONDS = int(os.getenv("MACHINE_CLEAN_INTERVAL_SECONDS", "300"))
-MACHINE_PORT_CACHE_TTL = int(os.getenv("MACHINE_PORT_CACHE_TTL", "300"))
-SCOREBOARD_CACHE_TTL = int(os.getenv("SCOREBOARD_CACHE_TTL", "30"))
+MACHINE_MAX_RUNTIME_MINUTES = int(os.getenv("MACHINE_MAX_RUNTIME_MINUTES", "30"))  # 单实例最长运行时间
+MACHINE_CLEAN_INTERVAL_SECONDS = int(os.getenv("MACHINE_CLEAN_INTERVAL_SECONDS", "300"))  # 超时清理任务间隔
+MACHINE_PORT_CACHE_TTL = int(os.getenv("MACHINE_PORT_CACHE_TTL", "300"))  # 端口占用缓存 TTL
+SCOREBOARD_CACHE_TTL = int(os.getenv("SCOREBOARD_CACHE_TTL", "30"))  # 记分板缓存秒数
 
 # --------------------------------------------------------------------------------------
 # 邮件配置
