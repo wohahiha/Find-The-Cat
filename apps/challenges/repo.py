@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Optional
+from django.db.models import Prefetch
 
 from django.utils.text import slugify
 
@@ -50,9 +51,32 @@ class ChallengeRepo(BaseRepo[Challenge]):
     def get_by_slug(self, *, contest: Contest, slug: str) -> Challenge:
         # 查询题目，不存在时抛出业务级 404
         try:
-            return self.filter(contest=contest, slug=slug).get()
+            return (
+                self.filter(contest=contest, slug=slug)
+                .select_related("contest", "category", "author")
+                .prefetch_related(
+                    Prefetch("tasks", queryset=ChallengeTask.objects.order_by("order", "id")),
+                    Prefetch("attachments", queryset=ChallengeAttachment.objects.order_by("order", "id")),
+                    Prefetch("hints", queryset=ChallengeHint.objects.order_by("order", "id")),
+                )
+                .get()
+            )
         except Challenge.DoesNotExist as exc:  # type: ignore[attr-defined]
             raise NotFoundError(message="题目不存在") from exc
+
+    def list_active_with_related(self, *, contest: Contest):
+        """
+        列出比赛下已开放题目，带上关联对象，减少 N+1。
+        """
+        return (
+            self.filter(contest=contest, is_active=True)
+            .select_related("contest", "category", "author")
+            .prefetch_related(
+                Prefetch("tasks", queryset=ChallengeTask.objects.order_by("order", "id")),
+                Prefetch("attachments", queryset=ChallengeAttachment.objects.order_by("order", "id")),
+                Prefetch("hints", queryset=ChallengeHint.objects.order_by("order", "id")),
+            )
+        )
 
 
 class ChallengeSolveRepo(BaseRepo[ChallengeSolve]):
@@ -66,6 +90,14 @@ class ChallengeSolveRepo(BaseRepo[ChallengeSolve]):
     def get_user_solve(self, *, challenge: Challenge, user: User) -> Optional[ChallengeSolve]:
         # 返回用户的解题记录，若不存在则 None
         return self.filter(challenge=challenge, user=user).first()
+
+    def get_user_solve_with_related(self, *, challenge: Challenge, user: User) -> Optional[ChallengeSolve]:
+        """带外键的解题记录，减少后续访问 N+1。"""
+        return (
+            self.filter(challenge=challenge, user=user)
+            .select_related("challenge", "user", "team")
+            .first()
+        )
 
 
 class ChallengeTaskRepo(BaseRepo[ChallengeTask]):

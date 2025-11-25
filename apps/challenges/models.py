@@ -181,6 +181,11 @@ class ChallengeSolve(models.Model):
     class Meta:
         unique_together = ("challenge", "user")
         ordering = ["solved_at"]
+        indexes = [
+            models.Index(fields=["challenge", "solved_at"]),
+            models.Index(fields=["challenge", "team"]),
+            models.Index(fields=["challenge", "user"]),
+        ]
         verbose_name = "解题记录"
         verbose_name_plural = "解题记录"
 
@@ -290,6 +295,10 @@ class ChallengeHintUnlock(models.Model):
     class Meta:
         unique_together = ("hint", "user")
         ordering = ["-unlocked_at"]
+        indexes = [
+            models.Index(fields=["challenge", "team"]),
+            models.Index(fields=["challenge", "user"]),
+        ]
         verbose_name = "提示解锁"
         verbose_name_plural = "提示解锁"
 

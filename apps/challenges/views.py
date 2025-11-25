@@ -33,7 +33,7 @@ class ChallengeListView(APIView):
     def get(self, request: Request, contest_slug: str) -> Response:
         # 获取比赛并返回所有已开放题目，计算当前用户可得分（动态计分+提示扣分）
         contest = self.context_service.get_contest(contest_slug)
-        challenges = self.challenge_repo.filter(contest=contest, is_active=True)
+        challenges = self.challenge_repo.list_active_with_related(contest=contest)
         membership = self.submit_service.member_repo.get_membership(contest=contest, user=request.user)
         data = [
             serialize_challenge(

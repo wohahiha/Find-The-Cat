@@ -5,6 +5,7 @@ from django.urls import path
 from .views import (
     RegisterView,
     LoginView,
+    CaptchaView,
     SendEmailVerificationView,
     PasswordResetRequestView,
     PasswordResetView,
@@ -21,6 +22,8 @@ urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
     # 登录：返回 JWT，支持用户名或邮箱
     path("auth/login/", LoginView.as_view(), name="login"),
+    # 获取图形验证码：登录前调用
+    path("auth/captcha/", CaptchaView.as_view(), name="captcha"),
     # 申请重置密码：发送邮箱验证码（节流/场景校验）
     path("auth/password/reset/request/", PasswordResetRequestView.as_view(), name="password-reset-request"),
     # 重置密码：消费验证码后设置新密码

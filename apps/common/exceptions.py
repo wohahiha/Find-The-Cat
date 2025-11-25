@@ -150,6 +150,17 @@ class AccountInactiveError(AuthError):
     default_message = "账户失效，请联系管理员"
 
 
+class CaptchaValidationError(AuthError):
+    """
+    登录/敏感操作的图形验证码错误：
+    - 验证码不存在/过期
+    - 验证码输入错误
+    """
+    default_code = 40104
+    default_message = "验证码错误，请刷新后重试"
+    http_status = 400
+
+
 class PermissionDeniedError(BizError):
     """
     权限不足：

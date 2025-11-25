@@ -18,7 +18,7 @@ from .schemas import MachineStartSchema, MachineStopSchema
 # 服务层：靶机实例生命周期管理，使用 docker_manager/redis_client 占位调用。
 from apps.common.infra import docker_manager
 from apps.common.infra import redis_client
-from apps.common.infra.logger import get_logger
+from apps.common.infra.logger import get_logger, logger_extra
 from apps.common.utils.redis_keys import machine_ports_key
 
 logger = get_logger(__name__)
@@ -99,6 +99,20 @@ class MachineStartService(BaseService[MachineInstance]):
                 "status": MachineInstance.Status.RUNNING,
             }
         )
+        logger.info(
+            "靶机启动成功",
+            extra=logger_extra(
+                {
+                    "machine_id": instance.id,
+                    "contest": contest.slug,
+                    "challenge": challenge.slug,
+                    "user_id": user.id,
+                    "team_id": getattr(membership, "team_id", None),
+                    "container_id": container_id,
+                    "port": port,
+                }
+            ),
+        )
         return instance
 
     def _allocate_port(self) -> int:
@@ -116,6 +130,7 @@ class MachineStartService(BaseService[MachineInstance]):
                 # 写入 redis 记录占用，设置短期过期以防泄漏
                 redis_client.set_json(key, list(used | {port}), ex=300)
                 return port
+        logger.warning("端口分配失败", extra=logger_extra({"used_count": len(used)}))
         raise ConflictError(message="端口分配失败，请稍后重试")
 
     def _start_container(self, challenge_slug: str, port: int) -> str:
@@ -135,7 +150,10 @@ class MachineStartService(BaseService[MachineInstance]):
             )
         except Exception:
             # 记录异常并提示前端稍后重试，避免产生无法控制的实例记录
-            logger.exception("启动靶机容器失败", extra={"challenge": challenge_slug, "port": port})
+            logger.exception(
+                "启动靶机容器失败",
+                extra=logger_extra({"challenge": challenge_slug, "port": port}),
+            )
             raise ConflictError(message="靶机启动失败，请稍后重试")
 
 
@@ -166,6 +184,19 @@ class MachineStopService(BaseService[MachineInstance]):
         instance.status = MachineInstance.Status.STOPPED
         instance.container_id = instance.container_id or ""
         instance.save(update_fields=["status", "updated_at", "container_id"])
+        logger.info(
+            "靶机停止",
+            extra=logger_extra(
+                {
+                    "machine_id": instance.id,
+                    "contest": instance.contest.slug,
+                    "challenge": instance.challenge.slug,
+                    "user_id": user.id,
+                    "team_id": instance.team_id,
+                    "container_id": instance.container_id,
+                }
+            ),
+        )
         return instance
 
     def _user_in_team(self, user: User, team_id: Optional[int]) -> bool:

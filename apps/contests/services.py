@@ -20,6 +20,7 @@ from apps.challenges.serializers import serialize_challenge
 from apps.submissions.repo import SubmissionRepo
 from apps.common.infra import redis_client
 from apps.common.utils.redis_keys import scoreboard_key
+from apps.common.infra.logger import get_logger, logger_extra
 
 from .models import Contest, Team, TeamMember, ContestAnnouncement
 from .repo import ContestRepo, TeamRepo, TeamMemberRepo, ContestAnnouncementRepo
@@ -36,6 +37,7 @@ from .schemas import (
 
 # 服务层：实现比赛、公告、队伍的业务流程，依赖仓储与 Schema 校验。
 
+logger = get_logger(__name__)
 
 def serialize_contest(contest: Contest) -> dict:
     """比赛序列化：提供比赛基础信息与状态，用于 API 返回。"""
@@ -160,7 +162,9 @@ class CreateContestService(BaseService[Contest]):
         # 将 Schema 转为字典，去除无关字段后落库
         data = schema.to_dict(exclude_none=True)
         data.pop("contest_slug", None)
-        return self.repo.create(data)
+        contest = self.repo.create(data)
+        logger.info("创建比赛", extra=logger_extra({"contest": contest.slug}))
+        return contest
 
 
 class ContestAnnouncementService(BaseService[ContestAnnouncement]):
@@ -185,7 +189,12 @@ class ContestAnnouncementService(BaseService[ContestAnnouncement]):
         payload = schema.to_dict(exclude_none=True)
         payload.pop("contest_slug", None)
         payload["contest"] = contest
-        return self.announcement_repo.create(payload)
+        announcement = self.announcement_repo.create(payload)
+        logger.info(
+            "创建比赛公告",
+            extra=logger_extra({"contest": contest.slug, "announcement": announcement.id}),
+        )
+        return announcement
 
 
 class TeamCreateService(BaseService[Team]):
@@ -229,6 +238,10 @@ class TeamCreateService(BaseService[Team]):
             description=schema.description,
         )
         self.member_repo.create_member(team=team, user=user, role=TeamMember.Role.CAPTAIN)
+        logger.info(
+            "创建队伍",
+            extra=logger_extra({"contest": contest.slug, "team": team.slug, "user_id": user.id}),
+        )
         return team
 
 
@@ -266,12 +279,29 @@ class TeamJoinService(BaseService[TeamMember]):
             raise NotFoundError(message="邀请码无效")
         # 3) 校验人数上限、用户未在其他队伍、比赛未结束
         if team.member_count >= contest.max_team_members:
+            logger.warning(
+                "加入队伍失败：人数已满",
+                extra=logger_extra({"contest": contest.slug, "team": team.slug, "user_id": user.id}),
+            )
             raise ConflictError(message="队伍人数已满")
         if self.member_repo.get_membership(contest=contest, user=user):
+            logger.warning(
+                "加入队伍失败：已在队伍",
+                extra=logger_extra({"contest": contest.slug, "user_id": user.id}),
+            )
             raise ConflictError(message="您已经加入了一支队伍")
         if contest.has_ended:
+            logger.warning(
+                "加入队伍失败：比赛已结束",
+                extra=logger_extra({"contest": contest.slug, "team": team.slug, "user_id": user.id}),
+            )
             raise ConflictError(message="比赛已结束，无法加入队伍")
-        return self.member_repo.create_member(team=team, user=user, role=TeamMember.Role.MEMBER)
+        member = self.member_repo.create_member(team=team, user=user, role=TeamMember.Role.MEMBER)
+        logger.info(
+            "加入队伍",
+            extra=logger_extra({"contest": contest.slug, "team": team.slug, "user_id": user.id}),
+        )
+        return member
 
 
 class TeamLeaveService(BaseService[None]):
@@ -302,9 +332,17 @@ class TeamLeaveService(BaseService[None]):
         if membership.role == TeamMember.Role.CAPTAIN:
             team = membership.team
             if team.member_count > 1:
+                logger.warning(
+                    "退出队伍失败：队长且队伍多人",
+                    extra=logger_extra({"contest": contest.slug, "team": team.slug, "user_id": user.id}),
+                )
                 raise ConflictError(message="队长请先将队伍解散或移交队长后再退出")
         # 3) 标记成员无效
         self.member_repo.remove_member(membership)
+        logger.info(
+            "退出队伍",
+            extra=logger_extra({"contest": contest.slug, "team": membership.team.slug, "user_id": user.id}),
+        )
 
 
 class TeamDisbandService(BaseService[Team]):
@@ -338,6 +376,10 @@ class TeamDisbandService(BaseService[Team]):
         team.is_active = False
         team.invite_token = secrets.token_hex(4)
         team.save(update_fields=["is_active", "invite_token", "updated_at"])
+        logger.info(
+            "解散队伍",
+            extra=logger_extra({"team": team.slug, "contest": getattr(team.contest, 'slug', None), "user_id": getattr(user, 'id', None)}),
+        )
         return team
 
 
@@ -358,7 +400,12 @@ class TeamInviteResetService(BaseService[Team]):
             raise PermissionDeniedError(message="仅队长或管理员可重置邀请码")
         # 使用随机 token 生成新邀请码
         token = secrets.token_hex(4)
-        return self.team_repo.reset_invite_token(team, token=token)
+        result = self.team_repo.reset_invite_token(team, token=token)
+        logger.info(
+            "重置队伍邀请码",
+            extra=logger_extra({"team": team.slug, "contest": getattr(team.contest, 'slug', None), "user_id": getattr(user, 'id', None)}),
+        )
+        return result
 
 
 class TeamTransferService(BaseService[Team]):
@@ -405,6 +452,12 @@ class TeamTransferService(BaseService[Team]):
         membership.role = TeamMember.Role.CAPTAIN
         membership.save(update_fields=["role"])
         self.member_repo.filter(team=team, user_id=old_captain_id).update(role=TeamMember.Role.MEMBER, is_active=True)
+        logger.info(
+            "移交队长",
+            extra=logger_extra(
+                {"team": team.slug, "contest": getattr(team.contest, 'slug', None), "old_captain": old_captain_id, "new_captain": target_user.id}
+            ),
+        )
         return team
 
 
@@ -417,9 +470,9 @@ class ScoreboardService(BaseService[list[dict]]):
     atomic_enabled = False
     cache_ttl_seconds: int = 30
 
-    def perform(self, contest: Contest) -> list[dict]:
+    def perform(self, contest: Contest, *, ignore_freeze: bool = False) -> list[dict]:
         """计算记分板：汇总解题记录并排序。"""
-        cache_key = self.cache_key(contest.id)
+        cache_key = self.cache_key(contest.id, ignore_freeze=ignore_freeze)
         cached = redis_client.get_json(cache_key)
         if isinstance(cached, list):
             return cached
@@ -427,55 +480,69 @@ class ScoreboardService(BaseService[list[dict]]):
         # 1) 计算封榜/截止时间，封榜后只统计封榜前的解题；否则以比赛结束时间为上限
         now = timezone.now()
         cutoff = contest.end_time
-        if contest.freeze_time and now >= contest.freeze_time:
+        if contest.freeze_time and now >= contest.freeze_time and not ignore_freeze:
             cutoff = min(contest.freeze_time, contest.end_time)
 
-        # 2) 查询满足时间窗口的解题，按时间排序
-        solves = (
+        # 2) 查询满足时间窗口的解题，按时间排序（裁剪字段，减少 IO）
+        solve_rows = (
             ChallengeSolve.objects.filter(challenge__contest=contest, solved_at__lte=cutoff)
             .select_related("challenge", "team", "user")
+            .values(
+                "challenge__slug",
+                "team_id",
+                "user_id",
+                "awarded_points",
+                "solved_at",
+                "team__slug",
+                "team__name",
+                "user__username",
+            )
             .order_by("solved_at")
         )
         board: dict[str, dict] = {}
-        for solve in solves:
+        for solve in solve_rows:
             key: str
             entry: dict
-            if contest.is_team_based and solve.team:
+            if contest.is_team_based and solve["team_id"]:
                 # 组队赛：按队伍汇总
-                key = f"team-{solve.team_id}"
+                key = f"team-{solve['team_id']}"
                 entry = board.setdefault(
                     key,
                     {
                         "type": "team",
-                        "team": serialize_team(solve.team),
+                        "team": {
+                            "id": solve["team_id"],
+                            "name": solve["team__name"],
+                            "slug": solve["team__slug"],
+                        },
                         "score": 0,
-                        "last_solve": solve.solved_at,
+                        "last_solve": solve["solved_at"],
                         "solves": [],
                     },
                 )
             else:
                 # 个人赛：按用户汇总
-                key = f"user-{solve.user_id}"
+                key = f"user-{solve['user_id']}"
                 entry = board.setdefault(
                     key,
                     {
                         "type": "user",
                         "user": {
-                            "id": solve.user_id,
-                            "username": solve.user.username,
+                            "id": solve["user_id"],
+                            "username": solve["user__username"],
                         },
                         "score": 0,
-                        "last_solve": solve.solved_at,
+                        "last_solve": solve["solved_at"],
                         "solves": [],
                     },
                 )
-            entry["score"] += solve.awarded_points
-            entry["last_solve"] = solve.solved_at
+            entry["score"] += solve["awarded_points"]
+            entry["last_solve"] = solve["solved_at"]
             entry["solves"].append(
                 {
-                    "challenge": solve.challenge.slug,
-                    "points": solve.awarded_points,
-                    "solved_at": solve.solved_at,
+                    "challenge": solve["challenge__slug"],
+                    "points": solve["awarded_points"],
+                    "solved_at": solve["solved_at"],
                 }
             )
 
@@ -507,14 +574,16 @@ class ScoreboardService(BaseService[list[dict]]):
         return result
 
     @staticmethod
-    def cache_key(contest_id: int) -> str:
-        # 生成记分板缓存键，便于缓存读写
-        return scoreboard_key(contest_id)
+    def cache_key(contest_id: int, *, ignore_freeze: bool = False) -> str:
+        # 生成记分板缓存键，便于缓存读写；后台忽略封榜时区分缓存键
+        suffix = "admin" if ignore_freeze else "front"
+        return f"{scoreboard_key(contest_id)}:{suffix}"
 
     @classmethod
     def invalidate_cache(cls, contest_id: int) -> None:
         # 主动失效记分板缓存，供提交/判题后调用
         redis_client.delete(cls.cache_key(contest_id))
+        redis_client.delete(cls.cache_key(contest_id, ignore_freeze=True))
 
 
 class ContestExportService(BaseService[dict]):

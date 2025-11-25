@@ -73,7 +73,17 @@ def _handle_unexpected_exception(exc: Exception, context: dict) -> Response:
     - 记录完整异常堆栈到日志；
     - 返回统一的 500 错误响应（不泄露内部细节）。
     """
-    logger.exception("Unhandled exception in API", exc_info=exc)
+    req = context.get("request")
+    user = getattr(req, "user", None)
+    logger.exception(
+        "Unhandled exception in API",
+        exc_info=exc,
+        extra={
+            "path": getattr(req, "path", None),
+            "method": getattr(req, "method", None),
+            "user_id": getattr(user, "id", None) if user and getattr(user, "is_authenticated", False) else None,
+        },
+    )
 
     return api_response(
         code=50000,

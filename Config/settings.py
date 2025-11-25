@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -57,6 +58,7 @@ INSTALLED_APPS = [
     'corsheaders',  # pip install django-cors-headers
     'django_filters',
     'drf_spectacular',  # django rest framework 自动生成 API 文档
+    'captcha',  # 图形验证码
 
     # 业务
     'apps.accounts',
@@ -80,6 +82,7 @@ AUTHENTICATION_BACKENDS = [
 # 中间件
 # --------------------------------------------------------------------------------------
 MIDDLEWARE = [
+    "apps.common.middleware.RequestContextMiddleware",
     'corsheaders.middleware.CorsMiddleware',  # 必须放最前
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -293,6 +296,15 @@ CACHES = {
 DOCKER_HOST = os.getenv("DOCKER_HOST", None)  # 默认 None，走本机 /var/run/docker.sock 或 Windows 管道
 DOCKER_TLS_VERIFY = os.getenv("DOCKER_TLS_VERIFY", "0")  # 远程 TLS 场景再用
 DOCKER_CERT_PATH = os.getenv("DOCKER_CERT_PATH", None)  # 同上
+DOCKER_USE_MOCK = os.getenv("DOCKER_USE_MOCK", "0") == "1"
+DOCKER_IMAGE_PREFIX = os.getenv("DOCKER_IMAGE_PREFIX", "")
+DOCKER_IMAGE_TAG = os.getenv("DOCKER_IMAGE_TAG", "latest")
+DOCKER_CONTAINER_PORT = int(os.getenv("DOCKER_CONTAINER_PORT", "80"))
+DOCKER_NETWORK = os.getenv("DOCKER_NETWORK", None)
+
+# 靶机运行时长（分钟）与清理间隔（秒）
+MACHINE_MAX_RUNTIME_MINUTES = int(os.getenv("MACHINE_MAX_RUNTIME_MINUTES", "30"))
+MACHINE_CLEAN_INTERVAL_SECONDS = int(os.getenv("MACHINE_CLEAN_INTERVAL_SECONDS", "300"))
 
 # --------------------------------------------------------------------------------------
 # 邮件配置
@@ -365,4 +377,65 @@ CORS_ALLOW_ALL_ORIGINS = True
 # Spectacular OpenAPI 扩展加载（注册自定义 JWT 认证扩展）
 # --------------------------------------------------------------------------------------
 from apps.common import openapi as _common_openapi  # noqa: F401
+
+# --------------------------------------------------------------------------------------
+# 日志配置：默认输出到本地日志文件（不落 stdout）
+# --------------------------------------------------------------------------------------
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = os.getenv("LOG_FILE", str(LOG_DIR / "ftc.log"))
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+LOG_FORMAT = os.getenv("LOG_FORMAT", "json").lower()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "plain": {
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s [request_id=%(request_id)s user_id=%(user_id)s ip=%(ip)s path=%(path)s method=%(method)s]",
+        },
+        "json": {
+            "format": '{"time":"%(asctime)s","level":"%(levelname)s","logger":"%(name)s","message":"%(message)s","request_id":"%(request_id)s","user_id":"%(user_id)s","ip":"%(ip)s","path":"%(path)s","method":"%(method)s"}',
+        },
+    },
+    "handlers": {
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": LOG_FILE,
+            "formatter": "json" if LOG_FORMAT == "json" else "plain",
+            "encoding": "utf-8",
+            "filters": ["request_context"],
+        },
+    },
+    "filters": {
+        "request_context": {
+            "()": "apps.common.infra.logger.RequestContextFilter",
+        }
+    },
+    "root": {
+        "handlers": ["file"],
+        "level": LOG_LEVEL,
+    },
+}
+
+# --------------------------------------------------------------------------------------
+# Celery 配置
+# --------------------------------------------------------------------------------------
+CELERY_BROKER_URL = os.getenv(
+    "CELERY_BROKER_URL",
+    f"redis://{REDIS_HOST}:{REDIS_PORT}/{os.getenv('REDIS_DB_CELERY', '1')}",
+)
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND",
+    f"redis://{REDIS_HOST}:{REDIS_PORT}/{os.getenv('REDIS_DB_CELERY_RESULT', '2')}",
+)
+# 默认队列名称
+CELERY_TASK_DEFAULT_QUEUE = os.getenv("CELERY_TASK_DEFAULT_QUEUE", "default")
+# Celery Beat 定时任务：靶机超时清理
+CELERY_BEAT_SCHEDULE = {
+    "cleanup-expired-machines": {
+        "task": "apps.machines.tasks.cleanup_expired_machines",
+        "schedule": timedelta(seconds=MACHINE_CLEAN_INTERVAL_SECONDS),
+    }
+}
 

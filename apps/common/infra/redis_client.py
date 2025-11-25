@@ -13,9 +13,11 @@ from typing import Any, Optional
 
 import django
 from django.conf import settings
+from apps.common.infra.logger import get_logger
 
 _USE_MOCK = os.getenv("REDIS_USE_MOCK", "0") == "1"
 _mock_store: dict[str, Any] = {}
+_logger = get_logger(__name__)
 
 try:
     import redis  # type: ignore
@@ -34,7 +36,14 @@ def _get_client():
     port = int(getattr(settings, "REDIS_PORT", 6379))
     db = int(getattr(settings, "REDIS_DB_CACHE", 0))
     password = os.getenv("REDIS_PASSWORD", None)
-    return redis.Redis(host=host, port=port, db=db, password=password, decode_responses=True)
+    try:
+        return redis.Redis(host=host, port=port, db=db, password=password, decode_responses=True)
+    except Exception as exc:
+        _logger.exception(
+            "Redis 连接失败",
+            extra={"host": host, "port": port, "db": db},
+        )
+        raise
 
 
 def set(key: str, value: Any, ex: Optional[int] = None) -> None:

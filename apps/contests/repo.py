@@ -35,7 +35,7 @@ class ContestAnnouncementRepo(BaseRepo[ContestAnnouncement]):
     def list_active(self, contest: Contest):
         """获取比赛下所有有效公告，按创建时间倒序。"""
         # 仅返回 is_active=True 的公告，供前台列表展示
-        return self.filter(contest=contest, is_active=True).order_by("-created_at")
+        return self.filter(contest=contest, is_active=True).select_related("contest").order_by("-created_at")
 
     def get_by_id(self, pk: int) -> ContestAnnouncement:
         """根据 ID 获取公告，未找到抛业务级 404。"""
@@ -79,9 +79,13 @@ class TeamRepo(BaseRepo[Team]):
         """依据主键获取队伍，常用于权限校验或后续更新。"""
         # 通过主键获取队伍，未找到抛业务级 404
         try:
-            return self.filter(pk=pk).get()
+            return self.filter(pk=pk).select_related("contest", "captain").get()
         except Team.DoesNotExist as exc:  # type: ignore[attr-defined]
             raise NotFoundError(message="队伍不存在") from exc
+
+    def filter_with_related(self, **kwargs):
+        """常用列表查询带上外键，减少 N+1。"""
+        return self.filter(**kwargs).select_related("contest", "captain")
 
     def reset_invite_token(self, team: Team, *, token: str) -> Team:
         """重置队伍邀请码。"""
@@ -113,7 +117,7 @@ class TeamMemberRepo(BaseRepo[TeamMember]):
         # 查询用户在某比赛的有效队伍关系
         return (
             self.filter(team__contest=contest, user=user, is_active=True)
-            .select_related("team")
+            .select_related("team", "team__contest", "user")
             .first()
         )
 
@@ -126,4 +130,4 @@ class TeamMemberRepo(BaseRepo[TeamMember]):
     def active_members(self, team: Team):
         """获取队伍当前有效成员列表，常用于解散或统计。"""
         # 获取队伍当前有效成员列表
-        return self.filter(team=team, is_active=True).select_related("user")
+        return self.filter(team=team, is_active=True).select_related("user", "team", "team__contest")

@@ -15,6 +15,9 @@ from rest_framework.throttling import SimpleRateThrottle
 from rest_framework.exceptions import Throttled
 
 from .exceptions import RateLimitError
+from apps.common.infra.logger import get_logger, logger_extra
+
+logger = get_logger(__name__)
 
 
 # ======================
@@ -31,6 +34,14 @@ def raise_rate_limit(exc: Throttled) -> None:
     detail = getattr(exc, "detail", None)
     message = str(detail) if detail else "请求过于频繁，请稍后再试"
 
+    logger.warning(
+        "限流触发",
+        extra=logger_extra(
+            {
+                "message": message,
+            }
+        ),
+    )
     raise RateLimitError(
         message=message,
         extra={"wait": wait, "raw_detail": detail}

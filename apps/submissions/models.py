@@ -50,6 +50,11 @@ class Submission(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["contest", "created_at"]),
+            models.Index(fields=["challenge", "user"]),
+            models.Index(fields=["challenge", "team"]),
+        ]
         verbose_name = "Flag 提交"
         verbose_name_plural = "Flag 提交"
 

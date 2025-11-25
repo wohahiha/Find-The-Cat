@@ -18,6 +18,9 @@ from .repo import (
     ChallengeHintRepo,
 )
 from .schemas import ChallengeCreateSchema, ChallengeUpdateSchema
+from apps.common.infra.logger import get_logger, logger_extra
+
+logger = get_logger(__name__)
 
 
 class ChallengeCreateService(BaseService[Challenge]):
@@ -65,6 +68,12 @@ class ChallengeCreateService(BaseService[Challenge]):
         self._sync_tasks(challenge, tasks)
         self._sync_attachments(challenge, attachments)
         self._sync_hints(challenge, hints)
+        logger.info(
+            "创建题目",
+            extra=logger_extra(
+                {"challenge": challenge.slug, "contest": contest.slug, "user_id": getattr(user, "id", None)}
+            ),
+        )
         return challenge
 
     def _sync_tasks(self, challenge: Challenge, tasks_data: list) -> None:
@@ -156,4 +165,15 @@ class ChallengeUpdateService(BaseService[Challenge]):
         if "hints" in payload:
             challenge.hints.all().delete()
             self._sync_hints(challenge, payload.get("hints", []))
+        logger.info(
+            "更新题目",
+            extra=logger_extra(
+                {
+                    "challenge": challenge.slug,
+                    "contest": contest.slug,
+                    "is_active": challenge.is_active,
+                    "user_id": getattr(schema, "operator_id", None),
+                }
+            ),
+        )
         return challenge

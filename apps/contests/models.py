@@ -70,6 +70,19 @@ class Contest(models.Model):
         return timezone.now() > self.end_time
 
 
+class ContestScoreboard(Contest):
+    """
+    比赛排行榜代理模型：
+    - 仅用于 Django Admin 展示排行榜，不新增数据库表。
+    - 复用 Contest 数据，提供后台排行榜视图。
+    """
+
+    class Meta:
+        proxy = True
+        verbose_name = "排行榜"
+        verbose_name_plural = "排行榜"
+
+
 class ContestAnnouncement(models.Model):
     """
     比赛公告模型：
@@ -93,6 +106,9 @@ class ContestAnnouncement(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["contest", "is_active", "created_at"]),
+        ]
         verbose_name = "比赛公告"
         verbose_name_plural = "比赛公告"
 
@@ -174,8 +190,12 @@ class TeamMember(models.Model):
 
     class Meta:
         unique_together = ("team", "user")
-        verbose_name = "队伍成员"
-        verbose_name_plural = "队伍成员"
+        indexes = [
+            models.Index(fields=["team", "is_active"]),
+            models.Index(fields=["team", "user", "is_active"]),
+        ]
+        verbose_name = "参赛队伍成员"
+        verbose_name_plural = "参赛队伍成员"
 
     def __str__(self) -> str:
         return f"{self.user} -> {self.team}"

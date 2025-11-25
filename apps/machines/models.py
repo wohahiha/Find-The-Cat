@@ -44,6 +44,10 @@ class MachineInstance(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["contest", "challenge", "user", "status"]),
+            models.Index(fields=["port"]),
+        ]
         verbose_name = "靶机实例"
         verbose_name_plural = "靶机实例"
 

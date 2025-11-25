@@ -107,20 +107,26 @@ class LoginSchema(BaseSchema[None]):
     """
     登录入参 Schema：
     - 接收用户名或邮箱作为 identifier。
-    - 校验字段非空与基本长度。
+    - 校验密码与图形验证码。
     """
     auto_validate: ClassVar[bool] = True
     # identifier：用户名或邮箱，用于兼容双字段登录
     identifier: str  # 用户名或邮箱
     # 登录密码
     password: str
+    # 图形验证码 key（后端生成）
+    captcha_key: str
+    # 图形验证码用户输入
+    captcha_code: str
 
     def validate(self) -> None:
-        """校验 identifier 与密码非空，identifier 长度需至少 3，保证基本合法性。"""
+        """校验登录凭据与图形验证码字段非空，identifier 长度需至少 3。"""
         if not self.identifier or len(self.identifier) < 3:
             raise ValidationError(message="请输入正确的用户名或邮箱")
         if not self.password:
             raise ValidationError(message="请输入密码")
+        if not self.captcha_key or not self.captcha_code:
+            raise ValidationError(message="请完成图形验证码")
 
 
 @dataclass

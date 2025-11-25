@@ -11,6 +11,7 @@ import secrets
 from typing import Optional
 
 from django.conf import settings
+from apps.common.infra.logger import get_logger
 
 _USE_MOCK = os.getenv("DOCKER_USE_MOCK", "0") == "1"
 # 镜像前缀/标签、容器端口、网络等配置，通过环境变量控制，便于举办方自定义
@@ -24,6 +25,8 @@ try:
 except Exception:  # pragma: no cover
     docker = None
     _USE_MOCK = True
+
+_logger = get_logger(__name__)
 
 
 def _get_client():
@@ -46,7 +49,11 @@ def _get_client():
             ca_cert=os.path.join(cert_path, "ca.pem"),
         )
         kwargs["tls"] = tls_config
-    return docker.from_env(**kwargs) if not host else docker.DockerClient(**kwargs)
+    try:
+        return docker.from_env(**kwargs) if not host else docker.DockerClient(**kwargs)
+    except Exception:
+        _logger.exception("Docker client 连接失败", extra={"host": host or "local"})
+        raise
 
 
 def start_container(

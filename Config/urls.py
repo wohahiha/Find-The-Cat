@@ -25,6 +25,7 @@ admin.site.index_title = "管理控制台"
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('captcha/', include('captcha.urls')),
     path('api/accounts/', include('apps.accounts.urls')),
     path('api/contests/', include('apps.contests.urls')),
     path('api/submissions/', include('apps.submissions.urls')),

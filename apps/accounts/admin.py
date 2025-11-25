@@ -27,6 +27,7 @@ from apps.common.permission_sets import (
     DEFAULT_USER_GROUP,
     get_permission_label,
 )
+from apps.common.infra.logger import get_logger, logger_extra
 from .models import (
     EmailVerificationCode,
     MailAccount,
@@ -34,6 +35,56 @@ from .models import (
     StaffUser,
     User,
 )
+
+logger = get_logger(__name__)
+
+
+class AdminAuditMixin:
+    """后台审计日志：记录增删改关键对象。"""
+
+    audit_model = ""
+
+    def log_change(self, request, object, message):
+        super().log_change(request, object, message)
+        logger.info(
+            "Admin修改",
+            extra=logger_extra(
+                {
+                    "admin": getattr(request.user, "username", None),
+                    "model": self.audit_model or object.__class__.__name__,
+                    "object_id": getattr(object, "pk", None),
+                    "action": "change",
+                }
+            ),
+        )
+
+    def log_addition(self, request, object, message):
+        super().log_addition(request, object, message)
+        logger.info(
+            "Admin新增",
+            extra=logger_extra(
+                {
+                    "admin": getattr(request.user, "username", None),
+                    "model": self.audit_model or object.__class__.__name__,
+                    "object_id": getattr(object, "pk", None),
+                    "action": "add",
+                }
+            ),
+        )
+
+    def log_deletion(self, request, object, object_repr):
+        super().log_deletion(request, object, object_repr)
+        logger.info(
+            "Admin删除",
+            extra=logger_extra(
+                {
+                    "admin": getattr(request.user, "username", None),
+                    "model": self.audit_model or object.__class__.__name__,
+                    "object_repr": object_repr,
+                    "action": "delete",
+                }
+            ),
+        )
 
 
 class FTCAdminAuthenticationForm(AdminAuthenticationForm):
@@ -204,6 +255,25 @@ class BaseUserAdmin(DjangoUserAdmin):
         password_field = form.base_fields.get("password")
         if password_field:
             password_field.label = "密码"
+        # 为详情页字段添加简洁帮助文字，方便管理员理解含义
+        help_texts = {
+            "username": "唯一的登录名，保存后不可随意修改。",
+            "email": "用于找回密码、通知等场景，必须唯一有效。",
+            "nickname": "展示用昵称，前台显示使用。",
+            "avatar": "用户头像文件，留空则显示默认头像。",
+            "bio": "个人简介，前台资料页展示。",
+            "organization": "所属机构或学校，便于统计展示。",
+            "country": "国家/地区信息，便于榜单展示。",
+            "website": "个人站点或博客链接，需包含 http/https。",
+            "is_email_verified": "标记邮箱是否通过验证码验证。",
+            "is_active": "关闭后用户无法登录，保留数据。",
+            "groups": "后台权限组，决定可访问的模块与操作范围。",
+            "user_permissions": "细粒度权限，补充或覆盖所属用户组权限。",
+            "password": "存储加密后的密码，修改请使用“更改密码”表单。",
+        }
+        for field_name, text in help_texts.items():
+            if field_name in form.base_fields:
+                form.base_fields[field_name].help_text = text
         return form
 
     # 详情页字段布局：基础信息/个人信息/状态
@@ -401,7 +471,7 @@ class BaseUserAdmin(DjangoUserAdmin):
 
 # @admin.register：将普通用户的管理配置注册到后台站点
 @admin.register(PlayerUser)
-class PlayerUserAdmin(BaseUserAdmin):
+class PlayerUserAdmin(AdminAuditMixin, BaseUserAdmin):
     """
     普通用户后台管理：
 
@@ -433,6 +503,7 @@ class PlayerUserAdmin(BaseUserAdmin):
     list_display = BaseUserAdmin.list_display
     # 过滤条件：按有效/邮箱验证筛选
     list_filter = ("is_active", "is_email_verified")
+    audit_model = "PlayerUser"
 
     def get_queryset(self, request):
         """
@@ -505,7 +576,7 @@ class PlayerUserAdmin(BaseUserAdmin):
 
 # @admin.register：将管理员账户的管理配置注册到后台站点
 @admin.register(StaffUser)
-class StaffUserAdmin(BaseUserAdmin):
+class StaffUserAdmin(AdminAuditMixin, BaseUserAdmin):
     """
     管理员后台管理：
 
@@ -630,6 +701,7 @@ class StaffUserAdmin(BaseUserAdmin):
     def display_superuser(self, obj: User) -> bool:
         """列表显示是否为超级管理员，方便筛选和审计。"""
         return obj.is_superuser
+    audit_model = "StaffUser"
 
 
 # @admin.register：注册邮箱验证码记录的后台管理
@@ -645,6 +717,22 @@ class EmailVerificationCodeAdmin(admin.ModelAdmin):
     # 详情页只读，防止误改历史验证码
     readonly_fields = ("email", "scene", "code", "is_used", "expires_at", "verified_at", "created_at", "updated_at")
 
+    def get_form(self, request, obj=None, **kwargs):
+        """为验证码详情页字段添加说明，方便审计定位。"""
+        form = super().get_form(request, obj, **kwargs)
+        help_texts = {
+            "email": "验证码发送目标邮箱。",
+            "scene": "验证码使用场景，例如注册、找回密码、修改邮箱。",
+            "code": "发送给用户的验证码内容。",
+            "is_used": "标记是否已被验证通过。",
+            "expires_at": "验证码过期时间，过期后不可再使用。",
+            "verified_at": "用户完成验证的时间。",
+        }
+        for name, text in help_texts.items():
+            if name in form.base_fields:
+                form.base_fields[name].help_text = text
+        return form
+
     # 阻止新增/修改/删除，保持审计只读
     def has_add_permission(self, request):
         return False
@@ -658,7 +746,7 @@ class EmailVerificationCodeAdmin(admin.ModelAdmin):
 
 # @admin.register：注册邮件账号配置的后台管理
 @admin.register(MailAccount)
-class MailAccountAdmin(admin.ModelAdmin):
+class MailAccountAdmin(AdminAuditMixin, admin.ModelAdmin):
     """
     邮件账号后台：用于管理发送邮箱及其优先级。
 
@@ -683,3 +771,27 @@ class MailAccountAdmin(admin.ModelAdmin):
     search_fields = ("name", "username", "host")
     # 排序规则：按优先级升序排列，优先级越小越靠前
     ordering = ("priority",)
+    audit_model = "MailAccount"
+
+    def get_form(self, request, obj=None, **kwargs):
+        """为邮件账号详情页字段添加说明，避免误配发信参数。"""
+        form = super().get_form(request, obj, **kwargs)
+        help_texts = {
+            "name": "发信账号的显示名称，便于后台识别。",
+            "provider": "邮件服务提供商类型（如 SMTP、企业邮箱等）。",
+            "username": "发信账号用户名，通常为邮箱地址。",
+            "password": "发信授权码或密码，注意保密。",
+            "host": "SMTP 服务器地址。",
+            "port": "SMTP 服务器端口，通常 465/587。",
+            "use_ssl": "是否使用 SSL 连接，需与端口匹配。",
+            "use_tls": "是否使用 TLS，避免与 SSL 重复开启。",
+            "is_active": "关闭后不会参与发信。",
+            "is_default": "标记默认发信账号，优先使用。",
+            "priority": "数字越小优先级越高，同一场景按优先级选择账号。",
+            "from_email": "可选自定义发件人邮箱，不填则使用用户名。",
+            "reply_to": "设置回复地址，留空则默认发件人。",
+        }
+        for name, text in help_texts.items():
+            if name in form.base_fields:
+                form.base_fields[name].help_text = text
+        return form

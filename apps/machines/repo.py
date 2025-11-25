@@ -17,7 +17,7 @@ class MachineRepo(BaseRepo[MachineInstance]):
         """依据主键获取实例，未找到抛业务级 404。"""
         # 供停止/详情场景使用，避免直接操作 ORM 抛出默认异常
         try:
-            return self.filter(pk=pk).get()
+            return self.filter(pk=pk).select_related("contest", "challenge", "user", "team").get()
         except MachineInstance.DoesNotExist as exc:  # type: ignore[attr-defined]
             raise NotFoundError(message="靶机实例不存在") from exc
 
@@ -31,6 +31,7 @@ class MachineRepo(BaseRepo[MachineInstance]):
                 user=user,
                 status=MachineInstance.Status.RUNNING,
             )
+            .select_related("contest", "challenge", "user", "team")
             .order_by("-created_at")
             .first()
         )
@@ -44,3 +45,18 @@ class MachineRepo(BaseRepo[MachineInstance]):
             .exclude(port=None)
             .values_list("port", flat=True)
         )
+
+    def running_before(self, cutoff_time):
+        """获取超过指定时间仍在运行的实例 QuerySet。"""
+        return self.filter(status=MachineInstance.Status.RUNNING, created_at__lt=cutoff_time)
+
+    def mark_stopped(self, instance: MachineInstance, *, clear_port: bool = True) -> MachineInstance:
+        """
+        标记实例为已停止，必要时清理端口与容器 ID。
+        """
+        instance.status = MachineInstance.Status.STOPPED
+        if clear_port:
+            instance.port = None
+        instance.container_id = ""
+        instance.save(update_fields=["status", "port", "container_id", "updated_at"])
+        return instance

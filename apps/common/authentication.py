@@ -28,6 +28,9 @@ from rest_framework_simplejwt.exceptions import (
 )
 
 from .exceptions import TokenError, AuthError
+from .infra.logger import get_logger, logger_extra
+
+logger = get_logger(__name__)
 
 
 class JWTAuthentication(SimpleJWTAuthentication):
@@ -91,12 +94,20 @@ class JWTAuthentication(SimpleJWTAuthentication):
         except InvalidToken as exc:
             # Token 语法错误 / 过期 / 签名错误 / 被吊销等，统一为 TokenError
             # 具体错误原因不泄露给前端，只给出“登录状态失效”的友好提示
+            logger.warning(
+                "认证失败：无效或过期的 JWT",
+                extra=logger_extra({"reason": "invalid_token"}),
+            )
             raise TokenError(message="令牌无效或已过期，请重新登录") from exc
         except SimpleJWTAuthFailed as exc:
             # 其他认证失败情况（例如用户不存在、被禁用等）
             detail = getattr(exc, "detail", None)
             # detail 可能是 str / dict / ErrorDetail，统一转为 str
             message = str(detail) if detail is not None else "认证失败，请重新登录"
+            logger.warning(
+                "认证失败：用户校验失败",
+                extra=logger_extra({"reason": message}),
+            )
             raise AuthError(message=message) from exc
 
         # 5. 返回 (user, validated_token)，与 SimpleJWT 接口保持一致

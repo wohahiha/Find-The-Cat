@@ -104,7 +104,7 @@ class ContestDetailView(APIView):
                 data["my_team"] = serialize_team(team)
 
         # 读取比赛下的有效题目列表
-        challenges = self.challenge_repo.filter(contest=contest, is_active=True)
+        challenges = self.challenge_repo.list_active_with_related(contest=contest)
         membership = None
         if request.user.is_authenticated:
             membership = self.member_repo.get_membership(contest=contest, user=request.user)

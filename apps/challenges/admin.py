@@ -10,6 +10,57 @@ from django.contrib import admin, messages
 from django import forms
 from django.urls import reverse
 from django.utils.html import format_html, format_html_join
+from apps.common.infra.logger import get_logger, logger_extra
+
+logger = get_logger(__name__)
+
+
+class AdminAuditMixin:
+    """后台审计日志：记录增删改关键对象。"""
+
+    audit_model = ""
+
+    def log_change(self, request, object, message):
+        super().log_change(request, object, message)
+        logger.info(
+            "Admin修改",
+            extra=logger_extra(
+                {
+                    "admin": getattr(request.user, "username", None),
+                    "model": self.audit_model or object.__class__.__name__,
+                    "object_id": getattr(object, "pk", None),
+                    "action": "change",
+                }
+            ),
+        )
+
+    def log_addition(self, request, object, message):
+        super().log_addition(request, object, message)
+        logger.info(
+            "Admin新增",
+            extra=logger_extra(
+                {
+                    "admin": getattr(request.user, "username", None),
+                    "model": self.audit_model or object.__class__.__name__,
+                    "object_id": getattr(object, "pk", None),
+                    "action": "add",
+                }
+            ),
+        )
+
+    def log_deletion(self, request, object, object_repr):
+        super().log_deletion(request, object, object_repr)
+        logger.info(
+            "Admin删除",
+            extra=logger_extra(
+                {
+                    "admin": getattr(request.user, "username", None),
+                    "model": self.audit_model or object.__class__.__name__,
+                    "object_repr": object_repr,
+                    "action": "delete",
+                }
+            ),
+        )
 
 from .models import ChallengeCategory, Challenge, ChallengeSolve, ChallengeAttachment
 from .services import AttachmentUploadService
@@ -52,8 +103,9 @@ class ChallengeAdminForm(forms.ModelForm):
 
 
 @admin.register(ChallengeCategory)
-class ChallengeCategoryAdmin(admin.ModelAdmin):
+class ChallengeCategoryAdmin(AdminAuditMixin, admin.ModelAdmin):
     """题目分类后台：支持名称/slug 搜索与自动填充。"""
+    list_select_related = ()
     # 列表展示字段
     list_display = ("name", "slug")
     # 支持按名称/slug 搜索
@@ -61,9 +113,21 @@ class ChallengeCategoryAdmin(admin.ModelAdmin):
     # 根据 name 自动生成 slug
     prepopulated_fields = {"slug": ("name",)}
 
+    def get_form(self, request, obj=None, **kwargs):
+        """为分类详情页字段添加说明，避免命名冲突。"""
+        form = super().get_form(request, obj, **kwargs)
+        help_texts = {
+            "name": "分类名称，用于后台分组与前台展示。",
+            "slug": "分类标识，需唯一，建议使用英文/短横线组合。",
+        }
+        for name, text in help_texts.items():
+            if name in form.base_fields:
+                form.base_fields[name].help_text = text
+        return form
+
 
 @admin.register(Challenge)
-class ChallengeAdmin(admin.ModelAdmin):
+class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
     form = ChallengeAdminForm
     """
     题目后台：按前缀 + 花括号 + Flag 值的输入方式展示。
@@ -80,6 +144,15 @@ class ChallengeAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
     # 表单字段提示
     field_help_texts = {
+        "contest": "关联的比赛，影响榜单与计分范围。",
+        "category": "题目分类，便于后台筛选与前台分组展示。",
+        "difficulty": "题目难度标签，供出题人和选手参考。",
+        "base_points": "基础分值，动态模式下为起始分。",
+        "scoring_mode": "选择固定或动态计分，动态会随解出数量衰减。",
+        "decay_type": "动态计分衰减方式：百分比或线性递减。",
+        "decay_factor": "衰减系数，百分比模式填写 0-1，线性模式为每次递减分数。",
+        "min_score": "动态计分可衰减到的最低分，防止分值过低。",
+        "is_active": "关闭后选手不可见该题目，适合维护/下架。",
         "dynamic_prefix": "可选前缀，最终 Flag = 前缀 + '{' + Flag 值 + '}'；无需手写花括号。",
         "flag": "静态：填写完整 Flag 值；动态：填写种子，系统按赛题/解题人生成唯一值。",
         "flag_case_insensitive": "勾选后校验时不区分大小写。",
@@ -124,6 +197,9 @@ class ChallengeAdmin(admin.ModelAdmin):
     )
     # 只读字段：附件列表
     readonly_fields = ("existing_attachments",)
+    # 预取外键，避免列表页 N+1
+    list_select_related = ("contest", "category", "author")
+    audit_model = "Challenge"
 
     class Media:
         """后台表单静态资源：按计分模式动态显示衰减字段。"""
@@ -181,12 +257,28 @@ class ChallengeAdmin(admin.ModelAdmin):
 @admin.register(ChallengeSolve)
 class ChallengeSolveAdmin(admin.ModelAdmin):
     """解题记录后台：查看得分与解题时间，保持只读。"""
+    list_select_related = ("challenge", "challenge__contest", "user", "team")
     # 列表展示解题核心信息
     list_display = ("challenge", "user", "team", "awarded_points", "solved_at")
     # 过滤：按所属比赛
     list_filter = ("challenge__contest",)
     # 所有字段只读，防止后台修改历史记录
     readonly_fields = ("challenge", "user", "team", "awarded_points", "solved_at")
+
+    def get_form(self, request, obj=None, **kwargs):
+        """为解题记录详情页字段添加说明，方便审计。"""
+        form = super().get_form(request, obj, **kwargs)
+        help_texts = {
+            "challenge": "对应的题目，决定分值与所属比赛。",
+            "user": "解题的用户，个人赛必填。",
+            "team": "解题所属队伍，组队赛使用。",
+            "awarded_points": "当次解题获得的分值（已含动态衰减）。",
+            "solved_at": "解题时间，用于榜单排序与血次序。",
+        }
+        for name, text in help_texts.items():
+            if name in form.base_fields:
+                form.base_fields[name].help_text = text
+        return form
 
     def has_add_permission(self, request):
         """禁止后台新增解题记录，避免污染榜单。"""
@@ -199,3 +291,4 @@ class ChallengeSolveAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         """禁止后台删除解题记录。"""
         return False
+    audit_model = "ChallengeCategory"

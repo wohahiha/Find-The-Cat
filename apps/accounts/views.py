@@ -14,6 +14,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample
+from captcha.models import CaptchaStore
+from captcha.helpers import captcha_image_url
 
 from apps.common import response
 from apps.common.permissions import IsAuthenticated, AllowAny
@@ -140,11 +143,27 @@ class LoginView(APIView):
     # 登录限流：使用登录专用节流器
     throttle_classes = [LoginRateThrottle]
 
-    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
+        responses=OpenApiTypes.OBJECT,
+        examples=[
+            OpenApiExample(
+                "登录请求示例",
+                value={
+                    "identifier": "alice 或 alice@example.com",
+                    "password": "Passw0rd123",
+                    "captcha_key": "abcd1234",
+                    "captcha_code": "XyZ1",
+                },
+                description="captcha_key/captcha_code 由获取验证码接口返回与输入。",
+            )
+        ],
+    )
     def post(self, request: Request) -> Response:
         """
         登录流程：
         - 校验 identifier/password。
+        - 校验 captcha_key/captcha_code 图形验证码。
         - 执行 LoginService 获取 token 与用户信息。
         - 写入 HttpOnly JWT Cookie（可配置关闭）。
         """
@@ -165,6 +184,23 @@ class LoginView(APIView):
         # 根据配置写入 JWT Cookie
         _set_jwt_cookie(resp, access_token=str(data["access"]))
         return resp
+
+
+class CaptchaView(APIView):
+    """
+    获取登录图形验证码：
+    - 返回 captcha_key 与验证码图片 URL。
+    - 前端需输入验证码并连同 key 传给登录接口。
+    """
+
+    permission_classes = [AllowAny]
+
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
+    def get(self, request: Request) -> Response:
+        # 生成验证码并返回图片地址与 key
+        key = CaptchaStore.generate_key()
+        image_url = captcha_image_url(key)
+        return response.success({"captcha_key": key, "image_url": image_url}, message="验证码已生成")
 
 
 class PasswordResetRequestView(APIView):

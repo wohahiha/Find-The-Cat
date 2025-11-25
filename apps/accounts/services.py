@@ -13,6 +13,7 @@ from uuid import uuid4
 
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
+from captcha.models import CaptchaStore
 
 from apps.common.base.base_service import BaseService
 from apps.common.exceptions import (
@@ -21,10 +22,11 @@ from apps.common.exceptions import (
     NotFoundError,
     InvalidCredentialsError,
     AccountInactiveError,
+    CaptchaValidationError,
 )
 
 from apps.common.infra.email_sender import send_mail_with_account, send_mail_with_settings
-from apps.common.infra.logger import get_logger
+from apps.common.infra.logger import get_logger, logger_extra
 
 from .models import User, EmailVerificationCode, MailAccount
 from .repo import UserRepo, EmailVerificationCodeRepo
@@ -127,7 +129,10 @@ class SendEmailVerificationService(BaseService[EmailVerificationCode]):
                 # 无专用账号时回退到 settings 邮件配置
                 send_mail_with_settings(subject=subject, body=body, to=[email])
         except Exception:
-            logger.exception("发送验证码邮件失败", extra={"email": email, "scene": scene})
+            logger.exception(
+                "发送验证码邮件失败",
+                extra=logger_extra({"email": email, "scene": scene}),
+            )
 
     def perform(self, schema: SendEmailCodeSchema) -> EmailVerificationCode:
         """
@@ -164,6 +169,10 @@ class SendEmailVerificationService(BaseService[EmailVerificationCode]):
 
         # 发送邮件，异常已在内部记录日志
         self._deliver(email=email, scene=scene, code=code)
+        logger.info(
+            "发送邮箱验证码",
+            extra=logger_extra({"email": email, "scene": scene}),
+        )
         return record
 
 
@@ -217,6 +226,7 @@ class RegisterService(BaseService[User]):
         self.user_repo.mark_email_verified(user)
         # 兜底分配默认用户权限
         assign_default_user_permissions(user)
+        logger.info("注册成功", extra=logger_extra({"user_id": user.id, "email": email}))
         return user
 
 
@@ -238,25 +248,53 @@ class LoginService(BaseService[dict[str, object]]):
         登录主流程：
         - 根据 identifier 获取用户。
         - 校验账户有效性与密码正确性。
+        - 校验图形验证码。
         - 颁发 JWT Refresh 与 Access。
         """
+        self._verify_captcha(schema.captcha_key, schema.captcha_code)
         identifier = schema.identifier
         user = self.user_repo.get_by_identifier(identifier)
         if user is None:
+            logger.warning(
+                "登录失败：账号不存在",
+                extra=logger_extra({"identifier": identifier}),
+            )
             raise InvalidCredentialsError(message="账号或密码错误")
 
         if not user.is_active:
+            logger.warning(
+                "登录失败：账户失效",
+                extra=logger_extra({"user_id": getattr(user, 'id', None), "identifier": identifier}),
+            )
             raise AccountInactiveError(message="账户失效，请联系管理员")
 
         if not user.check_password(schema.password):
+            logger.warning(
+                "登录失败：密码错误",
+                extra=logger_extra({"user_id": getattr(user, 'id', None), "identifier": identifier}),
+            )
             raise InvalidCredentialsError(message="账号或密码错误")
 
         refresh = RefreshToken.for_user(user)
+        logger.info(
+            "登录成功",
+            extra=logger_extra({"user_id": user.id, "identifier": identifier}),
+        )
         return {
             "refresh": str(refresh),
             "access": str(refresh.access_token),
             "user": serialize_user(user),
         }
+
+    def _verify_captcha(self, key: str, code: str) -> None:
+        """校验图形验证码，错误时抛出业务异常。"""
+        store = CaptchaStore.objects.filter(hashkey=key).first()
+        if not store:
+            raise CaptchaValidationError(message="验证码已失效，请刷新后重试")
+        # 验证后立即删除，避免重放
+        CaptchaStore.objects.filter(pk=store.pk).delete()
+        if store.response.lower() != code.lower():
+            raise CaptchaValidationError(message="验证码错误，请刷新后重试")
 
 
 class ResetPasswordService(BaseService[User]):
@@ -284,7 +322,12 @@ class ResetPasswordService(BaseService[User]):
         email = schema.email.lower()
         self.code_repo.consume(email=email, scene=EmailVerificationCode.Scene.RESET_PASSWORD, code=schema.code)
         user = self.user_repo.get_by_email(email)
-        return self.user_repo.set_password(user, schema.new_password)
+        user = self.user_repo.set_password(user, schema.new_password)
+        logger.info(
+            "重置密码成功",
+            extra=logger_extra({"user_id": user.id, "email": email}),
+        )
+        return user
 
 
 class UpdateProfileService(BaseService[User]):
@@ -326,7 +369,9 @@ class ChangePasswordService(BaseService[User]):
         """
         if not user.check_password(schema.old_password):
             raise InvalidCredentialsError(message="当前密码不正确")
-        return self.user_repo.set_password(user, schema.new_password)
+        user = self.user_repo.set_password(user, schema.new_password)
+        logger.info("修改密码成功", extra=logger_extra({"user_id": user.id}))
+        return user
 
 
 class ChangeEmailService(BaseService[User]):
@@ -368,6 +413,7 @@ class ChangeEmailService(BaseService[User]):
         user.email = new_email
         user.is_email_verified = True
         user.save(update_fields=["email", "is_email_verified", "updated_at"])
+        logger.info("修改邮箱成功", extra=logger_extra({"user_id": user.id, "email": new_email}))
         return user
 
 
@@ -420,5 +466,5 @@ class DeleteAccountService(BaseService[User]):
                 "updated_at",
             ]
         )
-        logger.info("User %s has been deactivated", user.pk)
+        logger.info("用户已注销", extra=logger_extra({"user_id": user.pk}))
         return user

@@ -46,6 +46,18 @@ class StandardPagination(PageNumberPagination):
             page=self.page.number,  # 当前页码（从 1 开始）
             page_size=self.page.paginator.per_page,  # 后端实际使用的 page_size
             total=self.page.paginator.count,  # 数据总条数
+            total_pages=self.page.paginator.num_pages,  # 总页数
             has_next=self.page.has_next(),  # 是否有下一页
             has_previous=self.page.has_previous(),  # 是否有上一页
+            next_page=self.page.next_page_number() if self.page.has_next() else None,
+            previous_page=self.page.previous_page_number() if self.page.has_previous() else None,
         )
+
+    def get_page_size(self, request: Request) -> int | None:
+        """
+        覆写以增加最小值校验，防止 page_size 为 0 或负值。
+        """
+        size = super().get_page_size(request)
+        if size is None:
+            return None
+        return max(1, size)

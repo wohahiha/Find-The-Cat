@@ -13,6 +13,7 @@ from apps.contests.services import ContestContextService, ScoreboardService
 from apps.contests.repo import TeamMemberRepo
 from apps.common.infra import redis_client
 from apps.common.utils.redis_keys import blood_rank_key, scoreboard_key
+from apps.common.infra.logger import get_logger, logger_extra
 
 from .models import Submission
 from .repo import SubmissionRepo
@@ -20,6 +21,7 @@ from .schemas import SubmissionCreateSchema
 
 # 服务层：处理提交记录、判题与解题日志写入。
 
+logger = get_logger(__name__)
 
 def serialize_submission(submission: Submission) -> dict:
     """提交记录序列化：返回判题状态、得分与关联实体。"""
@@ -78,7 +80,7 @@ class SubmissionService(BaseService[Submission]):
 
         # 2) 获取队伍关系与是否已解出
         membership = self.member_repo.get_membership(contest=contest, user=user)
-        existing_solve = self.solve_repo.get_user_solve(challenge=challenge, user=user)
+        existing_solve = self.solve_repo.get_user_solve_with_related(challenge=challenge, user=user)
 
         # 3) 若已解出，再次提交记为重复并抛出业务错误
         if existing_solve:
@@ -96,6 +98,18 @@ class SubmissionService(BaseService[Submission]):
                     "message": "你已经解出该题目",
                     "awarded_points": 0,
                 }
+            )
+            logger.info(
+                "判题-重复提交",
+                extra=logger_extra(
+                    {
+                        "submission_id": submission.id,
+                        "contest": contest.slug,
+                        "challenge": challenge.slug,
+                        "user_id": user.id,
+                        "team_id": getattr(membership, "team_id", None),
+                    }
+                ),
             )
             raise ChallengeAlreadySolvedError(message="你已经解出该题目")
 
@@ -126,6 +140,18 @@ class SubmissionService(BaseService[Submission]):
                     "message": "提交内容不正确",
                     "awarded_points": 0,
                 }
+            )
+            logger.info(
+                "判题-错误提交",
+                extra=logger_extra(
+                    {
+                        "submission_id": submission.id,
+                        "contest": contest.slug,
+                        "challenge": challenge.slug,
+                        "user_id": user.id,
+                        "team_id": getattr(membership, "team_id", None),
+                    }
+                ),
             )
             raise WrongFlagError(message="提交内容不正确")
 
@@ -165,6 +191,20 @@ class SubmissionService(BaseService[Submission]):
         submission.save(update_fields=["solve"])
         # 记分板快照失效，后续重新计算
         self._invalidate_scoreboard_cache(contest.id)
+        logger.info(
+            "判题-正确提交",
+            extra=logger_extra(
+                {
+                    "submission_id": submission.id,
+                    "contest": contest.slug,
+                    "challenge": challenge.slug,
+                    "user_id": user.id,
+                    "team_id": getattr(membership, "team_id", None),
+                    "awarded_points": awarded_points,
+                    "blood_rank": blood_rank,
+                }
+            ),
+        )
         return submission
 
     def visible_points_for_user(self, user: User | None, contest, challenge, membership=None) -> int:
