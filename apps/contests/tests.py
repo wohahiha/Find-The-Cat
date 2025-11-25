@@ -35,6 +35,7 @@ class ContestServiceTests(TestCase):
     """服务层单元测试：验证队伍创建/加入/移交与记分板逻辑。"""
 
     def setUp(self) -> None:
+        """构造一场进行中的比赛和两个普通用户供各用例复用。"""
         # 构造进行中的比赛和两个用户
         now = timezone.now()
         self.contest = Contest.objects.create(
@@ -116,6 +117,7 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
 
     @classmethod
     def setUpTestData(cls):
+        """一次性创建管理员和两个普通用户，供全局用例复用。"""
         cls.admin = User.objects.create_superuser(
             username="wohahiha",
             email="admin@example.com",
@@ -125,6 +127,7 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         cls.user2 = User.objects.create_user(username="bob", email="bob@example.com", password="Passw0rd123")
 
     def setUp(self):
+        """每个测试前重置时间窗口并清理缓存以避免限流影响。"""
         # 每个用例重置时间窗口并清理缓存，避免节流干扰
         self.now_minus = timezone.now() - timezone.timedelta(hours=1)
         self.now_plus = timezone.now() + timezone.timedelta(hours=1)

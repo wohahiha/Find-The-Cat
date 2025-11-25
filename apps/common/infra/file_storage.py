@@ -1,8 +1,8 @@
 """
-文件存储封装（本地占位版）。
+文件存储封装（本地+OSS 可切换）。
 
-- 默认将文件保存到 MEDIA_ROOT，返回相对路径与可选的访问 URL。
-- 预留接口便于未来接入 OSS/对象存储，只需替换存储实现。
+- 默认将文件保存到 MEDIA_ROOT，返回相对路径与访问 URL。
+- 预留 OSS 封装，方便切换对象存储，不影响调用方。
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ except Exception:  # pragma: no cover
 class LocalFileStorage:
     """
     本地文件存储。
-    - save_bytes: 将字节内容写入 MEDIA_ROOT/子目录。
+    - save_bytes: 将字节内容写入 MEDIA_ROOT/子目录，返回相对路径与 URL。
     """
 
     def __init__(self, base_dir: str | None = None):

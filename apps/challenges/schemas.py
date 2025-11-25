@@ -9,7 +9,7 @@ from apps.common.base.base_schema import BaseSchema
 from apps.common.exceptions import ValidationError
 from apps.common.utils.validators import validate_slug
 
-# Schema 层：定义题目创建/更新/提交的入参结构与校验逻辑。
+# Schema 层：定义题目创建/更新/提交/提示/附件上传的入参结构与校验逻辑，确保视图/服务收到的参数符合业务规则。
 
 
 @dataclass
@@ -60,7 +60,7 @@ class ChallengeCreateSchema(BaseSchema[None]):
     min_score: Optional[int] = None
 
     def validate(self) -> None:
-        """校验题目必填字段、分值、子任务与附件。"""
+        """校验题目必填字段、分值、子任务与附件，确保创建请求符合业务约束。"""
         if not self.title:
             raise ValidationError(message="题目标题不能为空")
         if not self.slug:

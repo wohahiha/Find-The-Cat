@@ -58,12 +58,14 @@ class MachineStartService(BaseService[MachineInstance]):
         member_repo: TeamMemberRepo | None = None,
         machine_repo: MachineRepo | None = None,
     ):
+        """注入比赛上下文、题目、成员与靶机仓储，便于测试替换。"""
         self.contest_service = contest_service or ContestContextService()
         self.challenge_repo = challenge_repo or ChallengeRepo()
         self.member_repo = member_repo or TeamMemberRepo()
         self.machine_repo = machine_repo or MachineRepo()
 
     def perform(self, user: User, schema: MachineStartSchema) -> MachineInstance:
+        """启动单个靶机实例，返回创建的实例记录。"""
         # 1) 获取比赛与题目，校验比赛进行中且题目开放
         contest = self.contest_service.get_contest(schema.contest_slug)
         self.contest_service.ensure_contest_running(contest)
@@ -147,10 +149,12 @@ class MachineStopService(BaseService[MachineInstance]):
     atomic_enabled = True
 
     def __init__(self, machine_repo: MachineRepo | None = None, member_repo: TeamMemberRepo | None = None):
+        """允许注入仓储，便于测试与替换实现。"""
         self.machine_repo = machine_repo or MachineRepo()
         self.member_repo = member_repo or TeamMemberRepo()
 
     def perform(self, user: User, schema: MachineStopSchema) -> MachineInstance:
+        """停止指定实例并更新状态，必要时校验团队权限。"""
         instance = self.machine_repo.get_by_id(schema.machine_id)
         # 权限：管理员或本实例关联用户/队伍
         if not (user.is_staff or instance.user_id == user.id or self._user_in_team(user, instance.team_id)):
@@ -165,12 +169,14 @@ class MachineStopService(BaseService[MachineInstance]):
         return instance
 
     def _user_in_team(self, user: User, team_id: Optional[int]) -> bool:
+        """检查用户是否属于指定队伍（活跃成员）。"""
         if team_id is None:
             return False
         membership = self.member_repo.filter(team_id=team_id, user=user, is_active=True).first()
         return membership is not None
 
     def _stop_container(self, container_id: str) -> None:
+        """调用 docker_manager 停止容器，异常时忽略以保证流程可继续。"""
         try:
             docker_manager.stop_container(container_id)
         except Exception:

@@ -22,7 +22,7 @@ from apps.submissions.services import SubmissionService
 
 
 class ChallengeListView(APIView):
-    """题目列表/创建接口：GET 需登录，POST 需管理员。"""
+    """题目列表/创建接口：GET 需登录查看，POST 需管理员创建。"""
     permission_classes = [IsAuthenticated]
     context_service = ContestContextService()
     challenge_repo = ChallengeRepo()
@@ -31,7 +31,7 @@ class ChallengeListView(APIView):
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, contest_slug: str) -> Response:
-        # 获取比赛并返回所有已开放题目
+        # 获取比赛并返回所有已开放题目，计算当前用户可得分（动态计分+提示扣分）
         contest = self.context_service.get_contest(contest_slug)
         challenges = self.challenge_repo.filter(contest=contest, is_active=True)
         membership = self.submit_service.member_repo.get_membership(contest=contest, user=request.user)
@@ -59,7 +59,7 @@ class ChallengeListView(APIView):
 
 
 class ChallengeDetailView(APIView):
-    """题目详情/更新接口：GET 需登录，PATCH 需管理员。"""
+    """题目详情/更新接口：GET 需登录查看，PATCH 需管理员更新。"""
     permission_classes = [IsAuthenticated]
     context_service = ContestContextService()
     challenge_repo = ChallengeRepo()
@@ -67,7 +67,7 @@ class ChallengeDetailView(APIView):
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, contest_slug: str, challenge_slug: str) -> Response:
-        # 获取题目并返回详情
+        # 获取题目并返回详情，附带当前可得分（动态计分+提示扣分）
         contest = self.context_service.get_contest(contest_slug)
         challenge = self.challenge_repo.get_by_slug(contest=contest, slug=challenge_slug)
         membership = self.submit_service.member_repo.get_membership(contest=contest, user=request.user)

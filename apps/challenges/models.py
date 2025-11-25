@@ -5,7 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 import hashlib
 
-# 模型文件：定义题目、分类、解题记录及子任务/附件的数据结构，不承载业务流程。
+# 模型文件：定义题目、分类、解题记录及子任务/附件/提示的数据结构，不承载业务流程。
 
 User = settings.AUTH_USER_MODEL
 
@@ -13,7 +13,8 @@ User = settings.AUTH_USER_MODEL
 class ChallengeCategory(models.Model):
     """
     题目分类：
-    - 供题目归类与前端过滤使用。
+    - 业务场景：对比赛题目进行分类，便于前端筛选/统计。
+    - 模块角色：轻量分类表，被题目外键引用。
     """
 
     # 分类名称
@@ -37,6 +38,7 @@ class Challenge(models.Model):
     题目主体：
     - 关联比赛与分类，记录题面、Flag 信息及分值。
     - 支持静态/动态 Flag 与大小写控制。
+    - 计分模式支持固定/动态衰减，用于排行榜与得分计算。
     """
 
     class Difficulty(models.TextChoices):
@@ -112,11 +114,11 @@ class Challenge(models.Model):
         return f"{self.title} ({self.contest.slug})"
 
     def normalized_flag(self, value: str) -> str:
-        """按配置标准化输入 Flag（去空格/大小写）。"""
+        """按配置标准化输入 Flag（去空格/大小写），用于统一比对。"""
         return value.strip().lower() if self.flag_case_insensitive else value.strip()
 
     def _assemble_flag(self, prefix: str, body: str) -> str:
-        """按约定包装前缀与 flag 主体，并做标准化。"""
+        """按约定包装前缀与 flag 主体，并做标准化，生成标准 Flag 串。"""
         normalized_prefix = (prefix or "").strip()
         normalized_body = self.normalized_flag(body)
         wrapped = f"{normalized_prefix}{{{normalized_body}}}"
@@ -125,8 +127,8 @@ class Challenge(models.Model):
     def build_expected_flag(self, user=None, membership=None, secret: str | None = None) -> str:
         """
         构造当前提交者应持有的标准 Flag。
-        - 静态题目：flag_prefix + { + flag + }，前缀可为空。
-        - 动态题目：基于 contest/challenge/solver 组合和 SECRET_KEY 生成唯一摘要。
+        - 静态题目：prefix + {flag}。
+        - 动态题目：基于 contest/challenge/solver + SECRET_KEY 生成摘要。
         """
         if self.flag_type != self.FlagType.DYNAMIC:
             return self._assemble_flag(self.dynamic_prefix, self.flag)

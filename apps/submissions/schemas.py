@@ -22,6 +22,7 @@ class SubmissionCreateSchema(BaseSchema[None]):
     flag: str
 
     def validate(self) -> None:
+        """校验比赛/题目/Flag 必填。"""
         if not self.contest_slug:
             raise ValidationError(message="缺少比赛标识")
         if not self.challenge_slug:

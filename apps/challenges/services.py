@@ -13,9 +13,10 @@ from .crud_service import ChallengeCreateService, ChallengeUpdateService
 from .hint_service import ChallengeHintService
 from .attachment_service import AttachmentUploadService
 
+# 对外导出服务列表
 __all__ = [
-    "ChallengeCreateService",
-    "ChallengeUpdateService",
-    "ChallengeHintService",
-    "AttachmentUploadService",
+    "ChallengeCreateService",  # 题目创建服务
+    "ChallengeUpdateService",  # 题目更新服务
+    "ChallengeHintService",  # 题目提示服务
+    "AttachmentUploadService",  # 附件上传服务
 ]

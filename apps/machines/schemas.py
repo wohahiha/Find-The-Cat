@@ -20,6 +20,7 @@ class MachineStartSchema(BaseSchema[None]):
     challenge_slug: str
 
     def validate(self) -> None:
+        """校验比赛与题目标识必填。"""
         if not self.contest_slug:
             raise ValidationError(message="缺少比赛标识")
         if not self.challenge_slug:
@@ -36,5 +37,6 @@ class MachineStopSchema(BaseSchema[None]):
     machine_id: int
 
     def validate(self) -> None:
+        """校验实例 ID 合法。"""
         if self.machine_id <= 0:
             raise ValidationError(message="非法的实例 ID")

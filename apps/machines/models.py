@@ -16,6 +16,7 @@ class MachineInstance(models.Model):
     """
 
     class Status(models.TextChoices):
+        """实例运行状态枚举：用于判断是否可重复启动/停止。"""
         RUNNING = "running", "运行中"
         STOPPED = "stopped", "已停止"
         ERROR = "error", "异常"

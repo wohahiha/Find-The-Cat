@@ -1,9 +1,10 @@
 """
 业务异常体系（BizError）
 
-约定：
-- 所有“预期内的业务错误”都继承 BizError；
-- 系统级错误（代码 bug、数据库挂了等）让全局异常处理器按 500 处理。
+约定与作用：
+- 所有“预期内的业务错误”都继承 BizError，避免直接抛框架异常。
+- 统一错误码/HTTP 状态/提示语，便于前后端对齐。
+- 系统级错误（代码 bug、数据库故障等）由全局异常处理器按 500 处理。
 
 错误码规范：
 - 0                : 成功（只出现在正常响应里）
@@ -17,9 +18,8 @@
 - 47000~47099      : 队伍/成员相关错误（队伍已满、已在队伍中等）
 - 48000~48099      : 题目 / Flag 相关错误（题目不可见、Flag 已解出等）
 
-注意：
-- 全局异常处理器只需要判断 isinstance(exc, BizError)，
-  然后读取 exc.code / exc.message / exc.http_status / exc.extra 即可构造统一响应。
+使用方式：
+- 业务层抛 BizError 或子类；全局异常处理器读取 exc.code/message/http_status/extra 构造统一响应。
 """
 
 
@@ -60,6 +60,7 @@ class BadRequestError(BizError):
     """
     通用的 400 错误：
     - 无法解析的请求
+    - 请求格式错误/缺少头信息等
     """
     default_code = 40001
     default_message = "错误的请求"

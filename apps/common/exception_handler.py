@@ -1,13 +1,10 @@
 """
-自定义全局异常处理器（用于 DRF）
-
-职责：
-- 只要是预期内的业务异常（BizError 及其子类），统一转换为标准 JSON：
-  { code, message, data=None, extra }
-- 对 DRF 内置异常（ValidationError、AuthenticationFailed 等）做一层映射，
-  转成我们的 BizError 子类，保持统一结构；
-- 对真正未处理的系统异常，打日志 + 返回 500 统一错误格式，
-  避免把 traceback 暴露给前端。
+自定义全局异常处理器（DRF 入口）：
+- 业务目的：统一前端收到的错误结构，区分业务错误与系统异常。
+- 处理策略：
+  1) BizError 及子类 → 直接转换为 {code, message, data, extra}。
+  2) DRF 内置异常（Validation/Authentication/Permission/NotFound/Throttled）→ 映射为 BizError，再统一输出。
+  3) 未知/系统异常 → 记录完整日志，返回 500 标准格式，避免泄露内部信息。
 """
 
 from typing import Any

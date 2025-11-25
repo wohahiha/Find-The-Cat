@@ -21,6 +21,7 @@ class ChallengeHintService(BaseService[dict]):
     提示服务：
     - 列出提示并标记是否解锁。
     - 扣分提示需先解锁后返回内容。
+    - 业务场景：比赛中选手查看/解锁题目提示，计入扣分。
     """
 
     atomic_enabled = False

@@ -2,10 +2,9 @@
 通用权限封装（apps.common.permissions）
 
 职责：
-- 放置全局可复用的权限类（基于 Django/DRF 的认证系统）；
-- 封装“登录 / 管理员 / 只读 / 题目 Owner / 自己 / 队长”等常见场景；
-- 出错时统一抛出 BizError 子类（PermissionDeniedError），
-  由全局异常处理器统一包装成标准响应结构。
+- 放置全局可复用的权限类（基于 Django/DRF 的认证系统）。
+- 封装“登录/管理员/只读/资源 Owner/本人/队长”等常见场景的权限校验。
+- 出错时统一抛出 BizError 子类（PermissionDeniedError），由全局异常处理器统一包装响应。
 """
 
 from __future__ import annotations
@@ -29,6 +28,7 @@ User = get_user_model()
 def _ensure_authenticated(request: Request) -> User:
     """
     确保用户已登录，返回 User；否则抛 PermissionDeniedError。
+    - 业务场景：所有权限类复用，统一登录态校验与错误提示。
     """
     user = getattr(request, "user", None)
     if user is None or not user.is_authenticated:

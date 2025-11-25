@@ -21,6 +21,7 @@ class MachineServiceTests(TestCase):
     """服务层单测：验证靶机启动与停止流程。"""
 
     def setUp(self) -> None:
+        """每个用例前开启 Docker mock，准备比赛/题目/用户。"""
         docker_manager._USE_MOCK = True  # 测试环境不依赖真实 Docker
         now = timezone.now()
         self.contest = Contest.objects.create(
@@ -69,6 +70,7 @@ class MachinesAPITestCase(AuthenticatedAPIMixin, APITestCase):
 
     @classmethod
     def setUpTestData(cls):
+        """全局准备管理员/用户、比赛与题目，启用 Docker mock。"""
         docker_manager._USE_MOCK = True
         cls.user = User.objects.create_user(username="alice", email="alice@example.com", password="Passw0rd123")
         cls.admin = User.objects.create_superuser(username="wohahiha", email="admin@example.com", password="stevenxu5190")
@@ -92,6 +94,7 @@ class MachinesAPITestCase(AuthenticatedAPIMixin, APITestCase):
         )
 
     def setUp(self):
+        """每个测试前清理缓存，避免节流或遗留数据干扰。"""
         cache.clear()
 
     def test_machine_start_stop_api(self):

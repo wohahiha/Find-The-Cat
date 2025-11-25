@@ -44,6 +44,7 @@ class ContestCreateSchema(BaseSchema[None]):
     def validate(self) -> None:
         """校验时间顺序、封榜区间与人数上限。"""
         def ensure_dt(value: datetime | str | None) -> datetime:
+            # 将字符串或 naive datetime 统一转换为时区感知的 datetime
             if isinstance(value, str):
                 dt = datetime.fromisoformat(value)
             else:

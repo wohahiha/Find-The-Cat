@@ -1,10 +1,10 @@
 """
 统一 API 响应封装（common.response）
 
-目标：
-- 所有接口的返回结构保持一致，便于前端 & 调试；
-- 业务代码里尽量只关心“code / message / data”，不直接接触 DRF Response；
-- 和 BizError 体系对齐，方便异常处理器和正常返回使用同一套字段。
+目标与作用：
+- 所有接口返回结构保持一致，便于前端对接与调试。
+- 业务代码只关注 code/message/data/extra，不直接操作 DRF Response。
+- 与 BizError 体系对齐，异常处理器与正常返回共用同一字段语义。
 
 约定返回结构：
 {
@@ -44,6 +44,7 @@ def build_payload(
 ) -> Payload:
     """
     构造统一的响应字典，不涉及 HTTP/DRF。
+    - 业务场景：视图/服务返回前构造 data 结构，统一字段命名。
     """
     payload: Payload = {
         "code": code,
@@ -58,6 +59,7 @@ def build_payload(
 def payload_from_biz_error(exc: BizError, data: Any = None) -> Payload:
     """
     根据 BizError 构造 payload。
+    - 业务场景：异常处理器将 BizError 转换为对外响应。
     """
     return build_payload(
         code=exc.code,
@@ -107,6 +109,7 @@ def api_response(
 ) -> Response:
     """
     统一构造 DRF Response。
+    - 业务场景：所有接口/异常最终出口，确保格式一致。
     """
     payload = build_payload(code=code, message=message, data=data, extra=extra)
     return Response(payload, status=http_status)
@@ -167,6 +170,7 @@ def fail(
 ) -> Response:
     """
     通用失败返回（手动构造，不走 BizError）。
+    - 业务场景：需要自定义错误码/信息但不想抛 BizError（如表单提前返回）。
     """
     return api_response(
         code=code,
@@ -180,6 +184,7 @@ def fail(
 def response_from_biz_error(exc: BizError, data: Any = None) -> Response:
     """
     根据 BizError 构造 Response。
+    - 业务场景：异常处理器或视图捕获 BizError 后直接返回。
     """
     return api_response(
         code=exc.code,

@@ -1,18 +1,16 @@
 """
 统一 JWT 认证封装（apps.common.authentication）
 
-职责：
-- 作为全局 JWT 认证入口，统一 header / cookie 等取 Token 的逻辑；
-- 统一把 JWT 相关异常映射到我们的业务异常体系（BizError → TokenError / AuthError），
-  由全局异常处理器 custom_exception_handler 统一封装响应结构；
-- 后续若要调整「Token 传递方式」「header 前缀」「cookie 名称」等，只需要改这一处。
+职责与目标：
+- 全局 JWT 认证入口，统一 Header/Cookie 取 Token 的逻辑。
+- 将 JWT 相关异常映射到 BizError（TokenError/AuthError），交由全局异常处理器统一格式化响应。
+- 后续若需调整“Token 传递方式/前缀/Cookie 名称”集中改此处。
 
-默认行为（与 SimpleJWT 基本兼容）：
+默认行为（兼容 SimpleJWT）：
 - 优先从 Authorization 头读取：Authorization: Bearer <token>
-- 可选地从 cookie 读取：jwt_token_in_cookie=<token>（可通过类属性调整）
-- 未提供任何凭证 → 返回 None，由 DRF 视为“未认证”，再由权限系统决定是否放行；
-- 提供了凭证但无效/过期 → 抛 TokenError（40102）；
-- 其他认证失败 → 抛 AuthError（40100）。
+- 可选从 Cookie 读取：jwt_token_in_cookie=<token>（可通过类属性调整）
+- 未提供凭证 → 返回 None（匿名，由权限类决定是否放行）
+- 凭证无效/过期 → TokenError(40102)；其他认证失败 → AuthError(40100)
 """
 
 from __future__ import annotations

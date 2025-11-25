@@ -31,12 +31,14 @@ class MachineListCreateView(APIView):
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request) -> Response:
+        # 查询当前登录用户的所有实例，按创建时间倒序
         queryset = self.repo.filter(user=request.user).order_by("-created_at")
         data = [serialize_machine(m) for m in queryset]
         return response.success({"items": data})
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
+        # 通过 Schema 校验后调用服务启动新靶机
         schema = MachineStartSchema.from_dict(request.data, auto_validate=True)
         instance = self.start_service.execute(request.user, schema)
         return response.created({"machine": serialize_machine(instance)}, message="靶机已启动")
@@ -53,6 +55,7 @@ class MachineStopView(APIView):
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, machine_id: int) -> Response:
+        # 路径参数 machine_id 指定要停止的实例
         schema = MachineStopSchema.from_dict({"machine_id": machine_id}, auto_validate=True)
         instance = self.stop_service.execute(request.user, schema)
         return response.success({"machine": serialize_machine(instance)}, message="靶机已停止")

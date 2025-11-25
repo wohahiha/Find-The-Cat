@@ -46,8 +46,9 @@ logger = get_logger(__name__)
 def serialize_user(user: User) -> dict[str, object]:
     """
     用户序列化工具：将 User 模型转换为 API 输出字典。
-    - user: 要序列化的用户实例。
-    - 返回：包含基础信息、权限标志、时间字段的字典。
+    - 业务场景：登录/注册/资料更新等接口返回用户信息时统一格式。
+    - 模块角色：轻量级 Presenter，避免视图重复拼装字段。
+    - 参数 user：要序列化的用户实例；返回包含基础资料、权限标志与时间字段。
     """
     return {
         "id": user.pk,

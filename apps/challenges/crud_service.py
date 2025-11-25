@@ -25,6 +25,7 @@ class ChallengeCreateService(BaseService[Challenge]):
     创建题目服务：
     - 校验并创建题目，同时写入子任务、附件与提示。
     - 自动处理分类与作者关联。
+    - 适用于管理员在比赛中新增题目。
     """
 
     def __init__(
@@ -59,7 +60,7 @@ class ChallengeCreateService(BaseService[Challenge]):
         tasks = payload.pop("tasks", [])
         attachments = payload.pop("attachments", [])
         hints = payload.pop("hints", [])
-        # 3) 创建题目并同步子任务与附件
+        # 3) 创建题目并同步子任务/附件/提示
         challenge = self.challenge_repo.create(payload)
         self._sync_tasks(challenge, tasks)
         self._sync_attachments(challenge, attachments)
@@ -67,7 +68,7 @@ class ChallengeCreateService(BaseService[Challenge]):
         return challenge
 
     def _sync_tasks(self, challenge: Challenge, tasks_data: list) -> None:
-        """创建子任务列表。"""
+        """创建子任务列表：支持多阶段得分。"""
         for idx, task in enumerate(tasks_data, start=1):
             self.task_repo.create(
                 {
@@ -80,7 +81,7 @@ class ChallengeCreateService(BaseService[Challenge]):
             )
 
     def _sync_attachments(self, challenge: Challenge, attachments_data: list) -> None:
-        """创建附件列表。"""
+        """创建附件列表：记录附件名称与下载链接。"""
         for idx, att in enumerate(attachments_data, start=1):
             self.attachment_repo.create(
                 {
@@ -92,7 +93,7 @@ class ChallengeCreateService(BaseService[Challenge]):
             )
 
     def _sync_hints(self, challenge: Challenge, hints_data: list) -> None:
-        """创建提示列表。"""
+        """创建提示列表：支持免费/扣分提示。"""
         for idx, hint in enumerate(hints_data, start=1):
             self.hint_repo.create(
                 {

@@ -46,8 +46,8 @@ from .services import (
 def _set_jwt_cookie(resp: Response, access_token: str) -> None:
     """
     根据配置决定是否写入 JWT Cookie。
-    - resp: DRF Response 对象。
-    - access_token: JWT 访问令牌。
+    - 业务场景：登录成功后可选择把 access token 写入 HttpOnly Cookie，便于前端少操作。
+    - 参数 resp: DRF Response 对象；access_token: JWT 访问令牌。
     """
     # 默认开启 Cookie 模式，可通过设置关闭
     if getattr(settings, "JWT_USE_COOKIE", True):
@@ -67,7 +67,8 @@ def _set_jwt_cookie(resp: Response, access_token: str) -> None:
 def _to_payload(data) -> dict:
     """
     将 request.data 转为普通 dict（兼容 QueryDict / OrderedDict）。
-    - data: DRF Request.data 或 QueryDict。
+    - 业务场景：视图层统一处理请求体，便于 Schema.from_dict。
+    - 参数 data: DRF Request.data 或 QueryDict。
     """
     # 若对象支持 dict() 方法，优先调用确保保留多值键处理；否则直接强转
     if hasattr(data, "dict"):

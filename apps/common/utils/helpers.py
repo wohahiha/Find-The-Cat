@@ -1,7 +1,7 @@
 """
-通用辅助函数。
-
+通用辅助函数：
 - 提供掩码、类型安全转换等纯工具方法，避免重复代码。
+- 不包含业务逻辑，便于在各模块安全复用。
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ def mask_mobile(mobile: str) -> str:
 
 
 def safe_int(value: Any, default: int = 0) -> int:
-    """安全转换为 int，失败则返回默认值。"""
+    """安全转换为 int，失败则返回默认值，防止类型错误导致异常。"""
     try:
         return int(value)
     except Exception:
@@ -37,5 +37,5 @@ def safe_int(value: Any, default: int = 0) -> int:
 
 
 def get_or_default(data: dict, key: str, default: Optional[Any] = None) -> Any:
-    """从字典安全获取值，不存在则返回默认值。"""
+    """从字典安全获取值，不存在则返回默认值，减少 KeyError。"""
     return data.get(key, default)

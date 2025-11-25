@@ -23,8 +23,10 @@ EMAIL_CODE_PATTERN = re.compile(r"^\d{6}$")
 
 def _validate_email(value: str) -> None:
     """
-    邮箱格式校验：复用 Django 内置校验，捕获异常后转为业务 ValidationError。
-    - value: 待校验邮箱字符串。
+    邮箱格式校验：
+    - 业务场景：注册/重置/修改邮箱等输入的统一邮箱格式检查。
+    - 模块角色：复用 Django 内置校验，统一转为业务异常。
+    - 参数 value：待校验邮箱字符串。
     """
     try:
         django_validate_email(value)
@@ -35,8 +37,8 @@ def _validate_email(value: str) -> None:
 def _validate_password(value: str) -> None:
     """
     密码复杂度校验：
-    - 长度须在 8-64 位。
-    - 需同时包含字母和数字，纯数字或纯字母不允许。
+    - 业务规则：长度 8-64 且必须包含字母和数字，防止弱密码。
+    - 模块角色：被注册/修改密码/重置密码等校验复用。
     """
     if not 8 <= len(value) <= 64:
         raise ValidationError(message="密码长度需在 8-64 位之间")
@@ -58,7 +60,7 @@ class SendEmailCodeSchema(BaseSchema[None]):
     scene: str
 
     def validate(self) -> None:
-        """校验邮箱格式与场景合法性。"""
+        """校验邮箱格式与场景合法性，避免发送到非法地址或不支持的业务场景。"""
         _validate_email(self.email)
         if self.scene not in EmailVerificationCode.Scene.values:
             raise ValidationError(message="不支持的验证码场景")
@@ -86,7 +88,7 @@ class RegisterSchema(BaseSchema[None]):
     nickname: Optional[str] = field(default=None)
 
     def validate(self) -> None:
-        """逐项校验用户名、邮箱、密码与验证码格式，并比对两次密码。"""
+        """逐项校验用户名、邮箱、密码与验证码格式，并比对两次密码，确保注册安全。"""
         if not USERNAME_PATTERN.match(self.username):
             raise ValidationError(message="用户名需为 3-32 位字母/数字/._- 组合")
 
@@ -114,7 +116,7 @@ class LoginSchema(BaseSchema[None]):
     password: str
 
     def validate(self) -> None:
-        """校验 identifier 与密码非空，identifier 长度需至少 3。"""
+        """校验 identifier 与密码非空，identifier 长度需至少 3，保证基本合法性。"""
         if not self.identifier or len(self.identifier) < 3:
             raise ValidationError(message="请输入正确的用户名或邮箱")
         if not self.password:
@@ -139,7 +141,7 @@ class ResetPasswordSchema(BaseSchema[None]):
     confirm_password: str
 
     def validate(self) -> None:
-        """校验邮箱、验证码格式，并确保新密码符合复杂度且两次一致。"""
+        """校验邮箱、验证码格式，并确保新密码符合复杂度且两次一致，避免弱密码与误操作。"""
         _validate_email(self.email)
         if not EMAIL_CODE_PATTERN.match(self.code):
             raise ValidationError(message="验证码格式错误")
@@ -170,7 +172,7 @@ class ProfileUpdateSchema(BaseSchema[None]):
     website: Optional[str] = None
 
     def validate(self) -> None:
-        """至少需要填写一个字段，否则提示无更新内容。"""
+        """至少需要填写一个字段，否则提示无更新内容，避免空请求占用资源。"""
         if not any(
             [
                 self.nickname,
@@ -200,7 +202,7 @@ class ChangePasswordSchema(BaseSchema[None]):
     confirm_password: str
 
     def validate(self) -> None:
-        """校验旧密码非空，新密码复杂度，以及新旧不同与两次一致。"""
+        """校验旧密码非空、新密码复杂度，以及新旧不同与两次一致，防止弱密码与误改。"""
         if not self.old_password:
             raise ValidationError(message="请填写当前密码")
         _validate_password(self.new_password)
@@ -226,7 +228,7 @@ class ChangeEmailSchema(BaseSchema[None]):
     current_password: str
 
     def validate(self) -> None:
-        """校验当前密码非空、新邮箱格式与验证码格式。"""
+        """校验当前密码非空、新邮箱格式与验证码格式，确保身份确认与邮箱有效性。"""
         if not self.current_password:
             raise ValidationError(message="请填写当前密码")
         _validate_email(self.new_email)

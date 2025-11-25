@@ -1,19 +1,22 @@
 from __future__ import annotations
 
-from django.test import TestCase, override_settings
-from django.conf import settings
+from datetime import timedelta
+
 from django.core.cache import cache
-from rest_framework.test import APITestCase
 from django.utils import timezone
+from django.conf import settings
+from django.test import override_settings
+from rest_framework.test import APITestCase
+from django.test import TestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from apps.accounts.models import User
+from apps.accounts.models import User, EmailVerificationCode
+from apps.common.tests_utils import AuthenticatedAPIMixin
 from apps.contests.models import Contest
 from apps.contests.schemas import TeamCreateSchema
 from apps.contests.services import TeamCreateService
 from apps.common.exceptions import WrongFlagError, ChallengeAlreadySolvedError
 from apps.common.exceptions import ValidationError
-from apps.common.tests_utils import AuthenticatedAPIMixin
 
 from .schemas import ChallengeCreateSchema
 from .services import ChallengeCreateService
@@ -25,7 +28,12 @@ from apps.submissions.services import SubmissionService
 
 
 class ChallengeServiceTests(TestCase):
-    """服务层单测：验证创建题目与提交 Flag 成功路径。"""
+    """
+    服务层单测：
+    - 验证创建题目成功路径。
+    - 验证静态/动态 Flag 判题、重复提交等业务分支。
+    """
+
     def setUp(self) -> None:
         # 构造进行中的比赛与出题人/选手
         now = timezone.now()
@@ -80,7 +88,7 @@ class ChallengeServiceTests(TestCase):
         self.assertIsNotNone(submission.solve)
 
     def test_flag_schema_validation(self):
-        """Flag 相关校验：静态必须有 flag，静态不允许动态前缀，动态缺种子报错。"""
+        """Flag 校验：静态需 flag，前缀不能含花括号，动态需种子。"""
         with self.assertRaises(ValidationError):
             ChallengeCreateSchema(
                 contest_slug="autumn-ctf",
@@ -110,7 +118,7 @@ class ChallengeServiceTests(TestCase):
             ).validate()
 
     def test_dynamic_flag_generation_and_check(self):
-        """动态 Flag：按用户生成唯一 Flag，校验通过，错误 Flag 抛错。"""
+        """动态 Flag：按用户生成唯一 Flag，正确通过，错误/重复抛业务异常。"""
         challenge = ChallengeCreateService().execute(
             self.author,
             ChallengeCreateSchema(
@@ -139,7 +147,7 @@ class ChallengeServiceTests(TestCase):
             )
 
     def _build_expected_flag(self, challenge, user):
-        """按照服务端逻辑构造动态 flag，供断言使用。"""
+        """按照服务端逻辑构造动态 Flag，供断言使用。"""
         return challenge.build_expected_flag(user=user, secret=settings.SECRET_KEY)
 
 
@@ -154,7 +162,7 @@ class ChallengeServiceTests(TestCase):
     }
 )
 class ChallengesAPITestCase(AuthenticatedAPIMixin, APITestCase):
-    """Challenges 模块接口冒烟：题目 CRUD、提交 Flag。"""
+    """挑战模块接口冒烟：题目 CRUD、提交/动态 Flag、附件上传。"""
 
     @classmethod
     def setUpTestData(cls):

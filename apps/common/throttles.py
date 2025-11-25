@@ -2,10 +2,9 @@
 统一限速封装（apps.common.throttles）
 
 职责：
-- 覆盖 DRF 默认限速行为，统一抛 BizError（RateLimitError）；
-- 为登录、Flag 提交、启动靶机等关键安全场景提供独立 throttle 类；
-- 支持基于 IP / 用户 / 比赛 的限速；
-- 返回友好提示，并包含 wait 秒数，便于前端做倒计时展示。
+- 覆盖 DRF 默认限速行为，统一抛 BizError（RateLimitError），保证响应格式。
+- 为登录、Flag 提交、启动靶机、通用 POST 等关键场景提供独立 throttle 类。
+- 支持基于 IP/用户的限速；保留 wait 秒数，便于前端展示倒计时。
 """
 
 from __future__ import annotations
@@ -26,6 +25,7 @@ def raise_rate_limit(exc: Throttled) -> None:
     """
     将 DRF 内置 Throttled 映射为 RateLimitError，
     保留 wait 秒数字段，交给全局异常处理器统一格式化。
+    - 业务场景：任何触发 DRF Throttled 的地方都可复用，统一提示。
     """
     wait = getattr(exc, "wait", None)
     detail = getattr(exc, "detail", None)

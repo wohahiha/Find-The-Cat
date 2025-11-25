@@ -21,6 +21,7 @@ def _ensure_group(name: str) -> Group:
     确保指定名称的分组存在并填充预设权限：
     - name: 分组名称（普通用户/管理员）。
     - 读取 GROUP_PERMISSION_PRESETS，将权限对象绑定到分组。
+    - 业务场景：初始化默认权限组，供新用户/管理员自动加入，避免权限缺失。
     """
     # 获取或创建分组，避免多次调用重复创建
     group, _ = Group.objects.get_or_create(name=name)
@@ -43,7 +44,7 @@ def _ensure_group(name: str) -> Group:
 
 
 def ensure_builtin_groups() -> None:
-    """确保内置的普通用户/管理员分组存在并补齐权限。"""
+    """确保内置的普通用户/管理员分组存在并补齐权限，防止后台/注册流程出现缺少分组的异常。"""
     _ensure_group(DEFAULT_USER_GROUP)
     _ensure_group(DEFAULT_ADMIN_GROUP)
 
@@ -53,6 +54,7 @@ def assign_default_admin_permissions(user) -> None:
     为管理员用户分配默认管理员分组：
     - 入参 user：目标用户实例。
     - 若未包含管理员组，则创建/获取后添加到用户。
+    - 业务场景：创建管理员或升级权限时自动补齐默认管理员权限集。
     """
     ensure_builtin_groups()
     if not user.groups.filter(name=DEFAULT_ADMIN_GROUP).exists():
@@ -65,6 +67,7 @@ def assign_default_user_permissions(user) -> None:
     为普通用户分配默认用户分组：
     - 入参 user：目标用户实例。
     - 若未包含普通用户组，则创建/获取后添加到用户。
+    - 业务场景：注册/后台创建普通用户时自动赋予基础权限，保证最小可用。
     """
     ensure_builtin_groups()
     if not user.groups.filter(name=DEFAULT_USER_GROUP).exists():

@@ -1,6 +1,7 @@
 """
-日志封装：提供统一获取 logger 的入口，便于后续集中配置格式/输出。
+日志封装：提供统一获取 logger 的入口，便于集中配置格式/输出。
 
+- configure_logging：按环境变量设置日志级别/格式/输出文件。
 - get_logger(name)：返回 Python logging 的 logger，默认延用 Django 配置。
 """
 

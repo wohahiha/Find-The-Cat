@@ -1,10 +1,8 @@
 """
-后台账户后台管理配置与表单定义
-
-- 自定义后台登录提示：账户失效时给出中文提示，便于运维排查。
-- 普通用户/管理员的创建与变更表单：锁定账户类型与权限标志，防止越权。
-- UserAdmin 公共配置：统一字段布局、权限概览、只读控制，降低重复代码。
-- 普通用户与管理员的 ModelAdmin：列表字段、过滤项、默认分组与权限校验。
+后台账户管理配置与表单定义：
+- 业务场景：Django Admin 管理用户、管理员、发信账号、验证码。
+- 模块角色：统一后台表单/列表/权限展示与校验，避免越权与误操作。
+- 功能：自定义登录提示、锁定账号类型、分配默认分组、权限概览、只读控制。
 """
 
 from __future__ import annotations
@@ -70,7 +68,7 @@ class BaseAccountChangeForm(UserChangeForm):
         ensure_builtin_groups()
 
     def enforce_account_flags(self, cleaned: dict) -> dict:
-        """子类需实现：写入 account_type/is_staff/is_superuser 标志。"""
+        """子类需实现：写入 account_type/is_staff/is_superuser 标志，保证身份不被篡改。"""
         return cleaned
 
     def clean(self):

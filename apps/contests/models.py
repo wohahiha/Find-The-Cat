@@ -18,6 +18,7 @@ class Contest(models.Model):
     """
 
     class Visibility(models.TextChoices):
+        """比赛可见性枚举：控制公开/私有访问范围。"""
         PUBLIC = "public", "公开"
         PRIVATE = "private", "私有"
 
@@ -156,6 +157,7 @@ class TeamMember(models.Model):
     """
 
     class Role(models.TextChoices):
+        """队伍成员角色枚举：区分队长与普通队员。"""
         CAPTAIN = "captain", "队长"
         MEMBER = "member", "队员"
 

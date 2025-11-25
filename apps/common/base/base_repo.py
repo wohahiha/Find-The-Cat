@@ -12,15 +12,10 @@ T = TypeVar("T", bound=Model)
 
 class BaseRepo(ABC, Generic[T]):
     """
-    Repository（数据访问层）基类。
-
-    目标：
-        - 统一封装 Django ORM 读写细节，对 Service 层提供稳定接口；
-        - 集中管理 select_related/prefetch/filter 等查询配置；
-        - 降低每个模块重复编写 CRUD 的成本。
-    使用方式：
-        class UserRepo(BaseRepo[User]):
-            model = User
+    Repository（数据访问层）基类：
+    - 业务目标：统一封装 Django ORM 读写细节，给 Service 提供稳定接口。
+    - 模块角色：集中管理 select_related/prefetch/filter 等查询配置，减少各模块重复 CRUD。
+    - 用法示例：class UserRepo(BaseRepo[User]): model = User
     """
 
     #: 子类必须指定对应的模型

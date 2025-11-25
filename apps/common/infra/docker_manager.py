@@ -1,7 +1,7 @@
 """
 Docker 管理封装：
-- 封装容器的启动/停止接口，支持本地或远程 Docker。
-- 提供 mock 模式（未安装 Docker SDK 时使用）。
+- 业务场景：题目靶机的启动/停止，支持本地或远程 Docker。
+- 模块角色：统一封装容器操作，提供 mock 模式，屏蔽底层 SDK 差异。
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ except Exception:  # pragma: no cover
 
 
 def _get_client():
+    """获取 Docker client，支持环境变量配置与 TLS；mock 模式下返回 None。"""
     if _USE_MOCK:
         return None
     if not docker:
@@ -93,6 +94,7 @@ def start_container(
 def stop_container(container_id: str) -> None:
     """
     停止并移除容器。
+    - mock 模式直接返回，不做实际操作。
     """
     if _USE_MOCK:
         return

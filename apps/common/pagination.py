@@ -3,21 +3,9 @@
 
 设计目标：
 - 统一分页响应结构，与 common.response.page_success 对齐；
-- 保留 DRF PageNumberPagination 的所有默认行为（页码、page_size 参数）；
-- 控制默认分页大小、最大分页大小；
-- 所有分页接口自动返回统一结构：
-    {
-        "code": 0,
-        "message": "OK",
-        "data": [...],
-        "extra": {
-            "page": 1,
-            "page_size": 20,
-            "total": 102,
-            "has_next": true,
-            "has_previous": false
-        }
-    }
+- 保留 DRF PageNumberPagination 默认参数行为（页码、page_size）；
+- 控制默认分页大小/最大分页大小，防止一次拉取过多数据；
+- 自动封装 {code,message,data,extra}，extra 内包含页码/总数/是否有前后页。
 """
 
 from __future__ import annotations

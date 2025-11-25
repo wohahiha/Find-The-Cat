@@ -16,7 +16,7 @@ EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def validate_email(email: str) -> None:
-    """校验邮箱格式，不通过抛出 ValidationError。"""
+    """校验邮箱格式，不通过抛出 ValidationError，统一邮件输入规则。"""
     try:
         django_validate_email(email)
     except DjangoValidationError as exc:

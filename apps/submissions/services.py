@@ -59,6 +59,7 @@ class SubmissionService(BaseService[Submission]):
         hint_repo: ChallengeHintRepo | None = None,
         submission_repo: SubmissionRepo | None = None,
     ):
+        """注入依赖仓储与上下文服务，便于测试时替换实现。"""
         self.contest_service = contest_service or ContestContextService()
         self.challenge_repo = challenge_repo or ChallengeRepo()
         self.solve_repo = solve_repo or ChallengeSolveRepo()
@@ -67,6 +68,7 @@ class SubmissionService(BaseService[Submission]):
         self.submission_repo = submission_repo or SubmissionRepo()
 
     def perform(self, user: User, schema: SubmissionCreateSchema) -> Submission:
+        """处理一次 Flag 提交，返回提交记录；正确会新增解题并刷新榜单。"""
         # 1) 获取比赛与题目，并校验比赛进行中
         contest = self.contest_service.get_contest(schema.contest_slug)
         self.contest_service.ensure_contest_running(contest)
@@ -80,6 +82,7 @@ class SubmissionService(BaseService[Submission]):
 
         # 3) 若已解出，再次提交记为重复并抛出业务错误
         if existing_solve:
+            # 重复提交也记录，便于审计与风控
             submission = self.submission_repo.create(
                 {
                     "contest": contest,
@@ -109,6 +112,7 @@ class SubmissionService(BaseService[Submission]):
         if not is_correct:
             status = Submission.Status.REJECTED
             message = "Flag 不正确"
+            # 错误提交也落库，方便后续分析与安全审计
             submission = self.submission_repo.create(
                 {
                     "contest": contest,
@@ -159,6 +163,7 @@ class SubmissionService(BaseService[Submission]):
         )
         submission.solve = solve
         submission.save(update_fields=["solve"])
+        # 记分板快照失效，后续重新计算
         self._invalidate_scoreboard_cache(contest.id)
         return submission
 
@@ -167,6 +172,7 @@ class SubmissionService(BaseService[Submission]):
         计算选手当前可获得分值：动态计分基础上扣除已解锁提示。
         - 未登录用户视为无提示扣分。
         """
+        # 若未传 membership，尝试在已登录上下文下查队伍关系
         if membership is None and user is not None and getattr(user, "is_authenticated", False):
             membership = self.member_repo.get_membership(contest=contest, user=user)
         awarded_points = self._calc_dynamic_points(challenge, contest, membership)
@@ -185,6 +191,7 @@ class SubmissionService(BaseService[Submission]):
             rank = redis_client.incr(key, amount=1, ex=60 * 60 * 24 * 30)
             return rank
         except Exception:
+            # 回退到数据库计数，避免缓存异常导致阻断
             current_solved = self.solve_repo.filter(challenge=challenge).count()
             return current_solved + 1
 
@@ -193,6 +200,7 @@ class SubmissionService(BaseService[Submission]):
         try:
             ScoreboardService.invalidate_cache(contest_id)
         except Exception:
+            # 缓存不可用时退化为直接删除 key，保证榜单可重新生成
             redis_client.delete(scoreboard_key(contest_id))
 
     def _calc_hint_cost(self, challenge, user: User) -> int:

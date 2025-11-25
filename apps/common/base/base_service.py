@@ -24,6 +24,9 @@ class BaseService(ABC, Generic[ServiceReturn]):
         - 任何业务失败都转换为 BizError。
 
     标准流程：validate(...) -> perform(...) -> handle_error(...)
+    业务角色：
+        - 提供统一的执行入口（execute），确保 validate/事务/异常转换一致。
+        - 子类只需关注校验与核心逻辑，实现高内聚的服务层。
     """
 
     atomic_enabled: bool = True

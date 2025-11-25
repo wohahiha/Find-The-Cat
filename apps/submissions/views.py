@@ -28,6 +28,7 @@ class SubmissionCreateView(APIView):
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
+        # Schema 校验入参后，调用服务完成判题与记录
         schema = SubmissionCreateSchema.from_dict(request.data, auto_validate=True)
         submission = self.service.execute(request.user, schema)
         challenge_payload = serialize_challenge(submission.challenge, current_points=submission.awarded_points)

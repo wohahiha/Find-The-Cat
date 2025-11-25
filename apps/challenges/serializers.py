@@ -1,4 +1,8 @@
-"""题目模块的序列化工具函数。"""
+"""
+题目模块的序列化工具函数：
+- 业务场景：将模型对象转换为接口响应数据。
+- 模块角色：轻量 Presenter，视图层/服务层复用，避免重复手写字典。
+"""
 
 from __future__ import annotations
 
@@ -6,7 +10,7 @@ from .models import Challenge, ChallengeHint
 
 
 def serialize_hint(hint: ChallengeHint, *, unlocked: bool) -> dict:
-    """提示序列化：未解锁时隐藏内容。"""
+    """提示序列化：未解锁时隐藏内容，仅返回基础信息与是否解锁。"""
     return {
         "id": hint.id,
         "title": hint.title,
@@ -22,6 +26,7 @@ def serialize_challenge(challenge: Challenge, *, current_points: int | None = No
     """
     题目序列化：包含基础信息、子任务、附件与提示概览（未解锁内容为空）。
     - current_points：当前选手可获得的分值（含动态衰减与提示扣分），若为空则回退基础分。
+    - 业务场景：题目列表/详情、提交后返回题目得分视图。
     """
     visible_points = current_points if current_points is not None else challenge.base_points
     return {

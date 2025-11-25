@@ -52,6 +52,7 @@ class ContestListView(APIView):
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request) -> Response:
+        # 公开接口：任何访客都可查看比赛列表，用于前台首页
         # 按状态过滤比赛（进行中/未开始/已结束）
         repo = ContestRepo()
         status_filter = request.query_params.get("status")
@@ -71,6 +72,7 @@ class ContestListView(APIView):
     def post(self, request: Request) -> Response:
         # 运行时切换为管理员权限
         self.permission_classes = [IsAdmin]  # type: ignore[assignment]
+        # 管理员创建比赛：先用 Schema 校验，再调用服务层持久化
         # 序列化并创建比赛
         schema = ContestCreateSchema.from_dict(request.data, auto_validate=True)
         contest = CreateContestService().execute(schema)
@@ -88,6 +90,8 @@ class ContestDetailView(APIView):
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, contest_slug: str) -> Response:
+        # contest_slug 来自路由占位符，用于定位比赛
+        # 获取比赛对象，填充基础信息
         # 获取比赛与基础信息
         contest = self.context_service.get_contest(contest_slug)
         data = {
@@ -107,6 +111,7 @@ class ContestDetailView(APIView):
         data["challenges"] = [
             serialize_challenge(
                 ch,
+                # 查询当前用户在该题目下可见的分值（考虑动态降分/封榜）
                 current_points=self.submit_service.visible_points_for_user(
                     request.user if request.user.is_authenticated else None,
                     contest,
@@ -132,6 +137,8 @@ class ContestExportView(APIView):
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, contest_slug: str) -> Response:
+        # contest_slug 路径参数：指定要导出的比赛
+        # 后台导出：汇总比赛、题目、队伍、解题、提交与记分板快照
         payload = self.export_service.execute(contest_slug)
         return response.success(payload, message="导出成功")
 
@@ -144,6 +151,8 @@ class ContestTeamsView(APIView):
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, contest_slug: str) -> Response:
+        # contest_slug 路径参数：限定需查询的比赛
+        # 登录用户查看当前比赛所有有效队伍，便于选择加入
         # 查询比赛并返回所有有效队伍
         contest = self.context_service.get_contest(contest_slug)
         teams = self.team_repo.filter(contest=contest, is_active=True).select_related("captain")
@@ -152,6 +161,8 @@ class ContestTeamsView(APIView):
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, contest_slug: str) -> Response:
+        # contest_slug 路径参数：锁定队伍所属比赛
+        # 登录用户创建队伍：补充比赛标识后走服务层校验人数/权限
         # 补充比赛标识后交由服务层创建队伍
         payload = dict(request.data)
         payload["contest_slug"] = contest_slug
@@ -166,6 +177,8 @@ class ContestTeamJoinView(APIView):
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, contest_slug: str) -> Response:
+        # contest_slug 路径参数：确认邀请码所属比赛
+        # 仅允许登录选手通过邀请码加入对应比赛队伍
         # 补充比赛标识后交由服务层处理
         payload = dict(request.data)
         payload["contest_slug"] = contest_slug
@@ -183,6 +196,8 @@ class TeamLeaveView(APIView):
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, contest_slug: str) -> Response:
+        # contest_slug 路径参数：标识当前退出的比赛
+        # 退出队伍：服务层校验队长限制与成员存在性
         schema = TeamLeaveSchema.from_dict({"contest_slug": contest_slug}, auto_validate=True)
         TeamLeaveService().execute(request.user, schema)
         return response.success(message="已退出队伍")
@@ -194,6 +209,8 @@ class TeamDisbandView(APIView):
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, team_id: int) -> Response:
+        # team_id 路径参数：指定需解散的队伍
+        # 由队长/管理员触发解散，服务层将成员标记失效
         schema = TeamDisbandSchema.from_dict({"team_id": team_id}, auto_validate=True)
         team = TeamDisbandService().execute(request.user, schema)
         return response.success({"team": serialize_team(team)}, message="队伍已解散")
@@ -209,6 +226,8 @@ class TeamInviteResetView(APIView):
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, team_id: int) -> Response:
+        # team_id 路径参数：定位需要更新邀请码的队伍
+        # 触发重置：生成新邀请码并更新更新时间
         schema = TeamInviteResetSchema.from_dict({"team_id": team_id}, auto_validate=True)
         team = TeamInviteResetService().execute(request.user, schema)
         return response.success({"team": serialize_team(team)}, message="邀请码已重置")
@@ -224,6 +243,8 @@ class TeamTransferView(APIView):
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, team_id: int) -> Response:
+        # team_id 路径参数：队长移交的目标队伍
+        # 将新队长用户 ID 传入服务层，完成角色切换
         # 补充队伍 ID 后交由服务层移交
         payload = dict(request.data)
         payload["team_id"] = team_id
@@ -245,6 +266,8 @@ class ContestAnnouncementView(APIView):
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request, contest_slug: str) -> Response:
+        # contest_slug 路径参数：限定公告所属比赛
+        # 公开公告列表：按创建时间倒序返回已启用公告
         # 获取比赛并返回有效公告列表
         contest = self.context_service.get_contest(contest_slug)
         announcements = self.context_service.list_announcements(contest)
@@ -254,6 +277,8 @@ class ContestAnnouncementView(APIView):
     def post(self, request: Request, contest_slug: str) -> Response:
         # 运行时切换为管理员权限并创建公告
         self.permission_classes = [IsAdmin]  # type: ignore[assignment]
+        # contest_slug 路径参数：指定公告关联的比赛
+        # 将比赛标识加入 payload，使用 Schema 校验并调用服务落库
         payload = dict(request.data)
         payload["contest_slug"] = contest_slug
         schema = AnnouncementCreateSchema.from_dict(payload, auto_validate=True)

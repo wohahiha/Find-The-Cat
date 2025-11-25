@@ -16,6 +16,7 @@ class Submission(models.Model):
     """
 
     class Status(models.TextChoices):
+        """提交判题状态枚举：区分正确/错误/重复提交。"""
         ACCEPTED = "accepted", "正确"
         REJECTED = "rejected", "错误"
         DUPLICATE = "duplicate", "重复提交"

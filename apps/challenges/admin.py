@@ -1,3 +1,9 @@
+"""
+挑战模块后台配置：
+- 提供题目/分类/解题记录的管理界面，支持附件上传、字段提示与只读控制。
+- 主要服务于运维/出题人后台操作，不参与前台业务逻辑。
+"""
+
 from __future__ import annotations
 
 from django.contrib import admin, messages
