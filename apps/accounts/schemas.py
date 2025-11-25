@@ -74,6 +74,7 @@ class RegisterSchema(BaseSchema[None]):
     - 验证邮箱验证码格式。
     """
     auto_validate: ClassVar[bool] = True
+
     # 用户名：3-32 位字母/数字/._-
     username: str
     # 邮箱：唯一登录与通知标识
@@ -110,6 +111,7 @@ class LoginSchema(BaseSchema[None]):
     - 校验密码与图形验证码。
     """
     auto_validate: ClassVar[bool] = True
+
     # identifier：用户名或邮箱，用于兼容双字段登录
     identifier: str  # 用户名或邮箱
     # 登录密码
@@ -137,6 +139,7 @@ class ResetPasswordSchema(BaseSchema[None]):
     - 校验新密码复杂度与两次输入一致性。
     """
     auto_validate: ClassVar[bool] = True
+    
     # 目标邮箱
     email: str
     # 邮箱验证码
@@ -164,6 +167,7 @@ class ProfileUpdateSchema(BaseSchema[None]):
     - 至少需提供一项更新字段。
     """
     auto_validate: ClassVar[bool] = True
+
     # 昵称
     nickname: Optional[str] = None
     # 头像链接
@@ -180,14 +184,14 @@ class ProfileUpdateSchema(BaseSchema[None]):
     def validate(self) -> None:
         """至少需要填写一个字段，否则提示无更新内容，避免空请求占用资源。"""
         if not any(
-            [
-                self.nickname,
-                self.avatar,
-                self.bio,
-                self.organization,
-                self.country,
-                self.website,
-            ]
+                [
+                    self.nickname,
+                    self.avatar,
+                    self.bio,
+                    self.organization,
+                    self.country,
+                    self.website,
+                ]
         ):
             raise ValidationError(message="请至少填写一项需要更新的资料")
 
