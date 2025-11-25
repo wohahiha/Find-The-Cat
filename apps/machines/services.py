@@ -128,7 +128,8 @@ class MachineStartService(BaseService[MachineInstance]):
             port = random.randint(20000, 40000)
             if port not in used:
                 # 写入 redis 记录占用，设置短期过期以防泄漏
-                redis_client.set_json(key, list(used | {port}), ex=300)
+                ttl = getattr(settings, "MACHINE_PORT_CACHE_TTL", 300)
+                redis_client.set_json(key, list(used | {port}), ex=ttl)
                 return port
         logger.warning("端口分配失败", extra=logger_extra({"used_count": len(used)}))
         raise ConflictError(message="端口分配失败，请稍后重试")

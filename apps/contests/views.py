@@ -12,6 +12,8 @@ from apps.common.permissions import IsAuthenticated, IsAdmin, AllowAny
 from apps.challenges.repo import ChallengeRepo
 from apps.challenges.serializers import serialize_challenge
 from apps.submissions.services import SubmissionService
+from apps.common.pagination import StandardPagination
+from django.db.models import Count, Q
 
 from .repo import ContestRepo, TeamRepo, TeamMemberRepo
 from .services import (
@@ -49,6 +51,7 @@ from .services import (
 class ContestListView(APIView):
     """比赛列表/创建接口：GET 公共访问，POST 仅管理员。"""
     permission_classes = [AllowAny]
+    pagination_class = StandardPagination
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request) -> Response:
@@ -65,8 +68,10 @@ class ContestListView(APIView):
                 queryset = queryset.filter(start_time__gt=now)
             elif status_filter == "ended":
                 queryset = queryset.filter(end_time__lt=now)
-        data = [serialize_contest(c) for c in queryset]
-        return response.success({"items": data})
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        data = [serialize_contest(c) for c in page]
+        return paginator.get_paginated_response({"items": data})
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
@@ -155,9 +160,14 @@ class ContestTeamsView(APIView):
         # 登录用户查看当前比赛所有有效队伍，便于选择加入
         # 查询比赛并返回所有有效队伍
         contest = self.context_service.get_contest(contest_slug)
-        teams = self.team_repo.filter(contest=contest, is_active=True).select_related("captain")
-        data = [serialize_team(team) for team in teams]
-        return response.success({"contest": contest.slug, "teams": data})
+        teams = (
+            self.team_repo.filter_with_related(contest=contest, is_active=True)
+            .annotate(active_member_count=Count("members", filter=Q(members__is_active=True)))
+        )
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(teams, request)
+        data = [serialize_team(team) for team in page]
+        return paginator.get_paginated_response({"contest": contest.slug, "teams": data})
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, contest_slug: str) -> Response:
@@ -271,7 +281,10 @@ class ContestAnnouncementView(APIView):
         # 获取比赛并返回有效公告列表
         contest = self.context_service.get_contest(contest_slug)
         announcements = self.context_service.list_announcements(contest)
-        return response.success({"items": [serialize_announcement(ann) for ann in announcements]})
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(announcements, request)
+        items = [serialize_announcement(ann) for ann in page]
+        return paginator.get_paginated_response({"items": items})
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request, contest_slug: str) -> Response:

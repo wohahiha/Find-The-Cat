@@ -4,6 +4,7 @@ import secrets
 from typing import Optional
 
 from django.utils import timezone
+from django.conf import settings
 
 from apps.common.base.base_service import BaseService
 from apps.common.exceptions import (
@@ -71,6 +72,9 @@ def serialize_announcement(announcement: ContestAnnouncement) -> dict:
 
 def serialize_team(team: Team) -> dict:
     """队伍序列化：包含队长、邀请码、成员数量等。"""
+    member_count = getattr(team, "active_member_count", None)
+    if member_count is None:
+        member_count = team.member_count
     return {
         "id": team.id,
         "contest": team.contest.slug,
@@ -79,7 +83,7 @@ def serialize_team(team: Team) -> dict:
         "description": team.description,
         "captain_id": team.captain_id,
         "invite_token": team.invite_token,
-        "member_count": team.member_count,
+        "member_count": member_count,
         "is_active": team.is_active,
     }
 
@@ -468,7 +472,7 @@ class ScoreboardService(BaseService[list[dict]]):
     - 支持 Redis 缓存以减轻重复计算开销。
     """
     atomic_enabled = False
-    cache_ttl_seconds: int = 30
+    cache_ttl_seconds: int = getattr(settings, "SCOREBOARD_CACHE_TTL", 30)
 
     def perform(self, contest: Contest, *, ignore_freeze: bool = False) -> list[dict]:
         """计算记分板：汇总解题记录并排序。"""

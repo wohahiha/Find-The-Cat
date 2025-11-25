@@ -305,6 +305,8 @@ DOCKER_NETWORK = os.getenv("DOCKER_NETWORK", None)
 # 靶机运行时长（分钟）与清理间隔（秒）
 MACHINE_MAX_RUNTIME_MINUTES = int(os.getenv("MACHINE_MAX_RUNTIME_MINUTES", "30"))
 MACHINE_CLEAN_INTERVAL_SECONDS = int(os.getenv("MACHINE_CLEAN_INTERVAL_SECONDS", "300"))
+MACHINE_PORT_CACHE_TTL = int(os.getenv("MACHINE_PORT_CACHE_TTL", "300"))
+SCOREBOARD_CACHE_TTL = int(os.getenv("SCOREBOARD_CACHE_TTL", "30"))
 
 # --------------------------------------------------------------------------------------
 # 邮件配置

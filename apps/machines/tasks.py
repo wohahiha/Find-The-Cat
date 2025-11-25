@@ -98,7 +98,11 @@ def cleanup_expired_machines() -> int:
     logger.info(
         "清理任务完成",
         extra=logger_extra(
-            {"cleaned": cleaned, "duration_ms": int((time.time() - start) * 1000)}
+            {
+                "cleaned": cleaned,
+                "duration_ms": int((time.time() - start) * 1000),
+                "interval": getattr(settings, "MACHINE_CLEAN_INTERVAL_SECONDS", None),
+            }
         ),
     )
     return cleaned

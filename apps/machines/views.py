@@ -9,6 +9,7 @@ from drf_spectacular.types import OpenApiTypes
 from apps.common import response
 from apps.common.permissions import IsAuthenticated
 from apps.common.throttles import MachineStartRateThrottle
+from apps.common.pagination import StandardPagination
 
 from .schemas import MachineStartSchema, MachineStopSchema
 from .services import MachineStartService, MachineStopService, serialize_machine
@@ -32,9 +33,15 @@ class MachineListCreateView(APIView):
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request) -> Response:
         # 查询当前登录用户的所有实例，按创建时间倒序
-        queryset = self.repo.filter(user=request.user).order_by("-created_at")
-        data = [serialize_machine(m) for m in queryset]
-        return response.success({"items": data})
+        queryset = (
+            self.repo.filter(user=request.user)
+            .select_related("contest", "challenge", "team")
+            .order_by("-created_at")
+        )
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        data = [serialize_machine(m) for m in page]
+        return paginator.get_paginated_response({"items": data})
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
