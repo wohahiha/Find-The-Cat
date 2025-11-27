@@ -22,14 +22,15 @@ from .models import (
 from apps.contests.models import Contest
 from apps.accounts.models import User
 
-# 仓储层：封装题目、分类、解题、子任务/附件/提示的数据库访问，供服务层复用。
+
+# 仓储层：封装题目、分类、解题、子任务/附件/提示的数据库访问，供服务层复用
 
 
 class ChallengeCategoryRepo(BaseRepo[ChallengeCategory]):
     """
     题目分类仓储：
-    - 业务场景：创建/更新题目时需要按名称获取或创建分类。
-    - 功能：根据名称生成 slug，若不存在则自动创建分类。
+    - 业务场景：创建/更新题目时需要按名称获取或创建分类
+    - 功能：根据名称生成 slug，若不存在则自动创建分类
     """
     model = ChallengeCategory
 
@@ -43,8 +44,8 @@ class ChallengeCategoryRepo(BaseRepo[ChallengeCategory]):
 class ChallengeRepo(BaseRepo[Challenge]):
     """
     题目仓储：
-    - 业务场景：列表/详情/提交等按比赛 + slug 获取题目。
-    - 功能：封装获取逻辑，若不存在抛业务级 NotFoundError。
+    - 业务场景：列表/详情/提交等按比赛 + slug 获取题目
+    - 功能：封装获取逻辑，若不存在抛业务级 NotFoundError
     """
     model = Challenge
 
@@ -66,7 +67,7 @@ class ChallengeRepo(BaseRepo[Challenge]):
 
     def list_active_with_related(self, *, contest: Contest):
         """
-        列出比赛下已开放题目，带上关联对象，减少 N+1。
+        列出比赛下已开放题目，带上关联对象，减少 N+1
         """
         return (
             self.filter(contest=contest, is_active=True)
@@ -82,8 +83,8 @@ class ChallengeRepo(BaseRepo[Challenge]):
 class ChallengeSolveRepo(BaseRepo[ChallengeSolve]):
     """
     解题记录仓储：
-    - 业务场景：判题/榜单统计时需要判断用户/队伍是否已解出。
-    - 功能：提供按题目+用户获取解题记录的便捷方法。
+    - 业务场景：判题/榜单统计时需要判断用户/队伍是否已解出
+    - 功能：提供按题目+用户获取解题记录的便捷方法
     """
     model = ChallengeSolve
 
@@ -92,7 +93,7 @@ class ChallengeSolveRepo(BaseRepo[ChallengeSolve]):
         return self.filter(challenge=challenge, user=user).first()
 
     def get_user_solve_with_related(self, *, challenge: Challenge, user: User) -> Optional[ChallengeSolve]:
-        """带外键的解题记录，减少后续访问 N+1。"""
+        """带外键的解题记录，减少后续访问 N+1"""
         return (
             self.filter(challenge=challenge, user=user)
             .select_related("challenge", "user", "team")
@@ -101,13 +102,13 @@ class ChallengeSolveRepo(BaseRepo[ChallengeSolve]):
 
 
 class ChallengeTaskRepo(BaseRepo[ChallengeTask]):
-    """题目子任务仓储：管理子任务的 CRUD，供题目创建/更新同步。"""
+    """题目子任务仓储：管理子任务的 CRUD，供题目创建/更新同步"""
 
     model = ChallengeTask
 
 
 class ChallengeAttachmentRepo(BaseRepo[ChallengeAttachment]):
-    """题目附件仓储：管理附件的 CRUD，供题目创建/更新同步。"""
+    """题目附件仓储：管理附件的 CRUD，供题目创建/更新同步"""
 
     model = ChallengeAttachment
 
@@ -115,8 +116,8 @@ class ChallengeAttachmentRepo(BaseRepo[ChallengeAttachment]):
 class ChallengeHintRepo(BaseRepo[ChallengeHint]):
     """
     题目提示仓储：
-    - 业务场景：提示列表、解锁校验。
-    - 功能：按题目获取提示列表、按 ID 获取提示。
+    - 业务场景：提示列表、解锁校验
+    - 功能：按题目获取提示列表、按 ID 获取提示
     """
 
     model = ChallengeHint
@@ -134,18 +135,18 @@ class ChallengeHintRepo(BaseRepo[ChallengeHint]):
 class ChallengeHintUnlockRepo(BaseRepo[ChallengeHintUnlock]):
     """
     提示解锁记录仓储：
-    - 业务场景：提示解锁、扣分统计、榜单扣分。
-    - 功能：查询是否已解锁、创建解锁记录、统计扣分成本。
+    - 业务场景：提示解锁、扣分统计、榜单扣分
+    - 功能：查询是否已解锁、创建解锁记录、统计扣分成本
     """
 
     model = ChallengeHintUnlock
 
     def has_unlocked(self, *, hint: ChallengeHint, user: User) -> bool:
-        """判断用户是否已解锁指定提示（队伍/个人）。"""
+        """判断用户是否已解锁指定提示（队伍/个人）"""
         return self.filter(hint=hint, user=user).exists()
 
     def create_unlock(self, *, hint: ChallengeHint, challenge: Challenge, user: User, team=None, cost: int = 0):
-        """创建解锁记录，带上队伍/成本信息。"""
+        """创建解锁记录，带上队伍/成本信息"""
         return self.create(
             {
                 "hint": hint,
@@ -156,10 +157,11 @@ class ChallengeHintUnlockRepo(BaseRepo[ChallengeHintUnlock]):
             }
         )
 
-    def total_cost(self, *, challenge_ids: list[int], user_ids: list[int] | None = None, team_ids: list[int] | None = None) -> dict[str, int]:
+    def total_cost(self, *, challenge_ids: list[int], user_ids: list[int] | None = None,
+                   team_ids: list[int] | None = None) -> dict[str, int]:
         """
         统计提示扣分：
-        - 返回以 user/team 维度的总成本，用于榜单扣减。
+        - 返回以 user/team 维度的总成本，用于榜单扣减
         """
         qs = self.filter(challenge_id__in=challenge_ids)
         if user_ids is not None:
@@ -173,6 +175,6 @@ class ChallengeHintUnlockRepo(BaseRepo[ChallengeHintUnlock]):
         return costs
 
     def cost_for_solver(self, *, challenge: Challenge, user: User) -> int:
-        """当前用户/队伍在指定题目的总提示成本，供计分扣减使用。"""
+        """当前用户/队伍在指定题目的总提示成本，供计分扣减使用"""
         qs = self.filter(challenge=challenge, user=user)
         return sum(int(item.cost or 0) for item in qs)

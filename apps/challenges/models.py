@@ -5,7 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 import hashlib
 
-# 模型文件：定义题目、分类、解题记录及子任务/附件/提示的数据结构，不承载业务流程。
+# 模型文件：定义题目、分类、解题记录及子任务/附件/提示的数据结构，不承载业务流程
 
 User = settings.AUTH_USER_MODEL
 
@@ -13,8 +13,8 @@ User = settings.AUTH_USER_MODEL
 class ChallengeCategory(models.Model):
     """
     题目分类：
-    - 业务场景：对比赛题目进行分类，便于前端筛选/统计。
-    - 模块角色：轻量分类表，被题目外键引用。
+    - 业务场景：对比赛题目进行分类，便于前端筛选/统计
+    - 模块角色：轻量分类表，被题目外键引用
     """
 
     # 分类名称
@@ -36,9 +36,9 @@ class ChallengeCategory(models.Model):
 class Challenge(models.Model):
     """
     题目主体：
-    - 关联比赛与分类，记录题面、Flag 信息及分值。
-    - 支持静态/动态 Flag 与大小写控制。
-    - 计分模式支持固定/动态衰减，用于排行榜与得分计算。
+    - 关联比赛与分类，记录题面、Flag 信息及分值
+    - 支持静态/动态 Flag 与大小写控制
+    - 计分模式支持固定/动态衰减，用于排行榜与得分计算
     """
 
     class Difficulty(models.TextChoices):
@@ -130,11 +130,11 @@ class Challenge(models.Model):
         return f"{self.title} ({self.contest.slug})"
 
     def normalized_flag(self, value: str) -> str:
-        """按配置标准化输入 Flag（去空格/大小写），用于统一比对。"""
+        """按配置标准化输入 Flag（去空格/大小写），用于统一比对"""
         return value.strip().lower() if self.flag_case_insensitive else value.strip()
 
     def _assemble_flag(self, prefix: str, body: str) -> str:
-        """按约定包装前缀与 flag 主体，并做标准化，生成标准 Flag 串。"""
+        """按约定包装前缀与 flag 主体，并做标准化，生成标准 Flag 串"""
         normalized_prefix = (prefix or "").strip()
         normalized_body = self.normalized_flag(body)
         wrapped = f"{normalized_prefix}{{{normalized_body}}}"
@@ -142,9 +142,9 @@ class Challenge(models.Model):
 
     def build_expected_flag(self, user=None, membership=None, secret: str | None = None) -> str:
         """
-        构造当前提交者应持有的标准 Flag。
-        - 静态题目：prefix + {flag}。
-        - 动态题目：基于 contest/challenge/solver + SECRET_KEY 生成摘要。
+        构造当前提交者应持有的标准 Flag
+        - 静态题目：prefix + {flag}
+        - 动态题目：基于 contest/challenge/solver + SECRET_KEY 生成摘要
         """
         if self.flag_type != self.FlagType.DYNAMIC:
             return self._assemble_flag(self.dynamic_prefix, self.flag)
@@ -164,8 +164,8 @@ class Challenge(models.Model):
     def check_flag(self, submitted: str, *, user=None, membership=None, secret: str | None = None) -> bool:
         """
         Flag 校验：
-        - 静态：直接比对包装后的 flag。
-        - 动态：基于用户/队伍生成期望值，再比对；若缺少身份则回退旧逻辑。
+        - 静态：直接比对包装后的 flag
+        - 动态：基于用户/队伍生成期望值，再比对；若缺少身份则回退旧逻辑
         """
         if self.flag_type == self.FlagType.DYNAMIC and user is None and membership is None:
             # 动态 flag 必须绑定用户或队伍身份，缺失时直接判错以避免被伪造
@@ -178,7 +178,7 @@ class Challenge(models.Model):
 class ChallengeSolve(models.Model):
     """
     解题记录：
-    - 记录选手或队伍的解题得分及时间，用于榜单统计。
+    - 记录选手或队伍的解题得分及时间，用于榜单统计
     """
 
     # 题目外键
@@ -211,7 +211,7 @@ class ChallengeSolve(models.Model):
 
 
 class ChallengeTask(models.Model):
-    """题目子任务：用于多阶段得分或提示指引。"""
+    """题目子任务：用于多阶段得分或提示指引"""
 
     # 关联题目
     challenge = models.ForeignKey(Challenge, verbose_name="题目", related_name="tasks", on_delete=models.CASCADE)
@@ -234,7 +234,7 @@ class ChallengeTask(models.Model):
 
 
 class ChallengeAttachment(models.Model):
-    """题目附件：记录可下载的附件链接。"""
+    """题目附件：记录可下载的附件链接"""
 
     # 关联题目
     challenge = models.ForeignKey(Challenge, verbose_name="题目", related_name="attachments", on_delete=models.CASCADE)
@@ -257,8 +257,8 @@ class ChallengeAttachment(models.Model):
 class ChallengeHint(models.Model):
     """
     题目提示：
-    - 支持免费提示与扣分提示。
-    - order 控制展示顺序。
+    - 支持免费提示与扣分提示
+    - order 控制展示顺序
     """
 
     # 关联题目
@@ -290,7 +290,7 @@ class ChallengeHint(models.Model):
 class ChallengeHintUnlock(models.Model):
     """
     提示解锁记录：
-    - 关联用户/队伍，便于后续扣分或审计。
+    - 关联用户/队伍，便于后续扣分或审计
     """
 
     # 提示

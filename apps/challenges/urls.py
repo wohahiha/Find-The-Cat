@@ -13,8 +13,8 @@ from .views import (
 app_name = "challenges"
 
 # 路由配置：
-# - 嵌套在 contests/<contest_slug>/challenges/ 之下，由 contests.urls include。
-# - 提供题目列表/详情、提示列表/解锁、附件上传等接口；提交接口已统一到 submissions 模块。
+# - 嵌套在 contests/<contest_slug>/challenges/ 之下，由 contests.urls include
+# - 提供题目列表/详情、提示列表/解锁、附件上传等接口；提交接口已统一到 submissions 模块
 urlpatterns = [
     # 题目列表与创建
     path("", ChallengeListView.as_view(), name="list"),

@@ -1,8 +1,8 @@
 """
-文件存储封装（本地+OSS 可切换）。
+文件存储封装（本地+OSS 可切换）
 
-- 默认将文件保存到 MEDIA_ROOT，返回相对路径与访问 URL。
-- 预留 OSS 封装，方便切换对象存储，不影响调用方。
+- 默认将文件保存到 MEDIA_ROOT，返回相对路径与访问 URL
+- 预留 OSS 封装，方便切换对象存储，不影响调用方
 """
 
 from __future__ import annotations
@@ -23,8 +23,8 @@ except Exception:  # pragma: no cover
 
 class LocalFileStorage:
     """
-    本地文件存储。
-    - save_bytes: 将字节内容写入 MEDIA_ROOT/子目录，返回相对路径与 URL。
+    本地文件存储
+    - save_bytes: 将字节内容写入 MEDIA_ROOT/子目录，返回相对路径与 URL
     """
 
     def __init__(self, base_dir: str | None = None):
@@ -35,16 +35,16 @@ class LocalFileStorage:
 
     def save_bytes(self, *, content: bytes, filename: str, subdir: str | None = None) -> Tuple[str, str | None]:
         """
-        保存二进制内容到本地磁盘。
+        保存二进制内容到本地磁盘
 
         入参：
-        - content: 文件字节内容。
-        - filename: 文件名（会直接用于存储路径，调用方需保证安全性）。
-        - subdir: 可选子目录，便于分类存储。
+        - content: 文件字节内容
+        - filename: 文件名（会直接用于存储路径，调用方需保证安全性）
+        - subdir: 可选子目录，便于分类存储
 
         返回：
-        - relative_path: 相对于 base_dir 的存储路径（字符串）。
-        - url: 若配置 MEDIA_URL，则返回可访问的 URL，否则为 None。
+        - relative_path: 相对于 base_dir 的存储路径（字符串）
+        - url: 若配置 MEDIA_URL，则返回可访问的 URL，否则为 None
         """
         target_dir = self.base_dir / (subdir or "")
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -59,8 +59,8 @@ class LocalFileStorage:
 
 class OSSStorage:
     """
-    对象存储封装（S3/OSS 兼容）。
-    - 依赖 boto3，需在环境中配置 access key/secret/endpoint/bucket。
+    对象存储封装（S3/OSS 兼容）
+    - 依赖 boto3，需在环境中配置 access key/secret/endpoint/bucket
     """
 
     def __init__(self):
@@ -72,7 +72,8 @@ class OSSStorage:
         self.bucket = os.getenv("OSS_BUCKET")
         self.prefix = (os.getenv("OSS_KEY_PREFIX") or "").strip().strip("/")
         if not all([self.endpoint, self.access_key, self.secret_key, self.bucket]):
-            raise RuntimeError("OSS 配置不完整，请在 .env 中填写 OSS_ENDPOINT/OSS_ACCESS_KEY_ID/OSS_ACCESS_KEY_SECRET/OSS_BUCKET")
+            raise RuntimeError(
+                "OSS 配置不完整，请在 .env 中填写 OSS_ENDPOINT/OSS_ACCESS_KEY_ID/OSS_ACCESS_KEY_SECRET/OSS_BUCKET")
         self.client = boto3.client(
             "s3",
             endpoint_url=self.endpoint,
@@ -82,7 +83,7 @@ class OSSStorage:
 
     def save_bytes(self, *, content: bytes, filename: str, subdir: str | None = None) -> Tuple[str, str]:
         """
-        上传文件到对象存储，返回 key 与可访问 URL（若 endpoint 支持）。
+        上传文件到对象存储，返回 key 与可访问 URL（若 endpoint 支持）
         """
         key_parts = [p for p in [self.prefix, subdir, filename] if p]
         key = "/".join(key_parts)

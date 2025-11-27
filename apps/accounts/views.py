@@ -1,9 +1,9 @@
-"""账户模块的 API 视图层。
+"""账户模块的 API 视图层
 
 每个接口仅负责：
-- 接收并校验参数（Schema）。
-- 调用对应业务 Service。
-- 使用统一响应封装成功结果。
+- 接收并校验参数（Schema）
+- 调用对应业务 Service
+- 使用统一响应封装成功结果
 """
 
 from __future__ import annotations
@@ -48,9 +48,9 @@ from .services import (
 
 def _set_jwt_cookie(resp: Response, access_token: str) -> None:
     """
-    根据配置决定是否写入 JWT Cookie。
-    - 业务场景：登录成功后可选择把 access token 写入 HttpOnly Cookie，便于前端少操作。
-    - 参数 resp: DRF Response 对象；access_token: JWT 访问令牌。
+    根据配置决定是否写入 JWT Cookie
+    - 业务场景：登录成功后可选择把 access token 写入 HttpOnly Cookie，便于前端少操作
+    - 参数 resp: DRF Response 对象；access_token: JWT 访问令牌
     """
     # 默认开启 Cookie 模式，可通过设置关闭
     if getattr(settings, "JWT_USE_COOKIE", True):
@@ -69,9 +69,9 @@ def _set_jwt_cookie(resp: Response, access_token: str) -> None:
 
 def _to_payload(data) -> dict:
     """
-    将 request.data 转为普通 dict（兼容 QueryDict / OrderedDict）。
-    - 业务场景：视图层统一处理请求体，便于 Schema.from_dict。
-    - 参数 data: DRF Request.data 或 QueryDict。
+    将 request.data 转为普通 dict（兼容 QueryDict / OrderedDict）
+    - 业务场景：视图层统一处理请求体，便于 Schema.from_dict
+    - 参数 data: DRF Request.data 或 QueryDict
     """
     # 若对象支持 dict() 方法，优先调用确保保留多值键处理；否则直接强转
     if hasattr(data, "dict"):
@@ -81,9 +81,9 @@ def _to_payload(data) -> dict:
 
 class SendEmailVerificationView(APIView):
     """
-    通用邮箱验证码发送接口。
-    - 适用场景：注册、找回密码、绑定邮箱。
-    - 仅负责参数校验与调用发送服务，限流交由 UserPostRateThrottle。
+    通用邮箱验证码发送接口
+    - 适用场景：注册、找回密码、绑定邮箱
+    - 仅负责参数校验与调用发送服务，限流交由 UserPostRateThrottle
     """
 
     # 公开接口，无需登录
@@ -95,8 +95,8 @@ class SendEmailVerificationView(APIView):
     def post(self, request: Request) -> Response:
         """
         发送验证码：
-        - 从请求体构建 SendEmailCodeSchema（自动校验）。
-        - 执行发送服务；DEBUG 下输出 debug_code 便于测试。
+        - 从请求体构建 SendEmailCodeSchema（自动校验）
+        - 执行发送服务；DEBUG 下输出 debug_code 便于测试
         """
         _ = self  # DRF 规格需实例方法，显式使用 self 抑制静态检查告警
         # 将请求数据转为 dict 并自动校验
@@ -112,7 +112,7 @@ class SendEmailVerificationView(APIView):
 
 
 class RegisterView(APIView):
-    """用户注册接口：校验验证码与唯一性后创建账户。"""
+    """用户注册接口：校验验证码与唯一性后创建账户"""
 
     # 公开接口，无需登录
     permission_classes = [AllowAny]
@@ -123,8 +123,8 @@ class RegisterView(APIView):
     def post(self, request: Request) -> Response:
         """
         提交注册：
-        - 校验注册入参。
-        - 执行注册服务，创建用户并分配默认权限。
+        - 校验注册入参
+        - 执行注册服务，创建用户并分配默认权限
         """
         _ = self
         # 构建并校验注册参数
@@ -136,7 +136,7 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
-    """用户登录接口：返回 JWT（刷新/访问）。"""
+    """用户登录接口：返回 JWT（刷新/访问）"""
 
     # 公开接口，无需登录
     permission_classes = [AllowAny]
@@ -155,17 +155,17 @@ class LoginView(APIView):
                     "captcha_key": "abcd1234",
                     "captcha_code": "XyZ1",
                 },
-                description="captcha_key/captcha_code 由获取验证码接口返回与输入。",
+                description="captcha_key/captcha_code 由获取验证码接口返回与输入",
             )
         ],
     )
     def post(self, request: Request) -> Response:
         """
         登录流程：
-        - 校验 identifier/password。
-        - 校验 captcha_key/captcha_code 图形验证码。
-        - 执行 LoginService 获取 token 与用户信息。
-        - 写入 HttpOnly JWT Cookie（可配置关闭）。
+        - 校验 identifier/password
+        - 校验 captcha_key/captcha_code 图形验证码
+        - 执行 LoginService 获取 token 与用户信息
+        - 写入 HttpOnly JWT Cookie（可配置关闭）
         """
         _ = self
         # 构建并校验登录参数
@@ -189,8 +189,8 @@ class LoginView(APIView):
 class CaptchaView(APIView):
     """
     获取登录图形验证码：
-    - 返回 captcha_key 与验证码图片 URL。
-    - 前端需输入验证码并连同 key 传给登录接口。
+    - 返回 captcha_key 与验证码图片 URL
+    - 前端需输入验证码并连同 key 传给登录接口
     """
 
     permission_classes = [AllowAny]
@@ -204,7 +204,7 @@ class CaptchaView(APIView):
 
 
 class PasswordResetRequestView(APIView):
-    """申请重置密码：发送重置场景的验证码。"""
+    """申请重置密码：发送重置场景的验证码"""
 
     # 公开接口
     permission_classes = [AllowAny]
@@ -215,8 +215,8 @@ class PasswordResetRequestView(APIView):
     def post(self, request: Request) -> Response:
         """
         申请重置：
-        - 将场景设置为 RESET_PASSWORD。
-        - 调用发送验证码服务。
+        - 将场景设置为 RESET_PASSWORD
+        - 调用发送验证码服务
         """
         _ = self
         # 转换请求数据并指定场景
@@ -229,7 +229,7 @@ class PasswordResetRequestView(APIView):
 
 
 class PasswordResetView(APIView):
-    """通过验证码重置密码。"""
+    """通过验证码重置密码"""
 
     # 公开接口
     permission_classes = [AllowAny]
@@ -240,8 +240,8 @@ class PasswordResetView(APIView):
     def post(self, request: Request) -> Response:
         """
         重置密码：
-        - 校验重置入参（邮箱/验证码/新密码）。
-        - 调用服务消费验证码并写入新密码。
+        - 校验重置入参（邮箱/验证码/新密码）
+        - 调用服务消费验证码并写入新密码
         """
         _ = self
         # 构建并校验重置参数
@@ -252,14 +252,14 @@ class PasswordResetView(APIView):
 
 
 class ProfileView(APIView):
-    """用户个人资料接口：获取/更新当前登录用户信息。"""
+    """用户个人资料接口：获取/更新当前登录用户信息"""
 
     # 需要登录
     permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request) -> Response:
-        """获取当前用户资料。"""
+        """获取当前用户资料"""
         _ = self
         return response.success({"user": serialize_user(request.user)})
 
@@ -267,8 +267,8 @@ class ProfileView(APIView):
     def patch(self, request: Request) -> Response:
         """
         部分更新个人资料：
-        - 校验至少包含一个可更新字段。
-        - 调用更新服务后返回最新用户信息。
+        - 校验至少包含一个可更新字段
+        - 调用更新服务后返回最新用户信息
         """
         _ = self
         # 构建并校验资料更新参数
@@ -279,7 +279,7 @@ class ProfileView(APIView):
 
 
 class ChangePasswordView(APIView):
-    """修改密码接口：需登录并提供旧密码。"""
+    """修改密码接口：需登录并提供旧密码"""
 
     # 需要登录
     permission_classes = [IsAuthenticated]
@@ -288,8 +288,8 @@ class ChangePasswordView(APIView):
     def post(self, request: Request) -> Response:
         """
         修改密码：
-        - 校验旧密码、新密码与确认密码。
-        - 调用服务写入新密码。
+        - 校验旧密码、新密码与确认密码
+        - 调用服务写入新密码
         """
         _ = self
         # 构建并校验修改密码参数
@@ -300,7 +300,7 @@ class ChangePasswordView(APIView):
 
 
 class ChangeEmailView(APIView):
-    """修改邮箱接口：需登录，验证当前密码与验证码。"""
+    """修改邮箱接口：需登录，验证当前密码与验证码"""
 
     # 需要登录
     permission_classes = [IsAuthenticated]
@@ -309,9 +309,9 @@ class ChangeEmailView(APIView):
     def post(self, request: Request) -> Response:
         """
         修改邮箱：
-        - 校验当前密码。
-        - 消费绑定邮箱验证码。
-        - 更新邮箱并返回最新资料。
+        - 校验当前密码
+        - 消费绑定邮箱验证码
+        - 更新邮箱并返回最新资料
         """
         _ = self
         # 构建并校验修改邮箱参数
@@ -322,7 +322,7 @@ class ChangeEmailView(APIView):
 
 
 class DeleteAccountView(APIView):
-    """注销账户接口：需登录并验证密码后软删除账户。"""
+    """注销账户接口：需登录并验证密码后软删除账户"""
 
     # 需要登录
     permission_classes = [IsAuthenticated]
@@ -331,8 +331,8 @@ class DeleteAccountView(APIView):
     def post(self, request: Request) -> Response:
         """
         注销流程：
-        - 校验当前密码。
-        - 调用服务进行软删除处理（禁用账号、清除可识别信息）。
+        - 校验当前密码
+        - 调用服务进行软删除处理（禁用账号、清除可识别信息）
         """
         _ = self
         # 构建并校验注销参数

@@ -21,10 +21,10 @@ from .services import SubmissionService
 
 
 class SubmissionServiceTests(TestCase):
-    """服务层单测：校验提交记录、判题与重复提交行为。"""
+    """服务层单测：校验提交记录、判题与重复提交行为"""
 
     def setUp(self) -> None:
-        """准备进行中的比赛、用户与题目，供提交测试使用。"""
+        """准备进行中的比赛、用户与题目，供提交测试使用"""
         now = timezone.now()
         self.contest = Contest.objects.create(
             name="Submit CTF",
@@ -101,13 +101,14 @@ class SubmissionServiceTests(TestCase):
     }
 )
 class SubmissionsAPITestCase(AuthenticatedAPIMixin, APITestCase):
-    """Submissions 接口冒烟：提交正确/错误及重复行为。"""
+    """Submissions 接口冒烟：提交正确/错误及重复行为"""
 
     @classmethod
     def setUpTestData(cls):
-        """一次性创建用户、管理员、比赛与题目，供接口测试复用。"""
+        """一次性创建用户、管理员、比赛与题目，供接口测试复用"""
         cls.user = User.objects.create_user(username="alice", email="alice@example.com", password="Passw0rd123")
-        cls.admin = User.objects.create_superuser(username="wohahiha", email="admin@example.com", password="stevenxu5190")
+        cls.admin = User.objects.create_superuser(username="wohahiha", email="admin@example.com",
+                                                  password="stevenxu5190")
         now = timezone.now()
         cls.contest = Contest.objects.create(
             name="API Submit",
@@ -129,7 +130,7 @@ class SubmissionsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         TeamCreateService().execute(cls.user, TeamCreateSchema(contest_slug="api-submit", name="Solo"))
 
     def setUp(self):
-        """每个测试前清理缓存，避免节流或残留数据影响。"""
+        """每个测试前清理缓存，避免节流或残留数据影响"""
         cache.clear()
 
     def test_submit_api_correct_and_wrong(self):

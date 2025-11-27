@@ -2,9 +2,9 @@
 统一限速封装（apps.common.throttles）
 
 职责：
-- 覆盖 DRF 默认限速行为，统一抛 BizError（RateLimitError），保证响应格式。
-- 为登录、Flag 提交、启动靶机、通用 POST 等关键场景提供独立 throttle 类。
-- 支持基于 IP/用户的限速；保留 wait 秒数，便于前端展示倒计时。
+- 覆盖 DRF 默认限速行为，统一抛 BizError（RateLimitError），保证响应格式
+- 为登录、Flag 提交、启动靶机、通用 POST 等关键场景提供独立 throttle 类
+- 支持基于 IP/用户的限速；保留 wait 秒数，便于前端展示倒计时
 """
 
 from __future__ import annotations
@@ -27,8 +27,8 @@ logger = get_logger(__name__)
 def raise_rate_limit(exc: Throttled) -> None:
     """
     将 DRF 内置 Throttled 映射为 RateLimitError，
-    保留 wait 秒数字段，交给全局异常处理器统一格式化。
-    - 业务场景：任何触发 DRF Throttled 的地方都可复用，统一提示。
+    保留 wait 秒数字段，交给全局异常处理器统一格式化
+    - 业务场景：任何触发 DRF Throttled 的地方都可复用，统一提示
     """
     wait = getattr(exc, "wait", None)
     detail = getattr(exc, "detail", None)
@@ -38,7 +38,7 @@ def raise_rate_limit(exc: Throttled) -> None:
         "限流触发",
         extra=logger_extra(
             {
-                "message": message,
+                "detail": message,
             }
         ),
     )
@@ -112,7 +112,7 @@ class FlagSubmitRateThrottle(SimpleRateThrottle):
 
 class MachineStartRateThrottle(SimpleRateThrottle):
     """
-    限制启动靶机的频率，防止资源滥用。
+    限制启动靶机的频率，防止资源滥用
 
     scope = machine_start
     key = throttle_machine_start_user_<uid>
@@ -143,7 +143,7 @@ class MachineStartRateThrottle(SimpleRateThrottle):
 
 class UserPostRateThrottle(SimpleRateThrottle):
     """
-    全局 POST 限速：防脚本滥用通用接口。
+    全局 POST 限速：防脚本滥用通用接口
 
     scope = user_post
     """
@@ -178,7 +178,7 @@ class UserPostRateThrottle(SimpleRateThrottle):
 class AttachmentUploadRateThrottle(SimpleRateThrottle):
     """
     附件上传限速：
-    - 防止大规模上传耗尽带宽与存储。
+    - 防止大规模上传耗尽带宽与存储
     """
 
     scope = "attachment_upload"

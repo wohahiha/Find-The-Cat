@@ -39,4 +39,4 @@ urlpatterns = [
     # 注销账号：软删除当前用户，释放用户名/邮箱
     path("me/deactivate/", DeleteAccountView.as_view(), name="deactivate"),
 ]
-# 账户相关路由配置：统一前缀按功能分组（auth/email/me），便于前端与权限管理。
+# 账户相关路由配置：统一前缀按功能分组（auth/email/me），便于前端与权限管理

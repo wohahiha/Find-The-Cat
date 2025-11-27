@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 
 def _release_port_from_cache(port: int | None) -> None:
-    """从 Redis 端口占用列表中移除指定端口。"""
+    """从 Redis 端口占用列表中移除指定端口"""
     if port is None:
         return
     key = machine_ports_key()
@@ -34,7 +34,7 @@ def _release_port_from_cache(port: int | None) -> None:
 
 
 def _stop_container(container_id: str) -> None:
-    """停止并移除容器，容器不存在时忽略异常。"""
+    """停止并移除容器，容器不存在时忽略异常"""
     try:
         if container_id:
             docker_manager.stop_container(container_id)
@@ -45,11 +45,11 @@ def _stop_container(container_id: str) -> None:
 @shared_task(name="cleanup_expired_machines")
 def cleanup_expired_machines() -> int:
     """
-    Celery 定时任务：清理超时运行的靶机容器。
+    Celery 定时任务：清理超时运行的靶机容器
 
-    - 判断运行时长是否超过 settings.MACHINE_MAX_RUNTIME_MINUTES。
-    - 依次停止/移除容器，释放端口缓存，并标记实例为 STOPPED。
-    - 兼容 mock 模式（docker_manager 内部已处理），异常仅记录日志。
+    - 判断运行时长是否超过 settings.MACHINE_MAX_RUNTIME_MINUTES
+    - 依次停止/移除容器，释放端口缓存，并标记实例为 STOPPED
+    - 兼容 mock 模式（docker_manager 内部已处理），异常仅记录日志
     """
     start = time.time()
     max_minutes = int(getattr(settings, "MACHINE_MAX_RUNTIME_MINUTES", 30))

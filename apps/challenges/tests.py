@@ -24,14 +24,15 @@ from .repo import ChallengeRepo
 from apps.submissions.schemas import SubmissionCreateSchema
 from apps.submissions.services import SubmissionService
 
-# 测试用例：覆盖题目创建/提交的服务逻辑与 API 冒烟。
+
+# 测试用例：覆盖题目创建/提交的服务逻辑与 API 冒烟
 
 
 class ChallengeServiceTests(TestCase):
     """
     服务层单测：
-    - 验证创建题目成功路径。
-    - 验证静态/动态 Flag 判题、重复提交等业务分支。
+    - 验证创建题目成功路径
+    - 验证静态/动态 Flag 判题、重复提交等业务分支
     """
 
     def setUp(self) -> None:
@@ -47,7 +48,7 @@ class ChallengeServiceTests(TestCase):
         self.player = User.objects.create_user(username="player", email="player@example.com", password="Pass1234")
 
     def test_challenge_create_and_fetch(self):
-        """创建题目后可通过仓储按 slug 获取。"""
+        """创建题目后可通过仓储按 slug 获取"""
         schema = ChallengeCreateSchema(
             contest_slug="autumn-ctf",
             title="Warmup",
@@ -64,7 +65,7 @@ class ChallengeServiceTests(TestCase):
         self.assertEqual(fetched.title, "Warmup")
 
     def test_challenge_submit_success(self):
-        """成功提交正确 Flag，生成解题记录。"""
+        """成功提交正确 Flag，生成解题记录"""
         ChallengeCreateService().execute(
             self.author,
             ChallengeCreateSchema(
@@ -88,7 +89,7 @@ class ChallengeServiceTests(TestCase):
         self.assertIsNotNone(submission.solve)
 
     def test_flag_schema_validation(self):
-        """Flag 校验：静态需 flag，前缀不能含花括号，动态需种子。"""
+        """Flag 校验：静态需 flag，前缀不能含花括号，动态需种子"""
         with self.assertRaises(ValidationError):
             ChallengeCreateSchema(
                 contest_slug="autumn-ctf",
@@ -118,7 +119,7 @@ class ChallengeServiceTests(TestCase):
             ).validate()
 
     def test_dynamic_flag_generation_and_check(self):
-        """动态 Flag：按用户生成唯一 Flag，正确通过，错误/重复抛业务异常。"""
+        """动态 Flag：按用户生成唯一 Flag，正确通过，错误/重复抛业务异常"""
         challenge = ChallengeCreateService().execute(
             self.author,
             ChallengeCreateSchema(
@@ -147,7 +148,7 @@ class ChallengeServiceTests(TestCase):
             )
 
     def _build_expected_flag(self, challenge, user):
-        """按照服务端逻辑构造动态 Flag，供断言使用。"""
+        """按照服务端逻辑构造动态 Flag，供断言使用"""
         return challenge.build_expected_flag(user=user, secret=settings.SECRET_KEY)
 
 
@@ -162,7 +163,7 @@ class ChallengeServiceTests(TestCase):
     }
 )
 class ChallengesAPITestCase(AuthenticatedAPIMixin, APITestCase):
-    """挑战模块接口冒烟：题目 CRUD、提交/动态 Flag、附件上传。"""
+    """挑战模块接口冒烟：题目 CRUD、提交/动态 Flag、附件上传"""
 
     @classmethod
     def setUpTestData(cls):
@@ -185,7 +186,7 @@ class ChallengesAPITestCase(AuthenticatedAPIMixin, APITestCase):
         cache.clear()
 
     def test_challenge_crud_and_submit(self):
-        """接口链路冒烟：创建题目、列表/详情查看、提交 Flag 与重复提交校验。"""
+        """接口链路冒烟：创建题目、列表/详情查看、提交 Flag 与重复提交校验"""
         admin_client = self._auth_client("wohahiha", "stevenxu5190")
         player_client = self._auth_client("alice", "Passw0rd123")
 
@@ -243,7 +244,7 @@ class ChallengesAPITestCase(AuthenticatedAPIMixin, APITestCase):
         self.assertEqual(resp.status_code, 400)
 
     def test_dynamic_flag_submit_api(self):
-        """接口层动态 Flag：按用户生成唯一值，正确通过，错误返回业务错误。"""
+        """接口层动态 Flag：按用户生成唯一值，正确通过，错误返回业务错误"""
         admin_client = self._auth_client("wohahiha", "stevenxu5190")
         player_client = self._auth_client("alice", "Passw0rd123")
 
@@ -279,7 +280,7 @@ class ChallengesAPITestCase(AuthenticatedAPIMixin, APITestCase):
         self.assertEqual(bad_resp.status_code, 400)
 
     def test_attachment_upload_api(self):
-        """管理员上传附件，返回路径与 URL。"""
+        """管理员上传附件，返回路径与 URL"""
         admin_client = self._auth_client("wohahiha", "stevenxu5190")
         file = SimpleUploadedFile("readme.txt", b"hello", content_type="text/plain")
         resp = admin_client.post(
@@ -291,5 +292,5 @@ class ChallengesAPITestCase(AuthenticatedAPIMixin, APITestCase):
         self.assertIn("attachment", resp.data["data"])
 
     def _build_dynamic_flag(self, challenge, user):
-        """复用服务端规则构造动态 Flag，便于接口断言。"""
+        """复用服务端规则构造动态 Flag，便于接口断言"""
         return challenge.build_expected_flag(user=user, secret=settings.SECRET_KEY)

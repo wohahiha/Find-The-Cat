@@ -5,7 +5,8 @@ from django.utils import timezone
 from django.conf import settings
 
 from apps.common.base.base_service import BaseService
-from apps.common.exceptions import WrongFlagError, ChallengeAlreadySolvedError, ValidationError, ChallengeNotAvailableError
+from apps.common.exceptions import WrongFlagError, ChallengeAlreadySolvedError, ValidationError, \
+    ChallengeNotAvailableError
 from apps.accounts.models import User
 from apps.challenges.models import ChallengeSolve
 from apps.challenges.repo import ChallengeRepo, ChallengeSolveRepo, ChallengeHintRepo
@@ -19,12 +20,13 @@ from .models import Submission
 from .repo import SubmissionRepo
 from .schemas import SubmissionCreateSchema
 
-# 服务层：处理提交记录、判题与解题日志写入。
+# 服务层：处理提交记录、判题与解题日志写入
 
 logger = get_logger(__name__)
 
+
 def serialize_submission(submission: Submission) -> dict:
-    """提交记录序列化：返回判题状态、得分与关联实体。"""
+    """提交记录序列化：返回判题状态、得分与关联实体"""
     return {
         "id": submission.id,
         "contest": submission.contest.slug,
@@ -46,23 +48,23 @@ def serialize_submission(submission: Submission) -> dict:
 class SubmissionService(BaseService[Submission]):
     """
     Flag 提交服务：
-    - 校验比赛状态与题目开放性。
-    - 统一使用 Challenge.check_flag 判题，支持动态 Flag 与前缀。
-    - 采用动态计分与提示扣分，记录血次序，正确则写入解题记录。
-    - 重复正确提交记为重复并抛出业务错误；错误也会记录提交。
+    - 校验比赛状态与题目开放性
+    - 统一使用 Challenge.check_flag 判题，支持动态 Flag 与前缀
+    - 采用动态计分与提示扣分，记录血次序，正确则写入解题记录
+    - 重复正确提交记为重复并抛出业务错误；错误也会记录提交
     """
     atomic_enabled = False  # 自行控制事务，确保错误提交也能落库记录
 
     def __init__(
-        self,
-        contest_service: ContestContextService | None = None,
-        challenge_repo: ChallengeRepo | None = None,
-        solve_repo: ChallengeSolveRepo | None = None,
-        member_repo: TeamMemberRepo | None = None,
-        hint_repo: ChallengeHintRepo | None = None,
-        submission_repo: SubmissionRepo | None = None,
+            self,
+            contest_service: ContestContextService | None = None,
+            challenge_repo: ChallengeRepo | None = None,
+            solve_repo: ChallengeSolveRepo | None = None,
+            member_repo: TeamMemberRepo | None = None,
+            hint_repo: ChallengeHintRepo | None = None,
+            submission_repo: SubmissionRepo | None = None,
     ):
-        """注入依赖仓储与上下文服务，便于测试时替换实现。"""
+        """注入依赖仓储与上下文服务，便于测试时替换实现"""
         self.contest_service = contest_service or ContestContextService()
         self.challenge_repo = challenge_repo or ChallengeRepo()
         self.solve_repo = solve_repo or ChallengeSolveRepo()
@@ -71,7 +73,7 @@ class SubmissionService(BaseService[Submission]):
         self.submission_repo = submission_repo or SubmissionRepo()
 
     def perform(self, user: User, schema: SubmissionCreateSchema) -> Submission:
-        """处理一次 Flag 提交，返回提交记录；正确会新增解题并刷新榜单。"""
+        """处理一次 Flag 提交，返回提交记录；正确会新增解题并刷新榜单"""
         # 1) 获取比赛与题目，并校验比赛进行中
         contest = self.contest_service.get_contest(schema.contest_slug)
         self.contest_service.ensure_contest_running(contest)
@@ -219,8 +221,8 @@ class SubmissionService(BaseService[Submission]):
 
     def visible_points_for_user(self, user: User | None, contest, challenge, membership=None) -> int:
         """
-        计算选手当前可获得分值：动态计分基础上扣除已解锁提示。
-        - 未登录用户视为无提示扣分。
+        计算选手当前可获得分值：动态计分基础上扣除已解锁提示
+        - 未登录用户视为无提示扣分
         """
         # 若未传 membership，尝试在已登录上下文下查队伍关系
         if membership is None and user is not None and getattr(user, "is_authenticated", False):
@@ -240,7 +242,7 @@ class SubmissionService(BaseService[Submission]):
 
     def _next_blood_rank(self, challenge) -> int:
         """
-        使用 redis 计数器获取血次序，降低并发冲突。
+        使用 redis 计数器获取血次序，降低并发冲突
         """
         key = blood_rank_key(challenge.id)
         try:
@@ -253,7 +255,7 @@ class SubmissionService(BaseService[Submission]):
             return current_solved + 1
 
     def _invalidate_scoreboard_cache(self, contest_id: int) -> None:
-        """正确提交后清理对应比赛的记分板缓存。"""
+        """正确提交后清理对应比赛的记分板缓存"""
         try:
             ScoreboardService.invalidate_cache(contest_id)
         except Exception:
@@ -261,7 +263,7 @@ class SubmissionService(BaseService[Submission]):
             redis_client.delete(scoreboard_key(contest_id))
 
     def _calc_hint_cost(self, challenge, user: User) -> int:
-        """提示扣分：若仓储支持 cost_for_solver 则使用，否则为 0。"""
+        """提示扣分：若仓储支持 cost_for_solver 则使用，否则为 0"""
         if hasattr(self.hint_repo, "cost_for_solver"):
             try:
                 return int(self.hint_repo.cost_for_solver(challenge=challenge, user=user))  # type: ignore[attr-defined]
@@ -272,8 +274,8 @@ class SubmissionService(BaseService[Submission]):
     def _solved_count(self, challenge, contest) -> int:
         """
         统计当前题目已解出的数量：
-        - 组队赛按队伍去重。
-        - 个人赛按用户去重。
+        - 组队赛按队伍去重
+        - 个人赛按用户去重
         """
         if contest.is_team_based:
             return (
@@ -293,8 +295,8 @@ class SubmissionService(BaseService[Submission]):
     def _apply_blood_reward(self, challenge, blood_rank: int | None, *, include_bonus: bool) -> tuple[int | None, int]:
         """
         n 血奖励处理：
-        - 返回 base_points 覆盖值（用于不衰减）与额外加分。
-        - include_bonus=False 时，仅处理不衰减，不计算加分。
+        - 返回 base_points 覆盖值（用于不衰减）与额外加分
+        - include_bonus=False 时，仅处理不衰减，不计算加分
         """
         if not blood_rank or blood_rank <= 0:
             return None, 0
@@ -304,9 +306,9 @@ class SubmissionService(BaseService[Submission]):
             return None, 0
         # 不衰减：仅动态分值生效
         if (
-            reward_type == challenge.BloodRewardType.NO_DECAY
-            and challenge.scoring_mode == challenge.ScoringMode.DYNAMIC
-            and blood_rank <= reward_count
+                reward_type == challenge.BloodRewardType.NO_DECAY
+                and challenge.scoring_mode == challenge.ScoringMode.DYNAMIC
+                and blood_rank <= reward_count
         ):
             return challenge.base_points, 0
         # 加分模式
@@ -322,8 +324,8 @@ class SubmissionService(BaseService[Submission]):
     def _calc_dynamic_points(self, challenge, solved_count: int) -> int:
         """
         根据计分模式计算得分：
-        - 固定模式：直接 base_points。
-        - 动态模式：按队伍/个人解题数衰减，最低分不低于 min_score。
+        - 固定模式：直接 base_points
+        - 动态模式：按队伍/个人解题数衰减，最低分不低于 min_score
         """
         if challenge.scoring_mode == challenge.ScoringMode.FIXED:
             return challenge.base_points

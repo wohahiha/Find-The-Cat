@@ -1,9 +1,9 @@
 """
-账户相关模型定义（用户、邮件验证码、邮件账号等）。
+账户相关模型定义（用户、邮件验证码、邮件账号等）
 
-- 扩展 User 模型（昵称、头像、组织、账号类型等）并覆写 Manager 限制超管数量，满足安全与资料需求。
-- 邮件验证码模型支持注册/重置密码/绑定邮箱等场景，内置过期与已使用标记。
-- 邮件账号模型封装 SMTP 配置、默认账号切换与优先级，支撑统一邮件发送基础设施。
+- 扩展 User 模型（昵称、头像、组织、账号类型等）并覆写 Manager 限制超管数量，满足安全与资料需求
+- 邮件验证码模型支持注册/重置密码/绑定邮箱等场景，内置过期与已使用标记
+- 邮件账号模型封装 SMTP 配置、默认账号切换与优先级，支撑统一邮件发送基础设施
 """
 
 from __future__ import annotations
@@ -11,18 +11,19 @@ from __future__ import annotations
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 
 class FTCUserManager(UserManager):
     """
     自定义用户管理器：
-    - 业务场景：创建超级管理员时限制数量，避免超管过多带来风险。
-    - 模块角色：为 User 模型提供带业务约束的创建入口。
-    - 功能：创建超管时补齐账号类型/管理员标记，超出上限直接拒绝。
+    - 业务场景：创建超级管理员时限制数量，避免超管过多带来风险
+    - 模块角色：为 User 模型提供带业务约束的创建入口
+    - 功能：创建超管时补齐账号类型/管理员标记，超出上限直接拒绝
     """
 
     def create_superuser(self, username, email=None, password=None, **extra_fields):
-        """创建超管：附带数量上限校验与默认权限标志。"""
+        """创建超管：附带数量上限校验与默认权限标志"""
         if self.filter(is_superuser=True).count() >= 3:
             raise ValueError("Superuser limit reached (maximum 3). Use existing accounts.")
         extra_fields.setdefault("account_type", self.model.AccountType.ADMIN)
@@ -33,9 +34,9 @@ class FTCUserManager(UserManager):
 class User(AbstractUser):
     """
     FTC 自定义用户模型：
-    - 业务场景：承载选手与管理员的认证主体，存储扩展资料。
-    - 模块角色：被认证、权限、业务服务和邮件发送广泛引用。
-    - 功能：增加昵称、头像、组织等字段；账号类型标记用户/管理员；保存时自动填充昵称。
+    - 业务场景：承载选手与管理员的认证主体，存储扩展资料
+    - 模块角色：被认证、权限、业务服务和邮件发送广泛引用
+    - 功能：增加昵称、头像、组织等字段；账号类型标记用户/管理员；保存时自动填充昵称
     """
 
     class AccountType(models.TextChoices):
@@ -69,7 +70,8 @@ class User(AbstractUser):
     website = models.URLField("个人主页", blank=True, help_text="个人主页或其他社交链接")
     is_email_verified = models.BooleanField("邮箱已验证", default=False, help_text="邮箱是否已通过验证码验证")
     updated_at = models.DateTimeField("更新时间", auto_now=True)
-    account_type = models.CharField("账号类型", max_length=10, choices=AccountType.choices, default=AccountType.USER, db_index=True)
+    account_type = models.CharField("账号类型", max_length=10, choices=AccountType.choices, default=AccountType.USER,
+                                    db_index=True)
 
     objects = FTCUserManager()
 
@@ -82,23 +84,23 @@ class User(AbstractUser):
         verbose_name_plural = "用户"
 
     def save(self, *args, **kwargs):
-        """保存前自动补充昵称，避免空昵称影响展示。"""
+        """保存前自动补充昵称，避免空昵称影响展示"""
         if not self.nickname:
             self.nickname = self.username
         super().save(*args, **kwargs)
 
     @property
     def display_name(self) -> str:
-        """展示名：优先昵称，否则回退用户名。"""
+        """展示名：优先昵称，否则回退用户名"""
         return self.nickname or self.username
 
 
 class EmailVerificationCode(models.Model):
     """
     邮箱验证码记录：
-    - 业务场景：注册、找回密码、绑定邮箱等操作的验证码校验。
-    - 模块角色：验证码存储与状态管理，被发送/校验服务调用。
-    - 功能：记录验证码、场景、过期与使用状态，提供过期判断与使用标记。
+    - 业务场景：注册、找回密码、绑定邮箱等操作的验证码校验
+    - 模块角色：验证码存储与状态管理，被发送/校验服务调用
+    - 功能：记录验证码、场景、过期与使用状态，提供过期判断与使用标记
     """
 
     class Scene(models.TextChoices):
@@ -129,18 +131,18 @@ class EmailVerificationCode(models.Model):
 
     @property
     def is_expired(self) -> bool:
-        """是否已过期：供校验逻辑快速判断有效性。"""
+        """是否已过期：供校验逻辑快速判断有效性"""
         return timezone.now() >= self.expires_at
 
     def mark_used(self) -> None:
-        """标记验证码已使用并记录验证时间。"""
+        """标记验证码已使用并记录验证时间"""
         self.is_used = True
         self.verified_at = timezone.now()
         self.save(update_fields=["is_used", "verified_at", "updated_at"])
 
 
 class PlayerUser(User):
-    """选手代理模型：复用 User 表，便于在管理端按角色区分。"""
+    """选手代理模型：复用 User 表，便于在管理端按角色区分"""
 
     class Meta:
         proxy = True
@@ -149,7 +151,7 @@ class PlayerUser(User):
 
 
 class StaffUser(User):
-    """管理员代理模型：复用 User 表，在管理端聚焦管理员列表。"""
+    """管理员代理模型：复用 User 表，在管理端聚焦管理员列表"""
 
     class Meta:
         proxy = True
@@ -158,14 +160,14 @@ class StaffUser(User):
 
 
 class MailAccountQuerySet(models.QuerySet):
-    """发信账号 QuerySet：封装启用状态与默认账号的获取。"""
+    """发信账号 QuerySet：封装启用状态与默认账号的获取"""
 
     def active(self):
-        """获取已启用的发信账号列表。"""
+        """获取已启用的发信账号列表"""
         return self.filter(is_active=True)
 
     def get_default(self):
-        """获取默认发信账号，若无默认则按优先级取第一个启用账号。"""
+        """获取默认发信账号，若无默认则按优先级取第一个启用账号"""
         account = (
             self.active()
             .filter(is_default=True)
@@ -180,9 +182,9 @@ class MailAccountQuerySet(models.QuerySet):
 class MailAccount(models.Model):
     """
     可配置的发信邮箱账户，支持不同服务商：
-    - 业务场景：统一管理平台发信 SMTP 账户，供验证码/通知邮件使用。
-    - 模块角色：存储发信配置、优先级与默认标记，被邮件发送组件选择。
-    - 功能：预置常用服务商默认参数，保存时保证默认账号唯一。
+    - 业务场景：统一管理平台发信 SMTP 账户，供验证码/通知邮件使用
+    - 模块角色：存储发信配置、优先级与默认标记，被邮件发送组件选择
+    - 功能：预置常用服务商默认参数，保存时保证默认账号唯一
     """
 
     class Provider(models.TextChoices):
@@ -194,7 +196,7 @@ class MailAccount(models.Model):
 
     provider = models.CharField("服务商", max_length=20, choices=Provider.choices, default=Provider.QQ)  # 邮件服务商
     name = models.CharField("名称", max_length=50, help_text="后台展示用名称")  # 后台展示名称
-    host = models.CharField("SMTP 主机", max_length=120, blank=True)  # SMTP 主机地址
+    host = models.CharField("SMTP 主机", max_length=120)  # SMTP 主机地址（必填，可由服务商默认填充）
     port = models.PositiveIntegerField("端口", default=587)  # SMTP 端口
     use_tls = models.BooleanField("启用 TLS", default=True)  # 是否启用 TLS
     use_ssl = models.BooleanField("启用 SSL", default=False)  # 是否启用 SSL
@@ -204,7 +206,8 @@ class MailAccount(models.Model):
     from_email = models.EmailField("发信邮箱", blank=True, help_text="用于 From 的邮箱地址，默认等于 username")  # 发件人邮箱
     priority = models.PositiveIntegerField("优先级", default=100, help_text="数字越小优先级越高")  # 选用优先级
     is_active = models.BooleanField("启用", default=True)  # 是否启用账号
-    is_default = models.BooleanField("默认账号", default=False, help_text="设为 True 后其余账号将自动取消默认")  # 是否为默认账号
+    is_default = models.BooleanField("默认账号", default=False,
+                                     help_text="设为 True 后其余账号将自动取消默认")  # 是否为默认账号
     created_at = models.DateTimeField("创建时间", auto_now_add=True)  # 创建时间
     updated_at = models.DateTimeField("更新时间", auto_now=True)  # 更新时间
 
@@ -223,31 +226,23 @@ class MailAccount(models.Model):
     }
 
     def apply_provider_defaults(self):
-        """根据预置服务商填充默认 SMTP 配置。"""
-        config = self.PROVIDER_DEFAULTS.get(self.provider)
-        if not config:
-            return
-        if not self.host:
-            self.host = config["host"]
-        if self.port in (0, None):
-            self.port = config["port"]
-        if self.use_tls is None:
-            self.use_tls = config["use_tls"]
-        if self.use_ssl is None:
-            self.use_ssl = config["use_ssl"]
+        """占位：不再自动填充主机端口，避免覆盖手工配置"""
+        return
 
     def save(self, *args, **kwargs):
-        """保存前填充默认配置、默认发信邮箱，并确保默认账号唯一。"""
+        """保存前填充默认配置、默认发信邮箱，并确保默认账号唯一"""
         self.apply_provider_defaults()
         if not self.from_email:
             self.from_email = self.username
+        if not self.host:
+            raise ValidationError("SMTP 主机不能为空，请选择服务商或手动填写")
         super().save(*args, **kwargs)
         if self.is_default:
             MailAccount.objects.exclude(pk=self.pk).update(is_default=False)
 
     @property
     def from_display(self) -> str:
-        """格式化发信人展示，例如 Name <email>。"""
+        """格式化发信人展示，例如 Name <email>"""
         if self.from_name:
             return f"{self.from_name} <{self.from_email}>"
         return self.from_email

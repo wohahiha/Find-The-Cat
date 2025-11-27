@@ -6,14 +6,15 @@ from typing import ClassVar
 from apps.common.base.base_schema import BaseSchema
 from apps.common.exceptions import ValidationError
 
-# Schema：定义提交 Flag 的入参与校验。
+
+# Schema：定义提交 Flag 的入参与校验
 
 
 @dataclass
 class SubmissionCreateSchema(BaseSchema[None]):
     """
     提交 Flag 入参：
-    - 需要比赛/题目标识与提交的 Flag。
+    - 需要比赛/题目标识与提交的 Flag
     """
 
     auto_validate: ClassVar[bool] = True
@@ -22,7 +23,7 @@ class SubmissionCreateSchema(BaseSchema[None]):
     flag: str
 
     def validate(self) -> None:
-        """校验比赛/题目/Flag 必填。"""
+        """校验比赛/题目/Flag 必填"""
         if not self.contest_slug:
             raise ValidationError(message="缺少比赛标识")
         if not self.challenge_slug:

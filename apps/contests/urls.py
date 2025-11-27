@@ -13,9 +13,10 @@ from .views import (
     TeamInviteResetView,
     TeamTransferView,
     ContestExportView,
+    ContestSubmissionView,
 )
 
-# 路由配置：声明比赛、队伍、公告相关的 API 路径。
+# 路由配置：声明比赛、队伍、公告相关的 API 路径
 
 app_name = "contests"
 
@@ -40,6 +41,8 @@ urlpatterns = [
     path("teams/<int:team_id>/transfer/", TeamTransferView.as_view(), name="team-transfer"),
     # 比赛公告列表 / 创建
     path("<slug:contest_slug>/announcements/", ContestAnnouncementView.as_view(), name="announcements"),
+    # 提交记录与判题（比赛作用域）
+    path("<slug:contest_slug>/submissions/", ContestSubmissionView.as_view(), name="submissions"),
     # 嵌套挑战路由
     path(
         "<slug:contest_slug>/challenges/",

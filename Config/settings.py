@@ -34,6 +34,7 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = 'django-insecure-a!(0n*euw%0(fy%sq*v#n8j2+0klghi^4oxsavef1u8$fcs@!l'
 DEBUG = True
 ALLOWED_HOSTS = ["*"]  # 允许访问的域名/IP
+
 # 是否允许登录不带图形验证码（生产建议 False；测试/DEBUG 可设 True）
 ALLOW_LOGIN_WITHOUT_CAPTCHA: bool = DEBUG
 
@@ -68,6 +69,8 @@ INSTALLED_APPS = [
     'apps.challenges',
     'apps.submissions',
     'apps.machines',
+    'apps.problem_bank',
+    'apps.system',
     # ...后续再扩充
 ]
 
@@ -443,4 +446,3 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": timedelta(seconds=MACHINE_CLEAN_INTERVAL_SECONDS),
     }
 }
-

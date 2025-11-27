@@ -2,9 +2,9 @@
 统一 API 响应封装（common.response）
 
 目标与作用：
-- 所有接口返回结构保持一致，便于前端对接与调试。
-- 业务代码只关注 code/message/data/extra，不直接操作 DRF Response。
-- 与 BizError 体系对齐，异常处理器与正常返回共用同一字段语义。
+- 所有接口返回结构保持一致，便于前端对接与调试
+- 业务代码只关注 code/message/data/extra，不直接操作 DRF Response
+- 与 BizError 体系对齐，异常处理器与正常返回共用同一字段语义
 
 约定返回结构：
 {
@@ -43,8 +43,8 @@ def build_payload(
         extra: Optional[Mapping[str, Any]] = None,
 ) -> Payload:
     """
-    构造统一的响应字典，不涉及 HTTP/DRF。
-    - 业务场景：视图/服务返回前构造 data 结构，统一字段命名。
+    构造统一的响应字典，不涉及 HTTP/DRF
+    - 业务场景：视图/服务返回前构造 data 结构，统一字段命名
     """
     payload: Payload = {
         "code": code,
@@ -58,8 +58,8 @@ def build_payload(
 
 def payload_from_biz_error(exc: BizError, data: Any = None) -> Payload:
     """
-    根据 BizError 构造 payload。
-    - 业务场景：异常处理器将 BizError 转换为对外响应。
+    根据 BizError 构造 payload
+    - 业务场景：异常处理器将 BizError 转换为对外响应
     """
     return build_payload(
         code=exc.code,
@@ -85,9 +85,9 @@ def build_page_extra(
         previous_page: int | None = None,
 ) -> Mapping[str, Any]:
     """
-    简单的分页元信息构造器。
+    简单的分页元信息构造器
 
-    后续根据需要调整。
+    后续根据需要调整
     """
     extra = {
         "page": page,
@@ -118,8 +118,8 @@ def api_response(
         extra: Optional[Mapping[str, Any]] = None,
 ) -> Response:
     """
-    统一构造 DRF Response。
-    - 业务场景：所有接口/异常最终出口，确保格式一致。
+    统一构造 DRF Response
+    - 业务场景：所有接口/异常最终出口，确保格式一致
     """
     payload = build_payload(code=code, message=message, data=data, extra=extra)
     return Response(payload, status=http_status)
@@ -127,7 +127,7 @@ def api_response(
 
 def success(data: Any = None, message: str = "OK") -> Response:
     """
-    最常用：业务成功返回。
+    最常用：业务成功返回
 
     - HTTP 状态：200
     - code：0
@@ -142,7 +142,7 @@ def success(data: Any = None, message: str = "OK") -> Response:
 
 def created(data: Any = None, message: str = "Created") -> Response:
     """
-    新建资源成功。
+    新建资源成功
 
     - HTTP 状态：201
     - code：0
@@ -157,7 +157,7 @@ def created(data: Any = None, message: str = "Created") -> Response:
 
 def no_content(message: str = "No Content") -> Response:
     """
-    无内容返回（例如删除成功），仅保留 code/message。
+    无内容返回（例如删除成功），仅保留 code/message
 
     - HTTP 状态：204
     - data 固定为 None
@@ -179,8 +179,8 @@ def fail(
         extra: Optional[Mapping[str, Any]] = None,
 ) -> Response:
     """
-    通用失败返回（手动构造，不走 BizError）。
-    - 业务场景：需要自定义错误码/信息但不想抛 BizError（如表单提前返回）。
+    通用失败返回（手动构造，不走 BizError）
+    - 业务场景：需要自定义错误码/信息但不想抛 BizError（如表单提前返回）
     """
     return api_response(
         code=code,
@@ -193,8 +193,8 @@ def fail(
 
 def response_from_biz_error(exc: BizError, data: Any = None) -> Response:
     """
-    根据 BizError 构造 Response。
-    - 业务场景：异常处理器或视图捕获 BizError 后直接返回。
+    根据 BizError 构造 Response
+    - 业务场景：异常处理器或视图捕获 BizError 后直接返回
     """
     return api_response(
         code=exc.code,
@@ -221,7 +221,7 @@ def page_success(
 
 ) -> Response:
     """
-    分页成功返回。
+    分页成功返回
 
     结构示例：
     {

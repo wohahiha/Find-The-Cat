@@ -26,19 +26,19 @@ logger = get_logger(__name__)
 class ChallengeCreateService(BaseService[Challenge]):
     """
     创建题目服务：
-    - 校验并创建题目，同时写入子任务、附件与提示。
-    - 自动处理分类与作者关联。
-    - 适用于管理员在比赛中新增题目。
+    - 校验并创建题目，同时写入子任务、附件与提示
+    - 自动处理分类与作者关联
+    - 适用于管理员在比赛中新增题目
     """
 
     def __init__(
-        self,
-        contest_repo: ContestRepo | None = None,
-        challenge_repo: ChallengeRepo | None = None,
-        category_repo: ChallengeCategoryRepo | None = None,
-        task_repo: ChallengeTaskRepo | None = None,
-        attachment_repo: ChallengeAttachmentRepo | None = None,
-        hint_repo: ChallengeHintRepo | None = None,
+            self,
+            contest_repo: ContestRepo | None = None,
+            challenge_repo: ChallengeRepo | None = None,
+            category_repo: ChallengeCategoryRepo | None = None,
+            task_repo: ChallengeTaskRepo | None = None,
+            attachment_repo: ChallengeAttachmentRepo | None = None,
+            hint_repo: ChallengeHintRepo | None = None,
     ):
         self.contest_repo = contest_repo or ContestRepo()
         self.challenge_repo = challenge_repo or ChallengeRepo()
@@ -87,7 +87,7 @@ class ChallengeCreateService(BaseService[Challenge]):
         return challenge
 
     def _sync_tasks(self, challenge: Challenge, tasks_data: list) -> None:
-        """创建子任务列表：支持多阶段得分。"""
+        """创建子任务列表：支持多阶段得分"""
         for idx, task in enumerate(tasks_data, start=1):
             self.task_repo.create(
                 {
@@ -100,7 +100,7 @@ class ChallengeCreateService(BaseService[Challenge]):
             )
 
     def _sync_attachments(self, challenge: Challenge, attachments_data: list) -> None:
-        """创建附件列表：记录附件名称与下载链接。"""
+        """创建附件列表：记录附件名称与下载链接"""
         for idx, att in enumerate(attachments_data, start=1):
             self.attachment_repo.create(
                 {
@@ -112,7 +112,7 @@ class ChallengeCreateService(BaseService[Challenge]):
             )
 
     def _sync_hints(self, challenge: Challenge, hints_data: list) -> None:
-        """创建提示列表：支持免费/扣分提示。"""
+        """创建提示列表：支持免费/扣分提示"""
         for idx, hint in enumerate(hints_data, start=1):
             self.hint_repo.create(
                 {
@@ -127,16 +127,16 @@ class ChallengeCreateService(BaseService[Challenge]):
 
 
 class ChallengeUpdateService(BaseService[Challenge]):
-    """更新题目服务：支持分类替换、子任务/附件/提示全量替换。"""
+    """更新题目服务：支持分类替换、子任务/附件/提示全量替换"""
 
     def __init__(
-        self,
-        contest_repo: ContestRepo | None = None,
-        challenge_repo: ChallengeRepo | None = None,
-        category_repo: ChallengeCategoryRepo | None = None,
-        task_repo: ChallengeTaskRepo | None = None,
-        attachment_repo: ChallengeAttachmentRepo | None = None,
-        hint_repo: ChallengeHintRepo | None = None,
+            self,
+            contest_repo: ContestRepo | None = None,
+            challenge_repo: ChallengeRepo | None = None,
+            category_repo: ChallengeCategoryRepo | None = None,
+            task_repo: ChallengeTaskRepo | None = None,
+            attachment_repo: ChallengeAttachmentRepo | None = None,
+            hint_repo: ChallengeHintRepo | None = None,
     ):
         self.contest_repo = contest_repo or ContestRepo()
         self.challenge_repo = challenge_repo or ChallengeRepo()

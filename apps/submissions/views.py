@@ -14,14 +14,15 @@ from apps.challenges.serializers import serialize_challenge
 from .schemas import SubmissionCreateSchema
 from .services import SubmissionService, serialize_submission
 
-# 视图层：提供提交接口，记录提交并走统一判题逻辑。
+
+# 视图层：提供提交接口，记录提交并走统一判题逻辑
 
 
 class SubmissionCreateView(APIView):
     """
     Flag 提交接口：
-    - 需登录，校验比赛状态与题目开放性。
-    - 正确返回解题记录，错误也会落库提交记录。
+    - 需登录，校验比赛状态与题目开放性
+    - 正确返回解题记录，错误也会落库提交记录
     """
 
     permission_classes = [IsAuthenticated]

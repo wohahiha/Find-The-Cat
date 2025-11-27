@@ -1,9 +1,9 @@
-"""账户模块的业务服务层。
+"""账户模块的业务服务层
 
 职责：
-- 发送/校验邮箱验证码（注册、找回密码、换绑邮箱）。
-- 用户注册、登录（JWT）、重置密码、修改资料/邮箱/密码、注销账号。
-- 统一封装业务流程与异常抛出，视图层仅做参数接收与结果返回。
+- 发送/校验邮箱验证码（注册、找回密码、换绑邮箱）
+- 用户注册、登录（JWT）、重置密码、修改资料/邮箱/密码、注销账号
+- 统一封装业务流程与异常抛出，视图层仅做参数接收与结果返回
 """
 
 from __future__ import annotations
@@ -48,10 +48,10 @@ logger = get_logger(__name__)
 
 def serialize_user(user: User) -> dict[str, object]:
     """
-    用户序列化工具：将 User 模型转换为 API 输出字典。
-    - 业务场景：登录/注册/资料更新等接口返回用户信息时统一格式。
-    - 模块角色：轻量级 Presenter，避免视图重复拼装字段。
-    - 参数 user：要序列化的用户实例；返回包含基础资料、权限标志与时间字段。
+    用户序列化工具：将 User 模型转换为 API 输出字典
+    - 业务场景：登录/注册/资料更新等接口返回用户信息时统一格式
+    - 模块角色：轻量级 Presenter，避免视图重复拼装字段
+    - 参数 user：要序列化的用户实例；返回包含基础资料、权限标志与时间字段
     """
     return {
         "id": user.pk,
@@ -74,19 +74,19 @@ def serialize_user(user: User) -> dict[str, object]:
 class SendEmailVerificationService(BaseService[EmailVerificationCode]):
     """
     发送邮箱验证码服务：
-    - 业务场景：注册、找回密码、绑定/变更邮箱。
-    - 职责：校验频率、生成验证码、落库并发送邮件。
-    - 输出：创建的验证码记录。
+    - 业务场景：注册、找回密码、绑定/变更邮箱
+    - 职责：校验频率、生成验证码、落库并发送邮件
+    - 输出：创建的验证码记录
     """
 
     code_ttl = timedelta(minutes=10)
     cooldown_seconds = 60
 
     def __init__(
-        self,
-        user_repo: UserRepo | None = None,
-        code_repo: EmailVerificationCodeRepo | None = None,
-        mail_account: MailAccount | None = None,
+            self,
+            user_repo: UserRepo | None = None,
+            code_repo: EmailVerificationCodeRepo | None = None,
+            mail_account: MailAccount | None = None,
     ):
         # 用户仓储：用于邮箱存在性校验
         self.user_repo = user_repo or UserRepo()
@@ -96,15 +96,15 @@ class SendEmailVerificationService(BaseService[EmailVerificationCode]):
         self.mail_account = mail_account or MailAccount.objects.get_default()
 
     def _generate_code(self) -> str:
-        """生成 6 位纯数字验证码。"""
+        """生成 6 位纯数字验证码"""
         return "".join(secrets.choice("0123456789") for _ in range(6))
 
     def _deliver(self, email: str, scene: str, code: str) -> None:
         """
         发送验证码邮件：
-        - email: 目标邮箱。
-        - scene: 验证码场景，用于文案映射。
-        - code: 验证码内容。
+        - email: 目标邮箱
+        - scene: 验证码场景，用于文案映射
+        - code: 验证码内容
         """
         subject = "Find The Cat 验证码"
         scene_map = {
@@ -115,7 +115,7 @@ class SendEmailVerificationService(BaseService[EmailVerificationCode]):
         # 构造邮件正文，包含验证码与有效期提示
         body = (
             f"您正在进行 {scene_map.get(scene, '操作')}，验证码为 {code}，"
-            "10 分钟内有效。如果不是您本人操作，请忽略此邮件。"
+            "10 分钟内有效如果不是您本人操作，请忽略此邮件"
         )
         try:
             # 优先使用指定/默认的发信账号
@@ -138,9 +138,9 @@ class SendEmailVerificationService(BaseService[EmailVerificationCode]):
     def perform(self, schema: SendEmailCodeSchema) -> EmailVerificationCode:
         """
         发送验证码主流程：
-        - 校验邮箱是否可用（注册/重置流的存在性要求）。
-        - 限流：60 秒内同场景同邮箱不可重复发送。
-        - 生成并存储验证码，触发邮件发送。
+        - 校验邮箱是否可用（注册/重置流的存在性要求）
+        - 限流：60 秒内同场景同邮箱不可重复发送
+        - 生成并存储验证码，触发邮件发送
         """
         # 邮箱统一小写，场景直接取 schema
         email = schema.email.lower()
@@ -180,15 +180,15 @@ class SendEmailVerificationService(BaseService[EmailVerificationCode]):
 class RegisterService(BaseService[User]):
     """
     选手注册服务：
-    - 校验用户名/邮箱唯一性。
-    - 校验注册邮箱验证码。
-    - 创建用户并分配默认权限组，标记邮箱验证通过。
+    - 校验用户名/邮箱唯一性
+    - 校验注册邮箱验证码
+    - 创建用户并分配默认权限组，标记邮箱验证通过
     """
 
     def __init__(
-        self,
-        user_repo: UserRepo | None = None,
-        code_repo: EmailVerificationCodeRepo | None = None,
+            self,
+            user_repo: UserRepo | None = None,
+            code_repo: EmailVerificationCodeRepo | None = None,
     ):
         # 用户仓储：唯一性校验与创建
         self.user_repo = user_repo or UserRepo()
@@ -198,9 +198,9 @@ class RegisterService(BaseService[User]):
     def perform(self, schema: RegisterSchema) -> User:
         """
         注册主流程：
-        - 校验用户名/邮箱是否占用。
-        - 消费注册验证码。
-        - 创建用户并默认验证邮箱。
+        - 校验用户名/邮箱是否占用
+        - 消费注册验证码
+        - 创建用户并默认验证邮箱
         """
         email = schema.email.lower()
         username = schema.username
@@ -234,8 +234,8 @@ class RegisterService(BaseService[User]):
 class LoginService(BaseService[dict[str, object]]):
     """
     登录服务：
-    - 支持用户名或邮箱登录。
-    - 校验账户状态与密码，返回 JWT 刷新/访问令牌及用户信息。
+    - 支持用户名或邮箱登录
+    - 校验账户状态与密码，返回 JWT 刷新/访问令牌及用户信息
     """
 
     atomic_enabled = False
@@ -247,10 +247,10 @@ class LoginService(BaseService[dict[str, object]]):
     def perform(self, schema: LoginSchema) -> dict[str, object]:
         """
         登录主流程：
-        - 根据 identifier 获取用户。
-        - 校验账户有效性与密码正确性。
-        - 校验图形验证码。
-        - 颁发 JWT Refresh 与 Access。
+        - 根据 identifier 获取用户
+        - 校验账户有效性与密码正确性
+        - 校验图形验证码
+        - 颁发 JWT Refresh 与 Access
         """
         allow_without_captcha = getattr(settings, "ALLOW_LOGIN_WITHOUT_CAPTCHA", False)
         if schema.captcha_key and schema.captcha_code:
@@ -293,7 +293,7 @@ class LoginService(BaseService[dict[str, object]]):
         }
 
     def _verify_captcha(self, key: str, code: str) -> None:
-        """校验图形验证码，错误时抛出业务异常。"""
+        """校验图形验证码，错误时抛出业务异常"""
         store = CaptchaStore.objects.filter(hashkey=key).first()
         if not store:
             raise CaptchaValidationError(message="验证码已失效，请刷新后重试")
@@ -306,13 +306,13 @@ class LoginService(BaseService[dict[str, object]]):
 class ResetPasswordService(BaseService[User]):
     """
     通过邮箱验证码重置密码：
-    - 校验验证码后重置目标邮箱对应用户的密码。
+    - 校验验证码后重置目标邮箱对应用户的密码
     """
 
     def __init__(
-        self,
-        user_repo: UserRepo | None = None,
-        code_repo: EmailVerificationCodeRepo | None = None,
+            self,
+            user_repo: UserRepo | None = None,
+            code_repo: EmailVerificationCodeRepo | None = None,
     ):
         # 用户仓储：用于查询/写入用户
         self.user_repo = user_repo or UserRepo()
@@ -322,8 +322,8 @@ class ResetPasswordService(BaseService[User]):
     def perform(self, schema: ResetPasswordSchema) -> User:
         """
         重置密码主流程：
-        - 消费重置场景的验证码。
-        - 获取用户并设置新密码。
+        - 消费重置场景的验证码
+        - 获取用户并设置新密码
         """
         email = schema.email.lower()
         self.code_repo.consume(email=email, scene=EmailVerificationCode.Scene.RESET_PASSWORD, code=schema.code)
@@ -339,14 +339,14 @@ class ResetPasswordService(BaseService[User]):
 class UpdateProfileService(BaseService[User]):
     """
     更新个人资料：
-    - 支持部分字段更新，并记录更新时间。
+    - 支持部分字段更新，并记录更新时间
     """
 
     def perform(self, user: User, schema: ProfileUpdateSchema) -> User:
         """
         资料更新流程：
-        - 根据 schema 提取非空字段并逐项覆盖用户属性。
-        - 保存时仅更新修改字段与更新时间，减少数据库写入。
+        - 根据 schema 提取非空字段并逐项覆盖用户属性
+        - 保存时仅更新修改字段与更新时间，减少数据库写入
         """
         payload = schema.to_dict(exclude_none=True)
         # 将有效字段写回用户对象
@@ -360,7 +360,7 @@ class UpdateProfileService(BaseService[User]):
 class ChangePasswordService(BaseService[User]):
     """
     登录态下修改密码：
-    - 需要旧密码验证身份，再设置新密码。
+    - 需要旧密码验证身份，再设置新密码
     """
 
     def __init__(self, user_repo: UserRepo | None = None):
@@ -370,8 +370,8 @@ class ChangePasswordService(BaseService[User]):
     def perform(self, user: User, schema: ChangePasswordSchema) -> User:
         """
         修改密码主流程：
-        - 校验旧密码正确性。
-        - 写入新密码并返回用户。
+        - 校验旧密码正确性
+        - 写入新密码并返回用户
         """
         if not user.check_password(schema.old_password):
             raise InvalidCredentialsError(message="当前密码不正确")
@@ -383,14 +383,14 @@ class ChangePasswordService(BaseService[User]):
 class ChangeEmailService(BaseService[User]):
     """
     变更邮箱服务：
-    - 需要当前密码验证身份。
-    - 校验邮箱唯一性与场景验证码。
+    - 需要当前密码验证身份
+    - 校验邮箱唯一性与场景验证码
     """
 
     def __init__(
-        self,
-        user_repo: UserRepo | None = None,
-        code_repo: EmailVerificationCodeRepo | None = None,
+            self,
+            user_repo: UserRepo | None = None,
+            code_repo: EmailVerificationCodeRepo | None = None,
     ):
         # 用户仓储：查找/写入用户
         self.user_repo = user_repo or UserRepo()
@@ -400,10 +400,10 @@ class ChangeEmailService(BaseService[User]):
     def perform(self, user: User, schema: ChangeEmailSchema) -> User:
         """
         变更邮箱主流程：
-        - 校验当前密码。
-        - 校验新邮箱与旧邮箱不同、未被其他账号占用。
-        - 消费绑定邮箱验证码。
-        - 更新邮箱并标记已验证。
+        - 校验当前密码
+        - 校验新邮箱与旧邮箱不同、未被其他账号占用
+        - 消费绑定邮箱验证码
+        - 更新邮箱并标记已验证
         """
         if not user.check_password(schema.current_password):
             raise InvalidCredentialsError(message="当前密码不正确")
@@ -426,16 +426,16 @@ class ChangeEmailService(BaseService[User]):
 class DeleteAccountService(BaseService[User]):
     """
     注销账号：
-    - 校验密码后进行“软删除”处理，释放用户名和邮箱占用。
-    - 通过改名/改邮箱/禁用账号/清空可识别信息来防止再登录。
+    - 校验密码后进行“软删除”处理，释放用户名和邮箱占用
+    - 通过改名/改邮箱/禁用账号/清空可识别信息来防止再登录
     """
 
     def perform(self, user: User, schema: DeleteAccountSchema) -> User:
         """
         注销主流程：
-        - 校验密码。
-        - 生成唯一后缀，重写用户名和邮箱，清空个人信息并禁用账号。
-        - 设置不可用密码，防止再次登录。
+        - 校验密码
+        - 生成唯一后缀，重写用户名和邮箱，清空个人信息并禁用账号
+        - 设置不可用密码，防止再次登录
         """
         if not user.check_password(schema.password):
             raise InvalidCredentialsError(message="密码不正确，无法注销账号")

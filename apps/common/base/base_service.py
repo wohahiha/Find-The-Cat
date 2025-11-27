@@ -14,19 +14,19 @@ ServiceReturn = TypeVar("ServiceReturn")
 
 class BaseService(ABC, Generic[ServiceReturn]):
     """
-    Service 层业务逻辑基类。
+    Service 层业务逻辑基类
 
     约束：
-        - 负责编排业务逻辑，不直接处理 HTTP。
-        - 使用普通 Python 参数，避免依赖 request。
-        - 通过仓储/Repo 访问持久化层，避免散乱 ORM 调用。
-        - 默认在事务中执行 `perform`。
-        - 任何业务失败都转换为 BizError。
+        - 负责编排业务逻辑，不直接处理 HTTP
+        - 使用普通 Python 参数，避免依赖 request
+        - 通过仓储/Repo 访问持久化层，避免散乱 ORM 调用
+        - 默认在事务中执行 `perform`
+        - 任何业务失败都转换为 BizError
 
     标准流程：validate(...) -> perform(...) -> handle_error(...)
     业务角色：
-        - 提供统一的执行入口（execute），确保 validate/事务/异常转换一致。
-        - 子类只需关注校验与核心逻辑，实现高内聚的服务层。
+        - 提供统一的执行入口（execute），确保 validate/事务/异常转换一致
+        - 子类只需关注校验与核心逻辑，实现高内聚的服务层
     """
 
     atomic_enabled: bool = True
@@ -39,7 +39,7 @@ class BaseService(ABC, Generic[ServiceReturn]):
     @staticmethod
     def atomic(*args, **kwargs):
         """
-        为子类提供 `transaction.atomic` 上下文管理器。
+        为子类提供 `transaction.atomic` 上下文管理器
 
             @BaseService.atomic()
             def do_something(...):
@@ -53,19 +53,19 @@ class BaseService(ABC, Generic[ServiceReturn]):
 
     def validate(self, *args, **kwargs) -> None:
         """
-        可选的业务预检查钩子（权限、状态等），默认空实现。
+        可选的业务预检查钩子（权限、状态等），默认空实现
         """
         return None
 
     @abstractmethod
     def perform(self, *args, **kwargs) -> ServiceReturn:
         """
-        子类必须实现的业务核心逻辑。
+        子类必须实现的业务核心逻辑
         """
 
     def execute(self, *args, **kwargs) -> ServiceReturn:
         """
-        Service 对外的统一入口，封装标准流程。
+        Service 对外的统一入口，封装标准流程
         """
         try:
             self.validate(*args, **kwargs)
@@ -80,7 +80,7 @@ class BaseService(ABC, Generic[ServiceReturn]):
 
     def handle_error(self, exc: Exception) -> ServiceReturn:
         """
-        将所有非 BizError 的异常转换为 BizError，确保对外失败契约一致。
+        将所有非 BizError 的异常转换为 BizError，确保对外失败契约一致
         """
         if isinstance(exc, BizError):
             raise exc

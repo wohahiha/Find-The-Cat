@@ -1,19 +1,19 @@
 # **AGENTS.md**
 
 > **本文件用于统一整个代码生成代理（Codex）的行为规范，确保在本项目中自动生成的所有代码均满足：可维护、高内聚、低耦合、可扩展，并严格遵守
-FTC 项目的技术架构与 SRS 定义。**
+FTC 项目的技术架构与 SRS 定义**
 
 ------
 
 ## 0. 总则
 
-1. 本仓库为 **Find The Cat（FTC）CTF 竞赛平台后端**，基于 **Django + DRF** 实现，采用分层和模块化设计。
-2. **一切业务行为必须严格对齐 SRS 与需求文档**，不得凭空臆造需求。
+1. 本仓库为 **Find The Cat（FTC）CTF 竞赛平台后端**，基于 **Django + DRF** 实现，采用分层和模块化设计
+2. **一切业务行为必须严格对齐 SRS 与需求文档**，不得凭空臆造需求
 3. 所有新增代码必须：
     - 使用 **简体中文注释**（必要技术术语保留英文）；
     - 遵守统一的 **错误处理、权限、限流、响应格式**；
-    - 保持 **高内聚，低耦合**。
-4. 不确定的地方，宁可 **保守、留 TODO 注释**，也不要拍脑袋造协议或字段。
+    - 保持 **高内聚，低耦合**
+4. 不确定的地方，宁可 **保守、留 TODO 注释**，也不要拍脑袋造协议或字段
 
 ------
 
@@ -156,12 +156,11 @@ FTC/                          # Django 项目根目录
 └─ FTCVenv/                   # Python 虚拟环境（可忽略）
 ```
 
-
 生成顺序必须严格遵守 SRS 模块顺序：
 
 > **accounts → contests → challenges → submissions → machines**
 
-如当前模块不存在（如 contests/），Codex 必须自动创建目录和基础文件。
+如当前模块不存在（如 contests/），Codex 必须自动创建目录和基础文件
 
 ------
 
@@ -179,16 +178,16 @@ FTC/                          # Django 项目根目录
     - `apps/common/exceptions.py`
     - `apps/common/permissions.py`
     - `apps/common/response.py`
-2. **所有代码文件均需使用中文注释。**
+2. **所有代码文件均需使用中文注释**
 3. 业务接口统一使用：
     - 权限：`IsAuthenticated`、`IsAdmin`、`IsOwner`、`IsSelf` 等
     - 统一响应：`success/created/fail/page_success`
-    - 异常：必须抛 `BizError` 子类，而不是 Django/DRF 默认异常。
+    - 异常：必须抛 `BizError` 子类，而不是 Django/DRF 默认异常
 4. 控制器(ViewSet) 必须遵守：
     - RESTful 风格
     - 不直接返回 DRF Response，统一调用 `success()`
     - 业务错误使用异常体系（如 WrongFlagError、ContestNotStartedError）
-5. Model、Serializer、ViewSet、Service、Repository 必须拆分清晰。
+5. Model、Serializer、ViewSet、Service、Repository 必须拆分清晰
 
 ------
 
@@ -209,8 +208,8 @@ apps/<module>/
   └─ tests.py         # 单元测试
 ```
 
-**禁止将所有逻辑写在 views.py**。
-视图层只做参数接收和调用 service 层。
+**禁止将所有逻辑写在 views.py**
+视图层只做参数接收和调用 service 层
 
 ------
 
@@ -269,13 +268,13 @@ apps/common/
 ❌ 在 Controller 内直接操作 Redis
 ❌ 在 ViewSet 内直接执行 docker 命令
 
-必须使用 common/infra 中的封装。
+必须使用 common/infra 中的封装
 
 ------
 
 ## 4. **模块级规范（按 SRS）**
 
-Codex 在生成对应模块代码时必须遵守以下约束。
+Codex 在生成对应模块代码时必须遵守以下约束
 
 ------
 
@@ -283,11 +282,11 @@ Codex 在生成对应模块代码时必须遵守以下约束。
 
 必须提供：
 
-- 自定义 User 模型（邮箱唯一、昵称/头像/组织等），邮箱验证码与可配置发信账号（MailAccount）。
-- 注册 / 登录 / 找回密码 / 修改密码 / 修改邮箱 / 注销；登录需校验图形验证码（captcha）。
-- 邮箱验证码发送（注册、找回、绑定），支持指定发信账号或 settings 兜底。
-- 个人资料查看/更新，默认权限组分配（permission_sets 默认组标签）。
-- JWT 登录返回 refresh/access，所有流程使用 Schema/Repo/Service 拆分。
+- 自定义 User 模型（邮箱唯一、昵称/头像/组织等），邮箱验证码与可配置发信账号（MailAccount）
+- 注册 / 登录 / 找回密码 / 修改密码 / 修改邮箱 / 注销；登录需校验图形验证码（captcha）
+- 邮箱验证码发送（注册、找回、绑定），支持指定发信账号或 settings 兜底
+- 个人资料查看/更新，默认权限组分配（permission_sets 默认组标签）
+- JWT 登录返回 refresh/access，所有流程使用 Schema/Repo/Service 拆分
 
 依赖内容：
 
@@ -302,13 +301,13 @@ Codex 在生成对应模块代码时必须遵守以下约束。
 
 必须包含：
 
-- Contest 模型（slug、时间窗口、赛制、封榜时间、可见性、是否组队），ContestScoreboard 代理。
-- 比赛状态判定（未开始 / 已结束 / 封榜），ContestContextService 统一校验。
-- 比赛公告、队伍创建/加入/退出/解散/邀请码重置/队长移交，全程使用 Repo+Service。
-- 比赛筛选（进行中 / 已结束），比赛导出（队伍、成员、题目、提交/解题、提示解锁、记分板）。
-- 记分板服务：Redis 缓存，封榜区分前台/后台缓存 key。
+- Contest 模型（slug、时间窗口、赛制、封榜时间、可见性、是否组队），ContestScoreboard 代理
+- 比赛状态判定（未开始 / 已结束 / 封榜），ContestContextService 统一校验
+- 比赛公告、队伍创建/加入/退出/解散/邀请码重置/队长移交，全程使用 Repo+Service
+- 比赛筛选（进行中 / 已结束），比赛导出（队伍、成员、题目、提交/解题、提示解锁、记分板）
+- 记分板服务：Redis 缓存，封榜区分前台/后台缓存 key
 
-禁止逻辑写在 Serializer 或 View 中，所有接口走 services + success()。
+禁止逻辑写在 Serializer 或 View 中，所有接口走 services + success()
 
 所有状态判断必须写入 ContestContextService：
 
@@ -321,13 +320,13 @@ Codex 在生成对应模块代码时必须遵守以下约束。
 
 必须实现：
 
-- Challenge 模型（分类、题面、难度、slug、计分模式、动态/静态 Flag、前缀）。
-- 多子任务（ChallengeTask）、附件（ChallengeAttachment）、提示及解锁记录（ChallengeHint/ChallengeHintUnlock）。
-- 附件上传走 file_storage 封装；后台 JS 覆盖 challenge_admin.js 提升体验。
-- 题目 CRUD 由 ChallengeCreate/UpdateService 完成，自动同步子任务/附件/提示。
-- 提示服务 ChallengeHintService：列表/解锁（校验比赛状态，扣分预留）。
-- Flag 校验：`Challenge.check_flag()` 统一生成期望值（动态 Flag 采用 SECRET+contest/challenge/solver 哈希）。
-- 计分模式：固定分值或动态衰减（percentage/fixed_step），最低分 min_score 默认基于基础分。
+- Challenge 模型（分类、题面、难度、slug、计分模式、动态/静态 Flag、前缀）
+- 多子任务（ChallengeTask）、附件（ChallengeAttachment）、提示及解锁记录（ChallengeHint/ChallengeHintUnlock）
+- 附件上传走 file_storage 封装；后台 JS 覆盖 challenge_admin.js 提升体验
+- 题目 CRUD 由 ChallengeCreate/UpdateService 完成，自动同步子任务/附件/提示
+- 提示服务 ChallengeHintService：列表/解锁（校验比赛状态，扣分预留）
+- Flag 校验：`Challenge.check_flag()` 统一生成期望值（动态 Flag 采用 SECRET+contest/challenge/solver 哈希）
+- 计分模式：固定分值或动态衰减（percentage/fixed_step），最低分 min_score 默认基于基础分
 
 ------
 
@@ -335,11 +334,11 @@ Codex 在生成对应模块代码时必须遵守以下约束。
 
 必须包含：
 
-- Submission 模型（提交记录）+ ChallengeSolve（解题记录）。
-- 计分逻辑：固定/动态衰减 + 提示扣分，支持动态 Flag 判题。
-- 排行榜维护：ScoreboardService + redis 缓存，提交成功后主动失效缓存。
-- n 血机制：blood_rank 使用 redis 计数器，失败回退数据库计数。
-- 错误/重复提交也会落库，便于审计；正确提交后写入 Solve 并回填 submission.solve。
+- Submission 模型（提交记录）+ ChallengeSolve（解题记录）
+- 计分逻辑：固定/动态衰减 + 提示扣分，支持动态 Flag 判题
+- 排行榜维护：ScoreboardService + redis 缓存，提交成功后主动失效缓存
+- n 血机制：blood_rank 使用 redis 计数器，失败回退数据库计数
+- 错误/重复提交也会落库，便于审计；正确提交后写入 Solve 并回填 submission.solve
 
 提交时必须调用：
 
@@ -353,11 +352,11 @@ Codex 在生成对应模块代码时必须遵守以下约束。
 
 必须包含：
 
-- MachineInstance 模型（容器实例记录，已移除动态 Flag 字段）。
-- Docker 容器启动/销毁（docker_manager，支持 mock）；端口分配使用 redis + db 占用校验。
-- Celery 定时任务 cleanup_expired_machines：自动销毁超时实例并释放端口。
-- 启停限速：MachineStartRateThrottle；防止同一题目重复实例。
-- 端口占用缓存 TTL 可配置，容器镜像前缀/标签通过环境变量注入。
+- MachineInstance 模型（容器实例记录，已移除动态 Flag 字段）
+- Docker 容器启动/销毁（docker_manager，支持 mock）；端口分配使用 redis + db 占用校验
+- Celery 定时任务 cleanup_expired_machines：自动销毁超时实例并释放端口
+- 启停限速：MachineStartRateThrottle；防止同一题目重复实例
+- 端口占用缓存 TTL 可配置，容器镜像前缀/标签通过环境变量注入
 
 必须使用：
 
@@ -366,7 +365,7 @@ apps/common/infra/docker_manager.py
 apps/common/infra/redis_client.py
 ```
 
-禁止直接执行 docker shell 命令或绕过 redis 端口分配。
+禁止直接执行 docker shell 命令或绕过 redis 端口分配
 
 ------
 
@@ -444,7 +443,7 @@ with transaction.atomic():
 
 所有生成的内容均必须符合：
 
-> **代码中的注释、文档字符串、错误提示、API 文档、测试说明均必须为简体中文（专业术语英文可保留）。**
+> **代码中的注释、文档字符串、错误提示、API 文档、测试说明均必须为简体中文（专业术语英文可保留）**
 
 ------
 
@@ -462,10 +461,17 @@ Codex 应当：
 
 ## 9. 当前进度
 
-- accounts：注册/登录（含图形验证码）/找回密码/修改密码/修改邮箱/资料修改/注销均已完成；邮箱验证码走 MailAccount/SMTP 兜底；默认权限组分配、软删除注销逻辑和核心 API 测试就绪。
-- contests：比赛创建/筛选/公告/队伍全链路完成，支持邀请码重置、队长移交、比赛导出；记分板使用 Redis 缓存并支持封榜区分前台/后台；路由已嵌套 challenges。
-- challenges：题目创建/更新/列表/详情完备，支持分类、子任务、附件上传（file_storage）、提示解锁、静态/动态 Flag（SECRET 哈希）；后台表单 JS 覆盖；API 测试覆盖题目与提示流转。
-- submissions：判题服务统一使用 Challenge.check_flag，记录错误/重复提交，动态计分 + 提示扣分 + 血次序（Redis）；提交成功自动失效记分板缓存；API 测试通过。
-- machines：靶机启动/停止防重复实例，端口分配使用 Redis + DB 占用缓存；Celery 定时清理超时实例；Docker manager 支持 mock，测试覆盖核心流程。
-- 通用/配置：RequestContextMiddleware+logger 写入 logs/ftc.log，统一权限/限流/异常/响应封装完善；DRF Spectacular JWT 扩展、Redis/邮箱/Docker/Celery 配置可环境化；schema.yaml 已更新。
-- 翻译与模板：自定义 locale（djangojs）覆盖后台提示，模板覆盖新增用户提示与批量操作布局，base_site 追加“切换账户”入口，预留 drf_spectacular 模板目录。
+- accounts：注册/登录（含图形验证码）/找回密码/修改密码/修改邮箱/资料修改/注销均已完成；邮箱验证码走 MailAccount/SMTP
+  兜底；默认权限组分配、软删除注销逻辑和核心 API 测试就绪
+- contests：比赛创建/筛选/公告/队伍全链路完成，支持邀请码重置、队长移交、比赛导出；记分板使用 Redis 缓存并支持封榜区分前台/后台；路由已嵌套
+  challenges
+- challenges：题目创建/更新/列表/详情完备，支持分类、子任务、附件上传（file_storage）、提示解锁、静态/动态 Flag（SECRET 哈希）；后台表单
+  JS 覆盖；API 测试覆盖题目与提示流转
+- submissions：判题服务统一使用 Challenge.check_flag，记录错误/重复提交，动态计分 + 提示扣分 + 血次序（Redis）；提交成功自动失效记分板缓存；API
+  测试通过
+- machines：靶机启动/停止防重复实例，端口分配使用 Redis + DB 占用缓存；Celery 定时清理超时实例；Docker manager 支持
+  mock，测试覆盖核心流程
+- 通用/配置：RequestContextMiddleware+logger 写入 logs/ftc.log，统一权限/限流/异常/响应封装完善；DRF Spectacular JWT
+  扩展、Redis/邮箱/Docker/Celery 配置可环境化；schema.yaml 已更新
+- 翻译与模板：自定义 locale（djangojs）覆盖后台提示，模板覆盖新增用户提示与批量操作布局，base_site 追加“切换账户”入口，预留
+  drf_spectacular 模板目录

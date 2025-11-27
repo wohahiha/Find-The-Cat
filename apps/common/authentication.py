@@ -2,9 +2,9 @@
 统一 JWT 认证封装（apps.common.authentication）
 
 职责与目标：
-- 全局 JWT 认证入口，统一 Header/Cookie 取 Token 的逻辑。
-- 将 JWT 相关异常映射到 BizError（TokenError/AuthError），交由全局异常处理器统一格式化响应。
-- 后续若需调整“Token 传递方式/前缀/Cookie 名称”集中改此处。
+- 全局 JWT 认证入口，统一 Header/Cookie 取 Token 的逻辑
+- 将 JWT 相关异常映射到 BizError（TokenError/AuthError），交由全局异常处理器统一格式化响应
+- 后续若需调整“Token 传递方式/前缀/Cookie 名称”集中改此处
 
 默认行为（兼容 SimpleJWT）：
 - 优先从 Authorization 头读取：Authorization: Bearer <token>
@@ -35,13 +35,13 @@ logger = get_logger(__name__)
 
 class JWTAuthentication(SimpleJWTAuthentication):
     """
-    统一 JWT 认证入口。
+    统一 JWT 认证入口
 
     可配置点：
     - use_cookie: 是否允许从 cookie 读取 access token；
     - cookie_name: cookie 中 jwt access token 的键名；
     - header_types: 继承自 SimpleJWT，可通过 SIMPLE_JWT['AUTH_HEADER_TYPES'] 或
-      直接修改本类属性来调整（例如支持 Bearer / JWT 等前缀）。
+      直接修改本类属性来调整（例如支持 Bearer / JWT 等前缀）
     """
 
     #: 是否允许从 Cookie 读取 access token
@@ -54,19 +54,19 @@ class JWTAuthentication(SimpleJWTAuthentication):
 
     def authenticate(self, request: Request) -> Optional[tuple[Any, Any]]:
         """
-        统一认证入口。
+        统一认证入口
 
         返回：
             - (user, validated_token)：认证成功；
-            - None：未提供任何凭证（交给后续权限系统处理）。
+            - None：未提供任何凭证（交给后续权限系统处理）
 
         异常约定：
             - Token 无效 / 过期 / 被篡改：抛 TokenError(40102)；
-            - 其他认证失败（例如用户被禁用等）：抛 AuthError(40100)。
+            - 其他认证失败（例如用户被禁用等）：抛 AuthError(40100)
 
         注意：
         - 不再抛 DRF 的 AuthenticationFailed / InvalidToken 等异常，
-          而是直接抛 BizError 子类，方便 custom_exception_handler 统一格式化。
+          而是直接抛 BizError 子类，方便 custom_exception_handler 统一格式化
         """
         # 1. 尝试从 Authorization header 中获取 token
         header = self.get_header(request)
@@ -83,7 +83,7 @@ class JWTAuthentication(SimpleJWTAuthentication):
                 raw_token = cookie_token
 
         # 3. 既没有 header 也没有 cookie → 视为“未提供凭证”，返回 None
-        #    DRF 会认为当前请求是匿名用户，再由权限类决定是否允许访问。
+        #    DRF 会认为当前请求是匿名用户，再由权限类决定是否允许访问
         if raw_token is None:
             return None
 

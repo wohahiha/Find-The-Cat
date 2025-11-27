@@ -36,12 +36,13 @@ from .schemas import (
     TeamTransferSchema,
 )
 
-# 服务层：实现比赛、公告、队伍的业务流程，依赖仓储与 Schema 校验。
+# 服务层：实现比赛、公告、队伍的业务流程，依赖仓储与 Schema 校验
 
 logger = get_logger(__name__)
 
+
 def serialize_contest(contest: Contest) -> dict:
-    """比赛序列化：提供比赛基础信息与状态，用于 API 返回。"""
+    """比赛序列化：提供比赛基础信息与状态，用于 API 返回"""
     return {
         "id": contest.id,
         "name": contest.name,
@@ -58,7 +59,7 @@ def serialize_contest(contest: Contest) -> dict:
 
 
 def serialize_announcement(announcement: ContestAnnouncement) -> dict:
-    """公告序列化：返回基础信息与时间戳。"""
+    """公告序列化：返回基础信息与时间戳"""
     return {
         "id": announcement.id,
         "contest": announcement.contest.slug,
@@ -71,7 +72,7 @@ def serialize_announcement(announcement: ContestAnnouncement) -> dict:
 
 
 def serialize_team(team: Team) -> dict:
-    """队伍序列化：包含队长、邀请码、成员数量等。"""
+    """队伍序列化：包含队长、邀请码、成员数量等"""
     member_count = getattr(team, "active_member_count", None)
     if member_count is None:
         member_count = team.member_count
@@ -90,16 +91,16 @@ def serialize_team(team: Team) -> dict:
 
 class ContestContextService(BaseService[Contest]):
     """
-    提供统一的比赛上下文（状态校验、成员关系等）。
+    提供统一的比赛上下文（状态校验、成员关系等）
     """
 
     def __init__(
-        self,
-        contest_repo: ContestRepo | None = None,
-        member_repo: TeamMemberRepo | None = None,
-        team_repo: TeamRepo | None = None,
+            self,
+            contest_repo: ContestRepo | None = None,
+            member_repo: TeamMemberRepo | None = None,
+            team_repo: TeamRepo | None = None,
     ):
-        """注入比赛、成员、队伍仓储，方便在上下文校验中复用。"""
+        """注入比赛、成员、队伍仓储，方便在上下文校验中复用"""
         # 仓储依赖注入：默认使用实际仓储，便于测试时替换
         self.contest_repo = contest_repo or ContestRepo()
         self.member_repo = member_repo or TeamMemberRepo()
@@ -108,44 +109,44 @@ class ContestContextService(BaseService[Contest]):
         self.announcement_repo = ContestAnnouncementRepo()
 
     def get_contest(self, slug: str) -> Contest:
-        """根据 slug 获取比赛对象。"""
+        """根据 slug 获取比赛对象"""
         return self.contest_repo.get_by_slug(slug)
 
     def ensure_contest_started(self, contest: Contest) -> None:
-        """校验比赛已开赛，否则抛业务校验错误。"""
+        """校验比赛已开赛，否则抛业务校验错误"""
         if not contest.has_started:
             raise ValidationError(message="比赛尚未开始")
 
     def ensure_contest_not_ended(self, contest: Contest) -> None:
-        """校验比赛未结束。"""
+        """校验比赛未结束"""
         if contest.has_ended:
             raise ValidationError(message="比赛已结束")
 
     def ensure_contest_running(self, contest: Contest) -> None:
-        """组合校验：比赛已开始且未结束。"""
+        """组合校验：比赛已开始且未结束"""
         self.ensure_contest_started(contest)
         self.ensure_contest_not_ended(contest)
 
     def get_user_membership(self, contest: Contest, user: User):
-        """查询用户在比赛中的队伍关系。"""
+        """查询用户在比赛中的队伍关系"""
         return self.member_repo.get_membership(contest=contest, user=user)
 
     def get_user_team(self, contest: Contest, user: User) -> Optional[Team]:
-        """获取用户所在队伍，若无则返回 None。"""
+        """获取用户所在队伍，若无则返回 None"""
         membership = self.get_user_membership(contest=contest, user=user)
         return membership.team if membership else None
 
     def perform(self, *args, **kwargs) -> Contest:
-        """ContextService 不提供通用执行入口，防止误用 execute。"""
+        """ContextService 不提供通用执行入口，防止误用 execute"""
         raise NotImplementedError("ContestContextService does not support execute()")
 
     def list_announcements(self, contest: Contest):
-        """获取比赛公告列表（仅返回有效公告）。"""
+        """获取比赛公告列表（仅返回有效公告）"""
         return self.announcement_repo.list_active(contest)
 
 
 def serialize_team_member(member: TeamMember) -> dict:
-    """队伍成员序列化：导出场景下附带用户基础标识。"""
+    """队伍成员序列化：导出场景下附带用户基础标识"""
     return {
         "user_id": member.user_id,
         "username": member.user.username if member.user_id else None,
@@ -156,13 +157,14 @@ def serialize_team_member(member: TeamMember) -> dict:
 
 
 class CreateContestService(BaseService[Contest]):
-    """创建比赛：封装仓储写入与 Schema 转换。"""
+    """创建比赛：封装仓储写入与 Schema 转换"""
+
     def __init__(self, repo: ContestRepo | None = None):
-        """允许外部传入自定义仓储，默认使用实际仓储。"""
+        """允许外部传入自定义仓储，默认使用实际仓储"""
         self.repo = repo or ContestRepo()
 
     def perform(self, schema: ContestCreateSchema) -> Contest:
-        """将校验后的比赛入参写入数据库，生成新的比赛记录。"""
+        """将校验后的比赛入参写入数据库，生成新的比赛记录"""
         # 将 Schema 转为字典，去除无关字段后落库
         data = schema.to_dict(exclude_none=True)
         data.pop("contest_slug", None)
@@ -173,22 +175,22 @@ class CreateContestService(BaseService[Contest]):
 
 class ContestAnnouncementService(BaseService[ContestAnnouncement]):
     """
-    管理比赛公告的服务：创建公告并返回记录。
+    管理比赛公告的服务：创建公告并返回记录
     """
 
     def __init__(
-        self,
-        contest_repo: ContestRepo | None = None,
-        announcement_repo: ContestAnnouncementRepo | None = None,
+            self,
+            contest_repo: ContestRepo | None = None,
+            announcement_repo: ContestAnnouncementRepo | None = None,
     ):
-        """注入比赛与公告仓储，便于单元测试替换。"""
+        """注入比赛与公告仓储，便于单元测试替换"""
         # 比赛仓储：根据 slug 拉取比赛
         self.contest_repo = contest_repo or ContestRepo()
         # 公告仓储：持久化公告内容
         self.announcement_repo = announcement_repo or ContestAnnouncementRepo()
 
     def perform(self, schema: AnnouncementCreateSchema) -> ContestAnnouncement:
-        """根据比赛标识创建公告，保持公告与比赛的关联关系。"""
+        """根据比赛标识创建公告，保持公告与比赛的关联关系"""
         contest = self.contest_repo.get_by_slug(schema.contest_slug)
         payload = schema.to_dict(exclude_none=True)
         payload.pop("contest_slug", None)
@@ -204,24 +206,24 @@ class ContestAnnouncementService(BaseService[ContestAnnouncement]):
 class TeamCreateService(BaseService[Team]):
     """
     创建队伍服务：
-    - 校验用户角色与比赛状态。
-    - 自动创建队伍并将创建者设为队长成员。
+    - 校验用户角色与比赛状态
+    - 自动创建队伍并将创建者设为队长成员
     """
 
     def __init__(
-        self,
-        contest_repo: ContestRepo | None = None,
-        team_repo: TeamRepo | None = None,
-        member_repo: TeamMemberRepo | None = None,
+            self,
+            contest_repo: ContestRepo | None = None,
+            team_repo: TeamRepo | None = None,
+            member_repo: TeamMemberRepo | None = None,
     ):
-        """注入比赛、队伍、成员仓储，便于不同环境下替换实现。"""
+        """注入比赛、队伍、成员仓储，便于不同环境下替换实现"""
         # 注入比赛、队伍、成员仓储，便于服务层统一调用
         self.contest_repo = contest_repo or ContestRepo()
         self.team_repo = team_repo or TeamRepo()
         self.member_repo = member_repo or TeamMemberRepo()
 
     def perform(self, user: User, schema: TeamCreateSchema) -> Team:
-        """以当前用户为队长创建队伍，完成唯一 slug 与成员记录写入。"""
+        """以当前用户为队长创建队伍，完成唯一 slug 与成员记录写入"""
         # 1) 获取比赛并校验管理员不可参赛、比赛允许组队、未结束
         contest = self.contest_repo.get_by_slug(schema.contest_slug)
         if user.is_staff:
@@ -252,23 +254,23 @@ class TeamCreateService(BaseService[Team]):
 class TeamJoinService(BaseService[TeamMember]):
     """
     加入队伍服务：
-    - 校验邀请码有效、人数未满、用户未加入其他队伍、比赛未结束。
+    - 校验邀请码有效、人数未满、用户未加入其他队伍、比赛未结束
     """
 
     def __init__(
-        self,
-        contest_repo: ContestRepo | None = None,
-        team_repo: TeamRepo | None = None,
-        member_repo: TeamMemberRepo | None = None,
+            self,
+            contest_repo: ContestRepo | None = None,
+            team_repo: TeamRepo | None = None,
+            member_repo: TeamMemberRepo | None = None,
     ):
-        """注入比赛、队伍、成员仓储，供加入校验与写入使用。"""
+        """注入比赛、队伍、成员仓储，供加入校验与写入使用"""
         # 仓储依赖：用于查询比赛、队伍与成员关系
         self.contest_repo = contest_repo or ContestRepo()
         self.team_repo = team_repo or TeamRepo()
         self.member_repo = member_repo or TeamMemberRepo()
 
     def perform(self, user: User, schema: TeamJoinSchema) -> TeamMember:
-        """校验并将用户加入目标队伍，返回成员关系记录。"""
+        """校验并将用户加入目标队伍，返回成员关系记录"""
         # 1) 获取比赛并禁止管理员加入
         contest = self.contest_repo.get_by_slug(schema.contest_slug)
         if user.is_staff:
@@ -311,22 +313,22 @@ class TeamJoinService(BaseService[TeamMember]):
 class TeamLeaveService(BaseService[None]):
     """
     退出队伍服务：
-    - 校验用户是否在队伍中。
-    - 队长需先解散或移交后才能退出。
+    - 校验用户是否在队伍中
+    - 队长需先解散或移交后才能退出
     """
 
     def __init__(
-        self,
-        contest_repo: ContestRepo | None = None,
-        member_repo: TeamMemberRepo | None = None,
+            self,
+            contest_repo: ContestRepo | None = None,
+            member_repo: TeamMemberRepo | None = None,
     ):
-        """注入比赛与成员仓储，便于读取当前成员关系。"""
+        """注入比赛与成员仓储，便于读取当前成员关系"""
         # 仓储依赖：用于校验比赛与当前成员关系
         self.contest_repo = contest_repo or ContestRepo()
         self.member_repo = member_repo or TeamMemberRepo()
 
     def perform(self, user: User, schema: TeamLeaveSchema) -> None:
-        """处理成员退出队伍，队长且多人时阻止直接退出。"""
+        """处理成员退出队伍，队长且多人时阻止直接退出"""
         # 1) 获取比赛与当前成员关系
         contest = self.contest_repo.get_by_slug(schema.contest_slug)
         membership = self.member_repo.get_membership(contest=contest, user=user)
@@ -352,22 +354,22 @@ class TeamLeaveService(BaseService[None]):
 class TeamDisbandService(BaseService[Team]):
     """
     解散队伍服务：
-    - 队长或管理员可操作。
-    - 逐个成员失效并关闭队伍。
+    - 队长或管理员可操作
+    - 逐个成员失效并关闭队伍
     """
 
     def __init__(
-        self,
-        team_repo: TeamRepo | None = None,
-        member_repo: TeamMemberRepo | None = None,
+            self,
+            team_repo: TeamRepo | None = None,
+            member_repo: TeamMemberRepo | None = None,
     ):
-        """注入队伍与成员仓储，便于批量标记成员失效。"""
+        """注入队伍与成员仓储，便于批量标记成员失效"""
         # 仓储依赖：队伍与成员查询/更新
         self.team_repo = team_repo or TeamRepo()
         self.member_repo = member_repo or TeamMemberRepo()
 
     def perform(self, user: User, schema: TeamDisbandSchema) -> Team:
-        """解散目标队伍，逐个成员失效并关闭队伍记录。"""
+        """解散目标队伍，逐个成员失效并关闭队伍记录"""
         # 1) 校验权限：仅队长或管理员
         team = self.team_repo.get_by_id(schema.team_id)
         if not (user.is_staff or team.captain_id == user.id):
@@ -382,21 +384,22 @@ class TeamDisbandService(BaseService[Team]):
         team.save(update_fields=["is_active", "invite_token", "updated_at"])
         logger.info(
             "解散队伍",
-            extra=logger_extra({"team": team.slug, "contest": getattr(team.contest, 'slug', None), "user_id": getattr(user, 'id', None)}),
+            extra=logger_extra({"team": team.slug, "contest": getattr(team.contest, 'slug', None),
+                                "user_id": getattr(user, 'id', None)}),
         )
         return team
 
 
 class TeamInviteResetService(BaseService[Team]):
-    """重置队伍邀请码：仅队长或管理员可操作。"""
+    """重置队伍邀请码：仅队长或管理员可操作"""
 
     def __init__(self, team_repo: TeamRepo | None = None):
-        """允许注入自定义队伍仓储以便测试或替换实现。"""
+        """允许注入自定义队伍仓储以便测试或替换实现"""
         # 队伍仓储：用于重置邀请码时读取与更新队伍
         self.team_repo = team_repo or TeamRepo()
 
     def perform(self, user: User, schema: TeamInviteResetSchema) -> Team:
-        """校验队伍有效性与操作者权限后重置邀请码。"""
+        """校验队伍有效性与操作者权限后重置邀请码"""
         team = self.team_repo.get_by_id(schema.team_id)
         if not team.is_active:
             raise ConflictError(message="队伍已失效，无法重置邀请码")
@@ -407,27 +410,28 @@ class TeamInviteResetService(BaseService[Team]):
         result = self.team_repo.reset_invite_token(team, token=token)
         logger.info(
             "重置队伍邀请码",
-            extra=logger_extra({"team": team.slug, "contest": getattr(team.contest, 'slug', None), "user_id": getattr(user, 'id', None)}),
+            extra=logger_extra({"team": team.slug, "contest": getattr(team.contest, 'slug', None),
+                                "user_id": getattr(user, 'id', None)}),
         )
         return result
 
 
 class TeamTransferService(BaseService[Team]):
-    """队长移交：将队长角色转给指定队员。"""
+    """队长移交：将队长角色转给指定队员"""
 
     def __init__(
-        self,
-        team_repo: TeamRepo | None = None,
-        member_repo: TeamMemberRepo | None = None,
+            self,
+            team_repo: TeamRepo | None = None,
+            member_repo: TeamMemberRepo | None = None,
     ):
-        """注入队伍与成员仓储，支持扩展或测试替换。"""
+        """注入队伍与成员仓储，支持扩展或测试替换"""
         # 仓储依赖：负责读取队伍状态与成员关系
         self.team_repo = team_repo or TeamRepo()
         self.member_repo = member_repo or TeamMemberRepo()
 
     @transaction.atomic
     def perform(self, user: User, schema: TeamTransferSchema) -> Team:
-        """在事务内完成队长权限转移，确保成员关系与队长字段一致。"""
+        """在事务内完成队长权限转移，确保成员关系与队长字段一致"""
         # 1) 校验队伍有效与操作者权限
         team = self.team_repo.get_by_id(schema.team_id)
         if not team.is_active:
@@ -459,7 +463,8 @@ class TeamTransferService(BaseService[Team]):
         logger.info(
             "移交队长",
             extra=logger_extra(
-                {"team": team.slug, "contest": getattr(team.contest, 'slug', None), "old_captain": old_captain_id, "new_captain": target_user.id}
+                {"team": team.slug, "contest": getattr(team.contest, 'slug', None), "old_captain": old_captain_id,
+                 "new_captain": target_user.id}
             ),
         )
         return team
@@ -468,14 +473,14 @@ class TeamTransferService(BaseService[Team]):
 class ScoreboardService(BaseService[list[dict]]):
     """
     记分板服务：
-    - 汇总比赛内的解题记录，按分数与时间排序生成排名。
-    - 支持 Redis 缓存以减轻重复计算开销。
+    - 汇总比赛内的解题记录，按分数与时间排序生成排名
+    - 支持 Redis 缓存以减轻重复计算开销
     """
     atomic_enabled = False
     cache_ttl_seconds: int = getattr(settings, "SCOREBOARD_CACHE_TTL", 30)
 
     def perform(self, contest: Contest, *, ignore_freeze: bool = False) -> list[dict]:
-        """计算记分板：汇总解题记录并排序。"""
+        """计算记分板：汇总解题记录并排序"""
         cache_key = self.cache_key(contest.id, ignore_freeze=ignore_freeze)
         cached = redis_client.get_json(cache_key)
         if isinstance(cached, list):
@@ -602,24 +607,24 @@ class ScoreboardService(BaseService[list[dict]]):
 class ContestExportService(BaseService[dict]):
     """
     比赛数据导出服务：
-    - 提供比赛基础信息、队伍成员、题目、解题记录与提交记录。
-    - 管理端使用，用于备份或运营分析。
+    - 提供比赛基础信息、队伍成员、题目、解题记录与提交记录
+    - 管理端使用，用于备份或运营分析
     """
 
     atomic_enabled = False
 
     def __init__(
-        self,
-        contest_repo: ContestRepo | None = None,
-        team_repo: TeamRepo | None = None,
-        member_repo: TeamMemberRepo | None = None,
-        challenge_repo: ChallengeRepo | None = None,
-        solve_repo: ChallengeSolveRepo | None = None,
-        submission_repo: SubmissionRepo | None = None,
-        scoreboard_service: ScoreboardService | None = None,
-        hint_unlock_repo: ChallengeHintUnlockRepo | None = None,
+            self,
+            contest_repo: ContestRepo | None = None,
+            team_repo: TeamRepo | None = None,
+            member_repo: TeamMemberRepo | None = None,
+            challenge_repo: ChallengeRepo | None = None,
+            solve_repo: ChallengeSolveRepo | None = None,
+            submission_repo: SubmissionRepo | None = None,
+            scoreboard_service: ScoreboardService | None = None,
+            hint_unlock_repo: ChallengeHintUnlockRepo | None = None,
     ):
-        """集中注入比赛、队伍、成员、题目、解题、提交与榜单依赖。"""
+        """集中注入比赛、队伍、成员、题目、解题、提交与榜单依赖"""
         # 仓储与服务依赖：集中注入，方便测试替换
         self.contest_repo = contest_repo or ContestRepo()
         self.team_repo = team_repo or TeamRepo()
@@ -631,7 +636,7 @@ class ContestExportService(BaseService[dict]):
         self.hint_unlock_repo = hint_unlock_repo or ChallengeHintUnlockRepo()
 
     def perform(self, contest_slug: str) -> dict:
-        """导出指定比赛的数据快照。"""
+        """导出指定比赛的数据快照"""
         contest = self.contest_repo.get_by_slug(contest_slug)
 
         # 队伍与成员

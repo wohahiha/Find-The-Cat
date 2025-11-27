@@ -1,7 +1,7 @@
 """
 Docker 管理封装：
-- 业务场景：题目靶机的启动/停止，支持本地或远程 Docker。
-- 模块角色：统一封装容器操作，提供 mock 模式，屏蔽底层 SDK 差异。
+- 业务场景：题目靶机的启动/停止，支持本地或远程 Docker
+- 模块角色：统一封装容器操作，提供 mock 模式，屏蔽底层 SDK 差异
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ _logger = get_logger(__name__)
 
 
 def _get_client():
-    """获取 Docker client，支持环境变量配置与 TLS；mock 模式下返回 None。"""
+    """获取 Docker client，支持环境变量配置与 TLS；mock 模式下返回 None"""
     if _USE_MOCK:
         return None
     if not docker:
@@ -57,13 +57,13 @@ def _get_client():
 
 
 def start_container(
-    image: str,
-    *,
-    name: Optional[str] = None,
-    port: Optional[int] = None,
-    env: Optional[dict] = None,
-    container_port: int | None = None,
-    network: Optional[str] = None,
+        image: str,
+        *,
+        name: Optional[str] = None,
+        port: Optional[int] = None,
+        env: Optional[dict] = None,
+        container_port: int | None = None,
+        network: Optional[str] = None,
 ) -> str:
     """
     启动容器：
@@ -100,8 +100,8 @@ def start_container(
 
 def stop_container(container_id: str) -> None:
     """
-    停止并移除容器。
-    - mock 模式直接返回，不做实际操作。
+    停止并移除容器
+    - mock 模式直接返回，不做实际操作
     """
     if _USE_MOCK:
         return

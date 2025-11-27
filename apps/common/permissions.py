@@ -2,9 +2,9 @@
 通用权限封装（apps.common.permissions）
 
 职责：
-- 放置全局可复用的权限类（基于 Django/DRF 的认证系统）。
-- 封装“登录/管理员/只读/资源 Owner/本人/队长”等常见场景的权限校验。
-- 出错时统一抛出 BizError 子类（PermissionDeniedError），由全局异常处理器统一包装响应。
+- 放置全局可复用的权限类（基于 Django/DRF 的认证系统）
+- 封装“登录/管理员/只读/资源 Owner/本人/队长”等常见场景的权限校验
+- 出错时统一抛出 BizError 子类（PermissionDeniedError），由全局异常处理器统一包装响应
 """
 
 from __future__ import annotations
@@ -27,8 +27,8 @@ User = get_user_model()
 
 def _ensure_authenticated(request: Request) -> User:
     """
-    确保用户已登录，返回 User；否则抛 PermissionDeniedError。
-    - 业务场景：所有权限类复用，统一登录态校验与错误提示。
+    确保用户已登录，返回 User；否则抛 PermissionDeniedError
+    - 业务场景：所有权限类复用，统一登录态校验与错误提示
     """
     user = getattr(request, "user", None)
     if user is None or not user.is_authenticated:
@@ -43,7 +43,7 @@ def _ensure_authenticated(request: Request) -> User:
 
 class AllowAny(BasePermission):
     """
-    允许任何请求通过（公开接口）。
+    允许任何请求通过（公开接口）
     """
 
     def has_permission(self, request: Request, view: Any) -> bool:  # noqa: D401
@@ -52,10 +52,10 @@ class AllowAny(BasePermission):
 
 class IsAuthenticated(BasePermission):
     """
-    需要已登录用户。
+    需要已登录用户
 
     等价于 DRF 默认的 IsAuthenticated，但出错时抛 BizError，
-    便于全局异常处理器统一格式。
+    便于全局异常处理器统一格式
     """
 
     message = "请先登录后再执行此操作"
@@ -67,7 +67,7 @@ class IsAuthenticated(BasePermission):
 
 class IsAdmin(BasePermission):
     """
-    需要管理员权限（is_staff == True）。
+    需要管理员权限（is_staff == True）
 
     - 未登录 → 提示先登录
     - 已登录但非 staff → 无权访问
@@ -86,7 +86,7 @@ class IsAdmin(BasePermission):
 
 class IsSuperUser(BasePermission):
     """
-    需要超级管理员权限（is_superuser == True）。
+    需要超级管理员权限（is_superuser == True）
     """
 
     message = "仅超级管理员可以执行此操作"
@@ -102,9 +102,9 @@ class IsSuperUser(BasePermission):
 
 class ReadOnly(BasePermission):
     """
-    所有用户都可以访问，但仅允许安全方法（GET / HEAD / OPTIONS）。
+    所有用户都可以访问，但仅允许安全方法（GET / HEAD / OPTIONS）
 
-    适合用在“公开只读接口”（如公开题目列表、公告等）。
+    适合用在“公开只读接口”（如公开题目列表、公告等）
     """
 
     message = "该接口仅支持只读操作"
@@ -120,7 +120,7 @@ class IsOwner(BasePermission):
     - 不包含管理员逻辑
     """
 
-    message = "你不是该资源的 Owner。"
+    message = "你不是该资源的 Owner"
 
     # 对出题者的称呼，允许后期修改：creator / author / ...
     owner_attr: str = "owner"
@@ -146,7 +146,7 @@ class IsOwner(BasePermission):
 
 class IsSelf(BasePermission):
     """
-    只允许“自己访问自己”的场景。
+    只允许“自己访问自己”的场景
 
     典型用法：
     - /api/users/<id>/ 获取/修改个人信息
@@ -186,7 +186,7 @@ class IsSelf(BasePermission):
 
 class IsLeader(BasePermission):
     """
-    队长权限（基于 Team.captain 字段判断）。
+    队长权限（基于 Team.captain 字段判断）
 
     适用对象：
     - 对象本身是 Team：

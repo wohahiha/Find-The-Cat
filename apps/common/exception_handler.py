@@ -1,10 +1,10 @@
 """
 自定义全局异常处理器（DRF 入口）：
-- 业务目的：统一前端收到的错误结构，区分业务错误与系统异常。
+- 业务目的：统一前端收到的错误结构，区分业务错误与系统异常
 - 处理策略：
-  1) BizError 及子类 → 直接转换为 {code, message, data, extra}。
-  2) DRF 内置异常（Validation/Authentication/Permission/NotFound/Throttled）→ 映射为 BizError，再统一输出。
-  3) 未知/系统异常 → 记录完整日志，返回 500 标准格式，避免泄露内部信息。
+  1) BizError 及子类 → 直接转换为 {code, message, data, extra}
+  2) DRF 内置异常（Validation/Authentication/Permission/NotFound/Throttled）→ 映射为 BizError，再统一输出
+  3) 未知/系统异常 → 记录完整日志，返回 500 标准格式，避免泄露内部信息
 """
 
 from typing import Any
@@ -37,7 +37,7 @@ logger = get_logger(__name__)
 
 def _extract_message(detail: Any) -> str:
     """
-    从 DRF 的 detail 结构中提取“第一条可读错误信息”。
+    从 DRF 的 detail 结构中提取“第一条可读错误信息”
 
     detail 可能是：
     - str
@@ -61,7 +61,7 @@ def _extract_message(detail: Any) -> str:
 
 def _handle_biz_error(exc: BizError) -> Response:
     """
-    直接把 BizError 转成统一响应。
+    直接把 BizError 转成统一响应
     """
     payload = payload_from_biz_error(exc)
     return Response(payload, status=exc.http_status)
@@ -71,7 +71,7 @@ def _handle_unexpected_exception(exc: Exception, context: dict) -> Response:
     """
     处理不是 BizError、不是 DRF 异常的“程序 bug”：
     - 记录完整异常堆栈到日志；
-    - 返回统一的 500 错误响应（不泄露内部细节）。
+    - 返回统一的 500 错误响应（不泄露内部细节）
     """
     req = context.get("request")
     user = getattr(req, "user", None)
@@ -100,8 +100,8 @@ def _handle_unexpected_exception(exc: Exception, context: dict) -> Response:
 
 def _map_drf_exception_to_biz(exc: Exception) -> BizError | None:
     """
-    尝试把 DRF 内置异常映射为我们的 BizError 子类。
-    映射不到就返回 None。
+    尝试把 DRF 内置异常映射为我们的 BizError 子类
+    映射不到就返回 None
     """
     # 参数校验错误（Serializer / 校验器抛的异常）
     if isinstance(exc, DRFValidationError):
@@ -135,7 +135,7 @@ def _map_drf_exception_to_biz(exc: Exception) -> BizError | None:
 
 def custom_exception_handler(exc: Exception, context: dict) -> Response | None:
     """
-    DRF 入口函数：全局异常处理器。
+    DRF 入口函数：全局异常处理器
 
     处理顺序：
     1. 业务异常（BizError） → 直接按我们的格式返回；
@@ -143,7 +143,7 @@ def custom_exception_handler(exc: Exception, context: dict) -> Response | None:
     3. 其它异常 →
         3.1 先交给 DRF 默认 handler，让它生成一个 Response；
         3.2 如果 DRF 能处理，则把它的结果“包一层”映射成统一结构；
-        3.3 如果 DRF 也搞不定，视为真正的系统异常，返回 500。
+        3.3 如果 DRF 也搞不定，视为真正的系统异常，返回 500
     """
 
     # 1) 我们自己的业务异常（BizError）
@@ -159,7 +159,7 @@ def custom_exception_handler(exc: Exception, context: dict) -> Response | None:
     drf_response = drf_exception_handler(exc, context)
 
     if drf_response is not None:
-        # DRF 已经帮我们生成了 Response（一般是 ValidationError、404 等）。
+        # DRF 已经帮我们生成了 Response（一般是 ValidationError、404 等）
         # 为了保持统一格式，再包一层：
         raw_data = drf_response.data  # 原始数据
         message = _extract_message(raw_data)  # 提取消息

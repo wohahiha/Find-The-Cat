@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.utils.text import slugify
 
-# 模型文件：负责比赛、公告、队伍与队员的数据结构定义，不承载业务流程。
+# 模型文件：负责比赛、公告、队伍与队员的数据结构定义，不承载业务流程
 
 User = settings.AUTH_USER_MODEL
 
@@ -13,12 +13,12 @@ User = settings.AUTH_USER_MODEL
 class Contest(models.Model):
     """
     比赛模型：
-    - 覆盖比赛的核心信息（名称、时间、可见性、赛制）。
-    - 提供比赛状态辅助属性，用于服务层校验比赛是否可报名/计分。
+    - 覆盖比赛的核心信息（名称、时间、可见性、赛制）
+    - 提供比赛状态辅助属性，用于服务层校验比赛是否可报名/计分
     """
 
     class Visibility(models.TextChoices):
-        """比赛可见性枚举：控制公开/私有访问范围。"""
+        """比赛可见性枚举：控制公开/私有访问范围"""
         PUBLIC = "public", "公开"
         PRIVATE = "private", "私有"
 
@@ -55,26 +55,26 @@ class Contest(models.Model):
 
     @property
     def is_active(self) -> bool:
-        """比赛是否进行中：用于接口展示和状态校验。"""
+        """比赛是否进行中：用于接口展示和状态校验"""
         now = timezone.now()
         return self.start_time <= now <= self.end_time
 
     @property
     def has_started(self) -> bool:
-        """是否已开赛，供报名/提交校验。"""
+        """是否已开赛，供报名/提交校验"""
         return timezone.now() >= self.start_time
 
     @property
     def has_ended(self) -> bool:
-        """是否已结束，供禁止后续操作。"""
+        """是否已结束，供禁止后续操作"""
         return timezone.now() > self.end_time
 
 
 class ContestScoreboard(Contest):
     """
     比赛排行榜代理模型：
-    - 仅用于 Django Admin 展示排行榜，不新增数据库表。
-    - 复用 Contest 数据，提供后台排行榜视图。
+    - 仅用于 Django Admin 展示排行榜，不新增数据库表
+    - 复用 Contest 数据，提供后台排行榜视图
     """
 
     class Meta:
@@ -86,8 +86,8 @@ class ContestScoreboard(Contest):
 class ContestAnnouncement(models.Model):
     """
     比赛公告模型：
-    - 关联比赛的公告信息，支持前台拉取。
-    - is_active 控制公告是否展示。
+    - 关联比赛的公告信息，支持前台拉取
+    - is_active 控制公告是否展示
     """
 
     # 所属比赛
@@ -109,23 +109,23 @@ class ContestAnnouncement(models.Model):
         indexes = [
             models.Index(fields=["contest", "is_active", "created_at"]),
         ]
-        verbose_name = "比赛公告"
-        verbose_name_plural = "比赛公告"
+        verbose_name = "公告"
+        verbose_name_plural = "公告"
 
     def __str__(self) -> str:
         return f"{self.contest.slug}: {self.title}"
 
 
 def default_invite_token() -> str:
-    """默认邀请码生成器：使用时间戳 slug，保证初始可用。"""
+    """默认邀请码生成器：使用时间戳 slug，保证初始可用"""
     return slugify(timezone.now().isoformat())[:12]
 
 
 class Team(models.Model):
     """
     队伍模型：
-    - 关联比赛，记录队伍基本信息与队长。
-    - invite_token 用于加入队伍的凭证。
+    - 关联比赛，记录队伍基本信息与队长
+    - invite_token 用于加入队伍的凭证
     """
 
     # 所属比赛
@@ -153,27 +153,27 @@ class Team(models.Model):
             ("contest", "slug"),
         )
         ordering = ["name"]
-        verbose_name = "参赛队伍"
-        verbose_name_plural = "参赛队伍"
+        verbose_name = "队伍"
+        verbose_name_plural = "队伍"
 
     def __str__(self) -> str:
         return f"{self.name} ({self.contest.name})"
 
     @property
     def member_count(self) -> int:
-        """当前有效成员数量，用于人数上限校验。"""
+        """当前有效成员数量，用于人数上限校验"""
         return self.members.filter(is_active=True).count()
 
 
 class TeamMember(models.Model):
     """
     队伍成员模型：
-    - 描述队伍与用户的多对多关系。
-    - role 标识角色（队长/队员），is_active 控制是否在队伍中。
+    - 描述队伍与用户的多对多关系
+    - role 标识角色（队长/队员），is_active 控制是否在队伍中
     """
 
     class Role(models.TextChoices):
-        """队伍成员角色枚举：区分队长与普通队员。"""
+        """队伍成员角色枚举：区分队长与普通队员"""
         CAPTAIN = "captain", "队长"
         MEMBER = "member", "队员"
 

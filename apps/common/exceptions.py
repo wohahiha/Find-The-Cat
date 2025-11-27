@@ -2,9 +2,9 @@
 业务异常体系（BizError）
 
 约定与作用：
-- 所有“预期内的业务错误”都继承 BizError，避免直接抛框架异常。
-- 统一错误码/HTTP 状态/提示语，便于前后端对齐。
-- 系统级错误（代码 bug、数据库故障等）由全局异常处理器按 500 处理。
+- 所有“预期内的业务错误”都继承 BizError，避免直接抛框架异常
+- 统一错误码/HTTP 状态/提示语，便于前后端对齐
+- 系统级错误（代码 bug、数据库故障等）由全局异常处理器按 500 处理
 
 错误码规范：
 - 0                : 成功（只出现在正常响应里）
@@ -19,18 +19,18 @@
 - 48000~48099      : 题目 / Flag 相关错误（题目不可见、Flag 已解出等）
 
 使用方式：
-- 业务层抛 BizError 或子类；全局异常处理器读取 exc.code/message/http_status/extra 构造统一响应。
+- 业务层抛 BizError 或子类；全局异常处理器读取 exc.code/message/http_status/extra 构造统一响应
 """
 
 
 class BizError(Exception):
     """
-    所有业务异常的基类。
+    所有业务异常的基类
 
     设计要点：
     - 不耦合 DRF / Response，只是纯数据和语义；
     - 子类只需覆盖 default_code / default_message / http_status；
-    - 也可以在 __init__ 时传入自定义 message / code / extra 做覆盖。
+    - 也可以在 __init__ 时传入自定义 message / code / extra 做覆盖
     """
 
     #: 子类可覆盖的默认错误码
@@ -128,7 +128,7 @@ class AuthError(BizError):
 
 class InvalidCredentialsError(AuthError):
     """
-    用户名 / 密码错误、或帐号状态异常导致无法登录。
+    用户名 / 密码错误、或帐号状态异常导致无法登录
     """
     default_code = 40101
     default_message = "用户名或密码错误"
@@ -136,7 +136,7 @@ class InvalidCredentialsError(AuthError):
 
 class TokenError(AuthError):
     """
-    Token 无效 / 过期 / 被吊销。
+    Token 无效 / 过期 / 被吊销
     """
     default_code = 40102
     default_message = "登录状态已失效，请重新登录"
@@ -144,7 +144,7 @@ class TokenError(AuthError):
 
 class AccountInactiveError(AuthError):
     """
-    账户处于停用或失效状态，禁止登录。
+    账户处于停用或失效状态，禁止登录
     """
     default_code = 40103
     default_message = "账户失效，请联系管理员"
@@ -287,7 +287,7 @@ class WrongFlagError(FlagError):
 
 def require(condition: bool, error: BizError) -> None:
     """
-    小工具：用于在业务代码中快速断言业务条件。
+    小工具：用于在业务代码中快速断言业务条件
 
     用法：
         require(user.is_active, AuthError("帐号已被禁用"))

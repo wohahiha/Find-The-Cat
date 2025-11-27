@@ -9,15 +9,16 @@ from apps.common.base.base_schema import BaseSchema
 from apps.common.exceptions import ValidationError
 from apps.common.utils.validators import validate_slug
 
-# Schema 层：定义题目创建/更新/提交/提示/附件上传的入参结构与校验逻辑，确保视图/服务收到的参数符合业务规则。
+
+# Schema 层：定义题目创建/更新/提交/提示/附件上传的入参结构与校验逻辑，确保视图/服务收到的参数符合业务规则
 
 
 @dataclass
 class ChallengeCreateSchema(BaseSchema[None]):
     """
     创建题目入参：
-    - 覆盖题目信息、Flag、分类、子任务、附件与提示。
-    - 自动校验必填字段、分值与子任务/附件合法性。
+    - 覆盖题目信息、Flag、分类、子任务、附件与提示
+    - 自动校验必填字段、分值与子任务/附件合法性
     """
     auto_validate: ClassVar[bool] = True
     # 比赛标识
@@ -66,7 +67,7 @@ class ChallengeCreateSchema(BaseSchema[None]):
     blood_bonus_points: List[int] = field(default_factory=list)
 
     def validate(self) -> None:
-        """校验题目必填字段、分值、子任务与附件，确保创建请求符合业务约束。"""
+        """校验题目必填字段、分值、子任务与附件，确保创建请求符合业务约束"""
         if not self.title:
             raise ValidationError(message="题目标题不能为空")
         if not self.slug:
@@ -143,32 +144,32 @@ class ChallengeCreateSchema(BaseSchema[None]):
 
 @dataclass
 class ChallengeUpdateSchema(ChallengeCreateSchema):
-    """更新题目入参：沿用创建校验逻辑。"""
+    """更新题目入参：沿用创建校验逻辑"""
     auto_validate: ClassVar[bool] = True
 
 
 @dataclass
 class ChallengeSubmitSchema(BaseSchema[None]):
-    """提交 Flag 入参：仅包含 Flag。"""
+    """提交 Flag 入参：仅包含 Flag"""
     auto_validate: ClassVar[bool] = True
     # 提交的 Flag
     flag: str
 
     def validate(self) -> None:
-        """校验 Flag 非空。"""
+        """校验 Flag 非空"""
         if not self.flag:
             raise ValidationError(message="请输入 Flag")
 
 
 @dataclass
 class HintUnlockSchema(BaseSchema[None]):
-    """解锁提示入参：无额外字段，预留扩展。"""
+    """解锁提示入参：无额外字段，预留扩展"""
     auto_validate: ClassVar[bool] = True
 
 
 @dataclass
 class AttachmentUploadSchema(BaseSchema[None]):
-    """附件上传入参：支持可选比赛/题目标识用于归档路径。"""
+    """附件上传入参：支持可选比赛/题目标识用于归档路径"""
     auto_validate: ClassVar[bool] = True
     # 可选：归档到具体比赛
     contest_slug: Optional[str] = None

@@ -1,8 +1,8 @@
 """
-日志封装：提供统一获取 logger 的入口，便于集中配置格式/输出。
+日志封装：提供统一获取 logger 的入口，便于集中配置格式/输出
 
-- configure_logging：按环境变量设置日志级别/格式/输出文件。
-- get_logger(name)：返回 Python logging 的 logger，默认延用 Django 配置。
+- configure_logging：按环境变量设置日志级别/格式/输出文件
+- get_logger(name)：返回 Python logging 的 logger，默认延用 Django 配置
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from typing import Optional
 
 def configure_logging() -> None:
     """
-    初始化日志配置。
+    初始化日志配置
 
     - LOG_LEVEL：日志级别（默认为 INFO）
     - LOG_FORMAT：可选 plain/json，json 仅输出 message 与 level
@@ -38,7 +38,7 @@ def configure_logging() -> None:
 
 def get_logger(name: Optional[str] = None) -> logging.Logger:
     """
-    获取 logger：默认使用模块名或传入的 name。
+    获取 logger：默认使用模块名或传入的 name
     """
     return logging.getLogger(name)
 
@@ -48,7 +48,7 @@ SENSITIVE_KEYS = {"password", "token", "flag", "code", "email_code", "auth_code"
 
 def sanitize_extra(extra: Optional[dict] = None) -> dict:
     """
-    过滤敏感字段，避免在日志中泄露密码/验证码/Flag 等。
+    过滤敏感字段，避免在日志中泄露密码/验证码/Flag 等
     """
     if not extra:
         return {}
@@ -62,7 +62,7 @@ def sanitize_extra(extra: Optional[dict] = None) -> dict:
 
 
 def logger_extra(extra: Optional[dict] = None) -> dict:
-    """封装 extra，自动过滤敏感字段。"""
+    """封装 extra，自动过滤敏感字段"""
     return sanitize_extra(extra)
 
 
@@ -76,7 +76,7 @@ def merge_extra(base: Optional[dict], extra: Optional[dict]) -> dict:
 
 
 class RequestContextFilter(logging.Filter):
-    """将 request_context 注入日志 record，确保 formatter 有字段可用。"""
+    """将 request_context 注入日志 record，确保 formatter 有字段可用"""
 
     def filter(self, record: logging.LogRecord) -> bool:
         try:

@@ -1,6 +1,6 @@
-"""账户相关的序列化与入参校验 Schema。
+"""账户相关的序列化与入参校验 Schema
 
-定义登录、注册、修改资料、修改邮箱/密码、注销等请求的输入结构与校验规则。
+定义登录、注册、修改资料、修改邮箱/密码、注销等请求的输入结构与校验规则
 """
 
 from __future__ import annotations
@@ -25,9 +25,9 @@ EMAIL_CODE_PATTERN = re.compile(r"^\d{6}$")
 def _validate_email(value: str) -> None:
     """
     邮箱格式校验：
-    - 业务场景：注册/重置/修改邮箱等输入的统一邮箱格式检查。
-    - 模块角色：复用 Django 内置校验，统一转为业务异常。
-    - 参数 value：待校验邮箱字符串。
+    - 业务场景：注册/重置/修改邮箱等输入的统一邮箱格式检查
+    - 模块角色：复用 Django 内置校验，统一转为业务异常
+    - 参数 value：待校验邮箱字符串
     """
     try:
         django_validate_email(value)
@@ -38,8 +38,8 @@ def _validate_email(value: str) -> None:
 def _validate_password(value: str) -> None:
     """
     密码复杂度校验：
-    - 业务规则：长度 8-64 且必须包含字母和数字，防止弱密码。
-    - 模块角色：被注册/修改密码/重置密码等校验复用。
+    - 业务规则：长度 8-64 且必须包含字母和数字，防止弱密码
+    - 模块角色：被注册/修改密码/重置密码等校验复用
     """
     if not 8 <= len(value) <= 64:
         raise ValidationError(message="密码长度需在 8-64 位之间")
@@ -51,8 +51,8 @@ def _validate_password(value: str) -> None:
 class SendEmailCodeSchema(BaseSchema[None]):
     """
     发送邮箱验证码入参 Schema：
-    - 用于注册/重置密码/绑定邮箱等场景的验证码发送请求。
-    - 自动执行 validate，确保邮箱格式正确且场景受支持。
+    - 用于注册/重置密码/绑定邮箱等场景的验证码发送请求
+    - 自动执行 validate，确保邮箱格式正确且场景受支持
     """
     auto_validate: ClassVar[bool] = True
 
@@ -62,7 +62,7 @@ class SendEmailCodeSchema(BaseSchema[None]):
     scene: str
 
     def validate(self) -> None:
-        """校验邮箱格式与场景合法性，避免发送到非法地址或不支持的业务场景。"""
+        """校验邮箱格式与场景合法性，避免发送到非法地址或不支持的业务场景"""
         _validate_email(self.email)
         if self.scene not in EmailVerificationCode.Scene.values:
             raise ValidationError(message="不支持的验证码场景")
@@ -72,8 +72,8 @@ class SendEmailCodeSchema(BaseSchema[None]):
 class RegisterSchema(BaseSchema[None]):
     """
     注册入参 Schema：
-    - 校验用户名格式、邮箱格式、密码强度与二次确认。
-    - 验证邮箱验证码格式。
+    - 校验用户名格式、邮箱格式、密码强度与二次确认
+    - 验证邮箱验证码格式
     """
     auto_validate: ClassVar[bool] = True
 
@@ -91,7 +91,7 @@ class RegisterSchema(BaseSchema[None]):
     nickname: Optional[str] = field(default=None)
 
     def validate(self) -> None:
-        """逐项校验用户名、邮箱、密码与验证码格式，并比对两次密码，确保注册安全。"""
+        """逐项校验用户名、邮箱、密码与验证码格式，并比对两次密码，确保注册安全"""
         if not USERNAME_PATTERN.match(self.username):
             raise ValidationError(message="用户名需为 3-32 位字母/数字/._- 组合")
 
@@ -109,8 +109,8 @@ class RegisterSchema(BaseSchema[None]):
 class LoginSchema(BaseSchema[None]):
     """
     登录入参 Schema：
-    - 接收用户名或邮箱作为 identifier。
-    - 校验密码与图形验证码。
+    - 接收用户名或邮箱作为 identifier
+    - 校验密码与图形验证码
     """
     auto_validate: ClassVar[bool] = True
 
@@ -124,7 +124,7 @@ class LoginSchema(BaseSchema[None]):
     captcha_code: str = ""
 
     def validate(self) -> None:
-        """校验登录凭据与图形验证码字段非空，identifier 长度需至少 3。"""
+        """校验登录凭据与图形验证码字段非空，identifier 长度需至少 3"""
         if not self.identifier or len(self.identifier) < 3:
             raise ValidationError(message="请输入正确的用户名或邮箱")
         if not self.password:
@@ -139,8 +139,8 @@ class LoginSchema(BaseSchema[None]):
 class ResetPasswordSchema(BaseSchema[None]):
     """
     重置密码入参 Schema：
-    - 通过邮箱 + 验证码 + 新密码完成重置。
-    - 校验新密码复杂度与两次输入一致性。
+    - 通过邮箱 + 验证码 + 新密码完成重置
+    - 校验新密码复杂度与两次输入一致性
     """
     auto_validate: ClassVar[bool] = True
 
@@ -154,7 +154,7 @@ class ResetPasswordSchema(BaseSchema[None]):
     confirm_password: str
 
     def validate(self) -> None:
-        """校验邮箱、验证码格式，并确保新密码符合复杂度且两次一致，避免弱密码与误操作。"""
+        """校验邮箱、验证码格式，并确保新密码符合复杂度且两次一致，避免弱密码与误操作"""
         _validate_email(self.email)
         if not EMAIL_CODE_PATTERN.match(self.code):
             raise ValidationError(message="验证码格式错误")
@@ -167,8 +167,8 @@ class ResetPasswordSchema(BaseSchema[None]):
 class ProfileUpdateSchema(BaseSchema[None]):
     """
     个人资料更新入参 Schema：
-    - 支持昵称、头像、简介、组织、国家、个人主页的部分更新。
-    - 至少需提供一项更新字段。
+    - 支持昵称、头像、简介、组织、国家、个人主页的部分更新
+    - 至少需提供一项更新字段
     """
     auto_validate: ClassVar[bool] = True
 
@@ -186,7 +186,7 @@ class ProfileUpdateSchema(BaseSchema[None]):
     website: Optional[str] = None
 
     def validate(self) -> None:
-        """至少需要填写一个字段，否则提示无更新内容，避免空请求占用资源。"""
+        """至少需要填写一个字段，否则提示无更新内容，避免空请求占用资源"""
         if not any(
                 [
                     self.nickname,
@@ -204,8 +204,8 @@ class ProfileUpdateSchema(BaseSchema[None]):
 class ChangePasswordSchema(BaseSchema[None]):
     """
     修改密码入参 Schema：
-    - 需要提供旧密码、新密码与确认新密码。
-    - 校验新密码复杂度、与旧密码不同且两次一致。
+    - 需要提供旧密码、新密码与确认新密码
+    - 校验新密码复杂度、与旧密码不同且两次一致
     """
     auto_validate: ClassVar[bool] = True
 
@@ -217,7 +217,7 @@ class ChangePasswordSchema(BaseSchema[None]):
     confirm_password: str
 
     def validate(self) -> None:
-        """校验旧密码非空、新密码复杂度，以及新旧不同与两次一致，防止弱密码与误改。"""
+        """校验旧密码非空、新密码复杂度，以及新旧不同与两次一致，防止弱密码与误改"""
         if not self.old_password:
             raise ValidationError(message="请填写当前密码")
         _validate_password(self.new_password)
@@ -231,8 +231,8 @@ class ChangePasswordSchema(BaseSchema[None]):
 class ChangeEmailSchema(BaseSchema[None]):
     """
     修改邮箱入参 Schema：
-    - 需要当前密码、新邮箱与新邮箱验证码。
-    - 校验邮箱格式与验证码格式。
+    - 需要当前密码、新邮箱与新邮箱验证码
+    - 校验邮箱格式与验证码格式
     """
     auto_validate: ClassVar[bool] = True
 
@@ -244,7 +244,7 @@ class ChangeEmailSchema(BaseSchema[None]):
     current_password: str
 
     def validate(self) -> None:
-        """校验当前密码非空、新邮箱格式与验证码格式，确保身份确认与邮箱有效性。"""
+        """校验当前密码非空、新邮箱格式与验证码格式，确保身份确认与邮箱有效性"""
         if not self.current_password:
             raise ValidationError(message="请填写当前密码")
         _validate_email(self.new_email)
@@ -256,7 +256,7 @@ class ChangeEmailSchema(BaseSchema[None]):
 class DeleteAccountSchema(BaseSchema[None]):
     """
     注销账户入参 Schema：
-    - 需要用户输入当前密码作为二次确认。
+    - 需要用户输入当前密码作为二次确认
     """
     auto_validate: ClassVar[bool] = True
 
@@ -264,6 +264,6 @@ class DeleteAccountSchema(BaseSchema[None]):
     password: str
 
     def validate(self) -> None:
-        """校验密码非空，确保用户明确确认注销操作。"""
+        """校验密码非空，确保用户明确确认注销操作"""
         if not self.password:
             raise ValidationError(message="请填写密码以确认身份")

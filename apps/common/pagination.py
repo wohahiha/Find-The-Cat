@@ -5,7 +5,7 @@
 - 统一分页响应结构，与 common.response.page_success 对齐；
 - 保留 DRF PageNumberPagination 默认参数行为（页码、page_size）；
 - 控制默认分页大小/最大分页大小，防止一次拉取过多数据；
-- 自动封装 {code,message,data,extra}，extra 内包含页码/总数/是否有前后页。
+- 自动封装 {code,message,data,extra}，extra 内包含页码/总数/是否有前后页
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ class StandardPagination(PageNumberPagination):
 
     def get_paginated_response(self, data: List[Any]) -> Response:
         """
-        将分页后的数据封装为统一格式。
+        将分页后的数据封装为统一格式
 
         注意：
         - self.page：当前页对象
@@ -55,7 +55,7 @@ class StandardPagination(PageNumberPagination):
 
     def get_page_size(self, request: Request) -> int | None:
         """
-        覆写以增加最小值校验，防止 page_size 为 0 或负值。
+        覆写以增加最小值校验，防止 page_size 为 0 或负值
         """
         size = super().get_page_size(request)
         if size is None:

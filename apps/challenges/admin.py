@@ -1,7 +1,7 @@
 """
 挑战模块后台配置：
-- 提供题目/分类/解题记录的管理界面，支持附件上传、字段提示与只读控制。
-- 主要服务于运维/出题人后台操作，不参与前台业务逻辑。
+- 提供题目/分类/解题记录的管理界面，支持附件上传、字段提示与只读控制
+- 主要服务于运维/出题人后台操作，不参与前台业务逻辑
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 
 class AdminAuditMixin:
-    """后台审计日志：记录增删改关键对象。"""
+    """后台审计日志：记录增删改关键对象"""
 
     audit_model = ""
 
@@ -62,42 +62,44 @@ class AdminAuditMixin:
             ),
         )
 
+
 from .models import ChallengeCategory, Challenge, ChallengeSolve, ChallengeAttachment
+from apps.machines.models import MachineInstance
 from .services import AttachmentUploadService
 from .schemas import AttachmentUploadSchema
 from .repo import ChallengeAttachmentRepo
 
 
 class ChallengeAdminForm(forms.ModelForm):
-    """题目后台表单：追加附件上传按钮。"""
+    """题目后台表单：追加附件上传按钮"""
 
     upload_file = forms.FileField(
         required=False,
         label="上传附件",
-        help_text="选择本地文件，保存后自动上传并创建附件记录。",
+        help_text="选择本地文件，保存后自动上传并创建附件记录",
     )
     title = forms.CharField(
         label="题目标题",
-        help_text="选手看到的名称，用于列表/榜单展示。",
+        help_text="选手看到的名称，用于列表/榜单展示",
     )
     slug = forms.CharField(
         label="题目标识",
-        help_text="URL/接口唯一标识，同一比赛下需唯一，建议使用英文/短横线。",
+        help_text="URL/接口唯一标识，同一比赛下需唯一，建议使用英文/短横线",
     )
     short_description = forms.CharField(
         required=False,
         label="题目简介",
-        help_text="列表视图的简短摘要/提示，便于快速浏览筛选。",
+        help_text="列表视图的简短摘要/提示，便于快速浏览筛选",
     )
     content = forms.CharField(
         widget=forms.Textarea,
         label="题目内容",
-        help_text="完整题面描述，包含环境信息、要求、附件说明等。",
+        help_text="完整题面描述，包含环境信息、要求、附件说明等",
     )
     blood_bonus_points = forms.CharField(
         required=False,
         label="n血加分列表",
-        help_text="仅在选择“加分”时有效，自动按血次生成输入行。",
+        help_text="仅在选择“加分”时有效，自动按血次生成输入行",
         widget=forms.HiddenInput(),
     )
 
@@ -113,7 +115,7 @@ class ChallengeAdminForm(forms.ModelForm):
             self.initial["blood_bonus_points"] = "\n".join(str(item) for item in bonus_list)
 
     def clean_blood_bonus_points(self):
-        """将换行/逗号分隔的加分转换为整数列表。"""
+        """将换行/逗号分隔的加分转换为整数列表"""
         raw = self.cleaned_data.get("blood_bonus_points") or ""
         if isinstance(raw, list):
             return raw
@@ -130,7 +132,7 @@ class ChallengeAdminForm(forms.ModelForm):
         return result
 
     def clean(self):
-        """校验加分数量与 n 值一致，避免遗漏。"""
+        """校验加分数量与 n 值一致，避免遗漏"""
         cleaned = super().clean()
         reward_type = cleaned.get("blood_reward_type")
         reward_count = int(cleaned.get("blood_reward_count") or 0)
@@ -140,12 +142,13 @@ class ChallengeAdminForm(forms.ModelForm):
                 raise forms.ValidationError("请填写足够的加分行数，与 n 血数量一致")
         return cleaned
 
-# 后台注册：配置题目、分类与解题记录的 Django Admin 展示。
+
+# 后台注册：配置题目、分类与解题记录的 Django Admin 展示
 
 
 @admin.register(ChallengeCategory)
 class ChallengeCategoryAdmin(AdminAuditMixin, admin.ModelAdmin):
-    """题目分类后台：支持名称/slug 搜索与自动填充。"""
+    """题目分类后台：支持名称/slug 搜索与自动填充"""
     list_select_related = ()
     # 列表展示字段
     list_display = ("name", "slug")
@@ -155,25 +158,31 @@ class ChallengeCategoryAdmin(AdminAuditMixin, admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
 
     def get_form(self, request, obj=None, **kwargs):
-        """为分类详情页字段添加说明，避免命名冲突。"""
+        """为分类详情页字段添加说明，避免命名冲突"""
         form = super().get_form(request, obj, **kwargs)
         help_texts = {
-            "name": "分类名称，用于后台分组与前台展示。",
-            "slug": "分类标识，需唯一，建议使用英文/短横线组合。",
+            "name": "分类名称，用于后台分组与前台展示",
+            "slug": "分类标识，需唯一，建议使用英文/短横线组合",
         }
         for name, text in help_texts.items():
             if name in form.base_fields:
                 form.base_fields[name].help_text = text
         return form
 
+    def get_model_perms(self, request):
+        """
+        隐藏独立菜单入口，但保留外键弹窗的使用能力，避免在导航栏出现单独板块
+        """
+        return {}
+
 
 @admin.register(Challenge)
 class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
     form = ChallengeAdminForm
     """
-    题目后台：按前缀 + 花括号 + Flag 值的输入方式展示。
+    题目后台：按前缀 + 花括号 + Flag 值的输入方式展示
 
-    - 先录入基础信息与分值，再选择 Flag 类型与前缀/值，帮助出题人理解最终 Flag 结构。
+    - 先录入基础信息与分值，再选择 Flag 类型与前缀/值，帮助出题人理解最终 Flag 结构
     """
     # 列表展示标题、所属比赛与分值等
     list_display = ("title", "contest", "category", "difficulty", "base_points", "flag_type", "is_active")
@@ -185,21 +194,21 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
     # 表单字段提示
     field_help_texts = {
-        "contest": "关联的比赛，影响榜单与计分范围。",
-        "category": "题目分类，便于后台筛选与前台分组展示。",
-        "difficulty": "题目难度标签，供出题人和选手参考。",
-        "base_points": "基础分值，动态模式下为起始分。",
-        "scoring_mode": "选择固定或动态计分，动态会随解出数量衰减。",
-        "decay_type": "动态计分衰减方式：百分比或线性递减。",
-        "decay_factor": "衰减系数，百分比模式填写 0-1，线性模式为每次递减分数。",
-        "min_score": "动态计分可衰减到的最低分，防止分值过低。",
-        "is_active": "关闭后选手不可见该题目，适合维护/下架。",
-        "dynamic_prefix": "可选前缀，最终 Flag = 前缀 + '{' + Flag 值 + '}'；无需手写花括号。",
-        "flag": "静态：填写完整 Flag 值；动态：填写种子，系统按赛题/解题人生成唯一值。",
-        "flag_case_insensitive": "勾选后校验时不区分大小写。",
-        "blood_reward_type": "n 血奖励：无/加分/前 n 血不衰减（仅动态计分可选）。",
-        "blood_reward_count": "前 n 名解题享受奖励的数量，设置为 0 关闭。",
-        "blood_bonus_points": "仅在选择“加分”时填写，按行输入每一血的额外加分值。",
+        "contest": "关联的比赛，影响榜单与计分范围",
+        "category": "题目分类，便于后台筛选与前台分组展示",
+        "difficulty": "题目难度标签，供出题人和选手参考",
+        "base_points": "基础分值，动态模式下为起始分",
+        "scoring_mode": "选择固定或动态计分，动态会随解出数量衰减",
+        "decay_type": "动态计分衰减方式：百分比或线性递减",
+        "decay_factor": "衰减系数，百分比模式填写 0-1，线性模式为每次递减分数",
+        "min_score": "动态计分可衰减到的最低分，防止分值过低",
+        "is_active": "关闭后选手不可见该题目，适合维护/下架",
+        "dynamic_prefix": "可选前缀，最终 Flag = 前缀 + '{' + Flag 值 + '}'；无需手写花括号",
+        "flag": "静态：填写完整 Flag 值；动态：填写种子，系统生成唯一值",
+        "flag_case_insensitive": "勾选后校验时不区分大小写",
+        "blood_reward_type": "n 血奖励：无/加分/前 n 血不衰减（仅动态计分可选）",
+        "blood_reward_count": "前 n 名解题享受奖励的数量，设置为 0 关闭",
+        "blood_bonus_points": "仅在选择“加分”时填写，按行输入每一血的额外加分值",
     }
     fieldsets = (
         (
@@ -221,39 +230,40 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
             "分值配置",
             {
                 "fields": ("base_points", "scoring_mode", "decay_type", "decay_factor", "min_score"),
-                "description": "动态计分会按解出次数衰减至最低分；固定分值时衰减相关字段不会生效。",
+                "description": "动态计分会按解出次数衰减至最低分；固定分值时衰减相关字段不会生效",
             },
         ),
         (
             "n血奖励",
             {
                 "fields": ("blood_reward_type", "blood_reward_count", "blood_bonus_points"),
-                "description": "配置前 n 名解题的加分或不衰减，不衰减仅支持动态分值。",
+                "description": "配置前 n 名解题的加分或不衰减，不衰减仅支持动态分值",
             },
         ),
         (
             "Flag 配置",
             {
                 "fields": ("dynamic_prefix", "flag_type", "flag", "flag_case_insensitive"),
-                "description": "最终 Flag 由“前缀 + { + Flag 值 + }”自动拼接；静态填写完整 Flag 值，动态填写种子。",
+                "description": "最终 Flag 由“前缀 + { + Flag 值 + }”自动拼接；静态填写完整 Flag 值，动态填写种子",
             },
         ),
         (
             "附件管理",
             {
                 "fields": ("upload_file", "existing_attachments"),
-                "description": "选择文件后保存自动创建附件记录。",
+                "description": "选择文件后保存自动创建附件记录",
             },
         ),
     )
     # 只读字段：附件列表
     readonly_fields = ("existing_attachments",)
+    inlines = ()
     # 预取外键，避免列表页 N+1
     list_select_related = ("contest", "category", "author")
     audit_model = "Challenge"
 
     class Media:
-        """后台表单静态资源：按计分模式动态显示衰减字段。"""
+        """后台表单静态资源：按计分模式动态显示衰减字段"""
         js = ("challenges/js/challenge_admin.js",)
 
     def get_form(self, request, obj=None, **kwargs):
@@ -265,7 +275,7 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
 
     def save_model(self, request, obj: Challenge, form, change):
         """
-        保存题目后，如果有选择附件则上传并创建附件记录。
+        保存题目后，如果有选择附件则上传并创建附件记录
         """
         super().save_model(request, obj, form, change)
         upload = form.files.get("upload_file")
@@ -293,7 +303,7 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
     @admin.display(description="已上传附件")
     def existing_attachments(self, obj: Challenge):
         """
-        展示已上传的附件列表。
+        展示已上传的附件列表
         """
         attachments = obj.attachments.all().order_by("order", "id")
         if not attachments:
@@ -305,9 +315,32 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
         )
 
 
+class MachineInstanceInline(admin.TabularInline):
+    """靶机实例内联：在题目下查看关联实例"""
+
+    model = MachineInstance
+    fk_name = "challenge"
+    extra = 0
+    fields = ("contest", "user", "team", "host", "port", "status", "created_at")
+    readonly_fields = ("contest", "user", "team", "host", "port", "status", "created_at")
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        """靶机实例由业务启动，不允许后台新增"""
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        """靶机实例信息只读"""
+        return False
+
+
+# 仅在定义完成后追加内联，保持 ChallengeAdmin 结构清晰
+ChallengeAdmin.inlines = ChallengeAdmin.inlines + (MachineInstanceInline,)  # type: ignore
+
+
 @admin.register(ChallengeSolve)
 class ChallengeSolveAdmin(admin.ModelAdmin):
-    """解题记录后台：查看得分与解题时间，保持只读。"""
+    """解题记录后台：查看得分与解题时间，保持只读"""
     list_select_related = ("challenge", "challenge__contest", "user", "team")
     # 列表展示解题核心信息
     list_display = ("challenge", "user", "team", "awarded_points", "bonus_points", "solved_at")
@@ -317,15 +350,15 @@ class ChallengeSolveAdmin(admin.ModelAdmin):
     readonly_fields = ("challenge", "user", "team", "awarded_points", "bonus_points", "solved_at")
 
     def get_form(self, request, obj=None, **kwargs):
-        """为解题记录详情页字段添加说明，方便审计。"""
+        """为解题记录详情页字段添加说明，方便审计"""
         form = super().get_form(request, obj, **kwargs)
         help_texts = {
-            "challenge": "对应的题目，决定分值与所属比赛。",
-            "user": "解题的用户，个人赛必填。",
-            "team": "解题所属队伍，组队赛使用。",
-            "awarded_points": "当次解题获得的总分值（已含动态衰减和加分）。",
-            "bonus_points": "若配置 n 血加分，则记录额外得分。",
-            "solved_at": "解题时间，用于榜单排序与血次序。",
+            "challenge": "对应的题目，决定分值与所属比赛",
+            "user": "解题的用户，个人赛必填",
+            "team": "解题所属队伍，组队赛使用",
+            "awarded_points": "当次解题获得的总分值（已含动态衰减和加分）",
+            "bonus_points": "若配置 n 血加分，则记录额外得分",
+            "solved_at": "解题时间，用于榜单排序与血次序",
         }
         for name, text in help_texts.items():
             if name in form.base_fields:
@@ -333,14 +366,19 @@ class ChallengeSolveAdmin(admin.ModelAdmin):
         return form
 
     def has_add_permission(self, request):
-        """禁止后台新增解题记录，避免污染榜单。"""
+        """禁止后台新增解题记录，避免污染榜单"""
         return False
 
     def has_change_permission(self, request, obj=None):
-        """禁止后台编辑解题记录。"""
+        """禁止后台编辑解题记录"""
         return False
 
     def has_delete_permission(self, request, obj=None):
-        """禁止后台删除解题记录。"""
+        """禁止后台删除解题记录"""
         return False
+
     audit_model = "ChallengeCategory"
+
+    def get_model_perms(self, request):
+        """隐藏独立菜单入口，改为从比赛视角查看解题记录"""
+        return {}

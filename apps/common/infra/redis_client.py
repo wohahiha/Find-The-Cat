@@ -1,7 +1,7 @@
 """
 Redis 客户端封装：
-- 统一读取 settings 中的 Redis 配置，提供基础的 get/set/incr/json 存取等方法。
-- 预留 mock 模式（无 Redis 时使用内存字典），便于本地开发/测试。
+- 统一读取 settings 中的 Redis 配置，提供基础的 get/set/incr/json 存取等方法
+- 预留 mock 模式（无 Redis 时使用内存字典），便于本地开发/测试
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ except Exception:  # pragma: no cover
 
 
 def _get_client():
-    """获取 Redis 客户端，mock 模式返回 None，缺少依赖时报错。"""
+    """获取 Redis 客户端，mock 模式返回 None，缺少依赖时报错"""
     if _USE_MOCK:
         return None
     if not redis:
@@ -48,8 +48,8 @@ def _get_client():
 
 def set(key: str, value: Any, ex: Optional[int] = None) -> None:
     """
-    设置键值，可选过期时间（秒）。
-    - mock 模式：写入内存并按过期时间清理。
+    设置键值，可选过期时间（秒）
+    - mock 模式：写入内存并按过期时间清理
     """
     if _USE_MOCK:
         _mock_store[key] = (value, time.time() + ex if ex else None)
@@ -60,8 +60,8 @@ def set(key: str, value: Any, ex: Optional[int] = None) -> None:
 
 def get(key: str) -> Optional[Any]:
     """
-    获取键值，若过期或不存在返回 None。
-    - mock 模式：自动清理过期键。
+    获取键值，若过期或不存在返回 None
+    - mock 模式：自动清理过期键
     """
     if _USE_MOCK:
         item = _mock_store.get(key)
@@ -78,8 +78,8 @@ def get(key: str) -> Optional[Any]:
 
 def incr(key: str, amount: int = 1, ex: Optional[int] = None) -> int:
     """
-    自增并可选设置过期时间。
-    - mock 模式：基于内存自增。
+    自增并可选设置过期时间
+    - mock 模式：基于内存自增
     """
     if _USE_MOCK:
         current = int(get(key) or 0) + amount
@@ -97,7 +97,7 @@ def incr(key: str, amount: int = 1, ex: Optional[int] = None) -> int:
 
 
 def delete(key: str) -> None:
-    """删除键（mock 模式删除内存记录）。"""
+    """删除键（mock 模式删除内存记录）"""
     if _USE_MOCK:
         _mock_store.pop(key, None)
         return
@@ -106,7 +106,7 @@ def delete(key: str) -> None:
 
 
 def lpush(key: str, *values) -> int:
-    """列表左插入（mock 模式使用内存 list）。"""
+    """列表左插入（mock 模式使用内存 list）"""
     if _USE_MOCK:
         lst = _mock_store.setdefault(key, [])
         lst[0:0] = list(values)
@@ -116,21 +116,21 @@ def lpush(key: str, *values) -> int:
 
 
 def lrange(key: str, start: int = 0, end: int = -1):
-    """列表切片读取（mock 模式从内存 list 返回）。"""
+    """列表切片读取（mock 模式从内存 list 返回）"""
     if _USE_MOCK:
         lst = _mock_store.get(key, [])
-        return lst[start : end + 1 if end != -1 else None]
+        return lst[start: end + 1 if end != -1 else None]
     client = _get_client()
     return client.lrange(key, start, end)
 
 
 def set_json(key: str, data: Any, ex: Optional[int] = None) -> None:
-    """以 JSON 序列化存储数据，方便结构化缓存。"""
+    """以 JSON 序列化存储数据，方便结构化缓存"""
     set(key, json.dumps(data), ex=ex)
 
 
 def get_json(key: str) -> Optional[Any]:
-    """获取 JSON 数据并反序列化，失败返回 None。"""
+    """获取 JSON 数据并反序列化，失败返回 None"""
     raw = get(key)
     if raw is None:
         return None

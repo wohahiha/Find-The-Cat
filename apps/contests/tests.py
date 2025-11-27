@@ -28,14 +28,15 @@ from .services import (
     TeamTransferService,
 )
 
-# 测试用例：覆盖 contests 模块的服务层与 API 冒烟，确保核心流程可用。
+
+# 测试用例：覆盖 contests 模块的服务层与 API 冒烟，确保核心流程可用
 
 
 class ContestServiceTests(TestCase):
-    """服务层单元测试：验证队伍创建/加入/移交与记分板逻辑。"""
+    """服务层单元测试：验证队伍创建/加入/移交与记分板逻辑"""
 
     def setUp(self) -> None:
-        """构造一场进行中的比赛和两个普通用户供各用例复用。"""
+        """构造一场进行中的比赛和两个普通用户供各用例复用"""
         # 构造进行中的比赛和两个用户
         now = timezone.now()
         self.contest = Contest.objects.create(
@@ -49,7 +50,7 @@ class ContestServiceTests(TestCase):
         self.user2 = User.objects.create_user(username="bob", email="bob@example.com", password="Pass1234")
 
     def test_team_create_service(self):
-        """创建队伍后，队长成员记录应自动生成。"""
+        """创建队伍后，队长成员记录应自动生成"""
         schema = TeamCreateSchema(contest_slug="spring-ctf", name="Alpha Team")
         team = TeamCreateService().execute(self.user1, schema)
         self.assertEqual(team.name, "Alpha Team")
@@ -58,7 +59,7 @@ class ContestServiceTests(TestCase):
         self.assertTrue(team.members.filter(user=self.user1, role="captain").exists())
 
     def test_team_join_service(self):
-        """验证邀请码加入队伍流程与角色设定。"""
+        """验证邀请码加入队伍流程与角色设定"""
         team = TeamCreateService().execute(self.user1, TeamCreateSchema(contest_slug="spring-ctf", name="Beta"))
         schema = TeamJoinSchema(contest_slug="spring-ctf", invite_token=team.invite_token)
         membership = TeamJoinService().execute(self.user2, schema)
@@ -67,20 +68,21 @@ class ContestServiceTests(TestCase):
         self.assertEqual(membership.role, "member")
 
     def test_team_invite_reset_and_transfer(self):
-        """验证重置邀请码与队长移交链路。"""
+        """验证重置邀请码与队长移交链路"""
         team = TeamCreateService().execute(self.user1, TeamCreateSchema(contest_slug="spring-ctf", name="Gamma"))
         # 重置邀请码
         reset_schema = TeamInviteResetSchema(team_id=team.id)
         updated_team = TeamInviteResetService().execute(self.user1, reset_schema)
         self.assertNotEqual(team.invite_token, updated_team.invite_token)
         # 队长移交
-        TeamJoinService().execute(self.user2, TeamJoinSchema(contest_slug="spring-ctf", invite_token=updated_team.invite_token))
+        TeamJoinService().execute(self.user2,
+                                  TeamJoinSchema(contest_slug="spring-ctf", invite_token=updated_team.invite_token))
         transfer_schema = TeamTransferSchema(team_id=team.id, new_captain_id=self.user2.id)
         updated_team = TeamTransferService().execute(self.user1, transfer_schema)
         self.assertEqual(updated_team.captain_id, self.user2.id)
 
     def test_scoreboard_service(self):
-        """验证记分板汇总逻辑：应按解题记录累加得分。"""
+        """验证记分板汇总逻辑：应按解题记录累加得分"""
         ChallengeCreateService().execute(
             self.user1,
             ChallengeCreateSchema(
@@ -113,11 +115,11 @@ class ContestServiceTests(TestCase):
     }
 )
 class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
-    """Contests 模块接口冒烟：比赛、公告、队伍全链路。"""
+    """Contests 模块接口冒烟：比赛、公告、队伍全链路"""
 
     @classmethod
     def setUpTestData(cls):
-        """一次性创建管理员和两个普通用户，供全局用例复用。"""
+        """一次性创建管理员和两个普通用户，供全局用例复用"""
         cls.admin = User.objects.create_superuser(
             username="wohahiha",
             email="admin@example.com",
@@ -127,14 +129,14 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         cls.user2 = User.objects.create_user(username="bob", email="bob@example.com", password="Passw0rd123")
 
     def setUp(self):
-        """每个测试前重置时间窗口并清理缓存以避免限流影响。"""
+        """每个测试前重置时间窗口并清理缓存以避免限流影响"""
         # 每个用例重置时间窗口并清理缓存，避免节流干扰
         self.now_minus = timezone.now() - timezone.timedelta(hours=1)
         self.now_plus = timezone.now() + timezone.timedelta(hours=1)
         cache.clear()
 
     def _create_contest(self, client: APIClient, slug: str) -> str:
-        """使用管理员创建比赛，返回 slug。"""
+        """使用管理员创建比赛，返回 slug"""
         resp = client.post(
             "/api/contests/",
             {
@@ -151,7 +153,7 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         return resp.data["data"]["contest"]["slug"]
 
     def test_contest_list_detail_and_announcements(self):
-        """验证比赛创建、公告发布、列表筛选与详情展示。"""
+        """验证比赛创建、公告发布、列表筛选与详情展示"""
         admin_client = self._auth_client("wohahiha", "stevenxu5190")
         slug = self._create_contest(admin_client, "spring-open")
 
@@ -174,7 +176,7 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         self.assertIn("announcements", resp.data["data"])
 
     def test_team_lifecycle(self):
-        """验证队伍创建、加入、队长移交、邀请码重置与解散全链路。"""
+        """验证队伍创建、加入、队长移交、邀请码重置与解散全链路"""
         admin_client = self._auth_client("wohahiha", "stevenxu5190")
         slug = self._create_contest(admin_client, "team-contest")
 

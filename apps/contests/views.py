@@ -11,9 +11,11 @@ from apps.common import response
 from apps.common.permissions import IsAuthenticated, IsAdmin, AllowAny
 from apps.challenges.repo import ChallengeRepo
 from apps.challenges.serializers import serialize_challenge
-from apps.submissions.services import SubmissionService
+from apps.submissions.services import SubmissionService, serialize_submission
 from apps.common.pagination import StandardPagination
 from django.db.models import Count, Q
+from apps.submissions.repo import SubmissionRepo
+from apps.submissions.schemas import SubmissionCreateSchema
 
 from .repo import ContestRepo, TeamRepo, TeamMemberRepo
 from .services import (
@@ -45,11 +47,12 @@ from .services import (
     serialize_team,
 )
 
-# 视图层：暴露比赛、公告、队伍接口，仅做参数转换与调用服务层，不承载业务。
+
+# 视图层：暴露比赛、公告、队伍接口，仅做参数转换与调用服务层，不承载业务
 
 
 class ContestListView(APIView):
-    """比赛列表/创建接口：GET 公共访问，POST 仅管理员。"""
+    """比赛列表/创建接口：GET 公共访问，POST 仅管理员"""
     permission_classes = [AllowAny]
     pagination_class = StandardPagination
 
@@ -85,7 +88,7 @@ class ContestListView(APIView):
 
 
 class ContestDetailView(APIView):
-    """比赛详情接口：返回比赛、挑战、公告、记分板及我的队伍。"""
+    """比赛详情接口：返回比赛、挑战、公告、记分板及我的队伍"""
     permission_classes = [AllowAny]
     context_service = ContestContextService()
     challenge_repo = ChallengeRepo()
@@ -135,7 +138,7 @@ class ContestDetailView(APIView):
 
 
 class ContestExportView(APIView):
-    """比赛数据导出接口：仅管理员可用，返回 JSON 数据快照。"""
+    """比赛数据导出接口：仅管理员可用，返回 JSON 数据快照"""
 
     permission_classes = [IsAdmin]
     export_service = ContestExportService()
@@ -148,8 +151,56 @@ class ContestExportView(APIView):
         return response.success(payload, message="导出成功")
 
 
+class ContestSubmissionView(APIView):
+    """
+    比赛提交接口：
+    - POST：比赛作用域内提交 Flag
+    - GET：管理员查看该比赛的提交记录
+    """
+
+    permission_classes = [IsAuthenticated]
+    pagination_class = StandardPagination
+    service = SubmissionService()
+    repo = SubmissionRepo()
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
+    def post(self, request: Request, contest_slug: str) -> Response:
+        """比赛作用域内提交 Flag"""
+        payload = dict(request.data)
+        payload["contest_slug"] = contest_slug
+        schema = SubmissionCreateSchema.from_dict(payload, auto_validate=True)
+        submission = self.service.execute(request.user, schema)
+        base_points = max(0, submission.awarded_points - getattr(submission, "bonus_points", 0))
+        challenge_payload = serialize_challenge(submission.challenge, current_points=base_points)
+        return response.created(
+            {
+                "submission": serialize_submission(submission),
+                "challenge": challenge_payload,
+                "awarded_points": submission.awarded_points,
+                "bonus_points": getattr(submission, "bonus_points", 0),
+                "solved_at": getattr(submission.solve, "solved_at", None),
+            },
+            message="提交已记录",
+        )
+
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
+    def get(self, request: Request, contest_slug: str) -> Response:
+        """管理员查看比赛提交记录，支持分页"""
+        self.permission_classes = [IsAdmin]  # type: ignore[assignment]
+        contest = ContestRepo().get_by_slug(contest_slug)
+        queryset = (
+            self.repo.filter(contest=contest)
+            .select_related("challenge", "user", "team")
+            .order_by("-created_at")
+        )
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        items = [serialize_submission(sub) for sub in page]
+        return paginator.get_paginated_response({"items": items})
+
+
 class ContestTeamsView(APIView):
-    """比赛队伍列表 / 创建接口：需登录。"""
+    """比赛队伍列表 / 创建接口：需登录"""
     permission_classes = [IsAuthenticated]
     context_service = ContestContextService()
     team_repo = TeamRepo()
@@ -183,7 +234,7 @@ class ContestTeamsView(APIView):
 
 
 class ContestTeamJoinView(APIView):
-    """加入队伍接口：需登录，通过邀请码加入。"""
+    """加入队伍接口：需登录，通过邀请码加入"""
     permission_classes = [IsAuthenticated]
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
@@ -202,7 +253,7 @@ class ContestTeamJoinView(APIView):
 
 
 class TeamLeaveView(APIView):
-    """退出队伍接口：需登录，队长多人时需先转移/解散。"""
+    """退出队伍接口：需登录，队长多人时需先转移/解散"""
     permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
@@ -215,7 +266,7 @@ class TeamLeaveView(APIView):
 
 
 class TeamDisbandView(APIView):
-    """解散队伍接口：需登录，队长或管理员可操作。"""
+    """解散队伍接口：需登录，队长或管理员可操作"""
     permission_classes = [IsAuthenticated]
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
@@ -230,7 +281,7 @@ class TeamDisbandView(APIView):
 class TeamInviteResetView(APIView):
     """
     重置队伍邀请码：
-    - 队长或管理员操作。
+    - 队长或管理员操作
     """
 
     permission_classes = [IsAuthenticated]
@@ -247,7 +298,7 @@ class TeamInviteResetView(APIView):
 class TeamTransferView(APIView):
     """
     队长移交：
-    - 队长或管理员可操作，将队长角色转给指定队员。
+    - 队长或管理员可操作，将队长角色转给指定队员
     """
 
     permission_classes = [IsAuthenticated]
@@ -267,8 +318,8 @@ class TeamTransferView(APIView):
 class ContestAnnouncementView(APIView):
     """
     比赛公告接口：
-    - GET：任何人可查看比赛公告列表。
-    - POST：管理员创建公告。
+    - GET：任何人可查看比赛公告列表
+    - POST：管理员创建公告
     """
 
     permission_classes = [AllowAny]

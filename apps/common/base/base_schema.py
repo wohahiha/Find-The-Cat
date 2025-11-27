@@ -15,12 +15,12 @@ SchemaType = TypeVar("SchemaType", bound="BaseSchema[Any]")
 @dataclass
 class BaseSchema(ABC, Generic[T]):
     """
-    业务 Schema / DTO 基类。
+    业务 Schema / DTO 基类
 
     目的：
         - 用于 Service 层在 Model 与外部输入之间传递结构化数据；
         - 聚合字段校验逻辑，替代零散的 serializer/表单校验；
-        - 提供通用的字典化、Model 映射与回写能力。
+        - 提供通用的字典化、Model 映射与回写能力
 
     子类示例：
         @dataclass
@@ -47,7 +47,7 @@ class BaseSchema(ABC, Generic[T]):
     @abstractmethod
     def validate(self) -> None:
         """
-        子类实现字段/业务约束校验，出错时抛 BizError。
+        子类实现字段/业务约束校验，出错时抛 BizError
         """
 
     # ------------------------
@@ -61,7 +61,7 @@ class BaseSchema(ABC, Generic[T]):
             exclude: Iterable[str] | None = None,
     ) -> Dict[str, Any]:
         """
-        将 Schema 转为 dict，支持过滤 None 或移除指定字段。
+        将 Schema 转为 dict，支持过滤 None 或移除指定字段
         """
         data = asdict(self)
         if exclude_none:
@@ -78,7 +78,7 @@ class BaseSchema(ABC, Generic[T]):
             mapping: Mapping[str, str] | None = None,
     ) -> Dict[str, Any]:
         """
-        根据 mapping 将 Schema 字段名映射到 Model 字段，便于 create/update。
+        根据 mapping 将 Schema 字段名映射到 Model 字段，便于 create/update
         """
         data = self.to_dict(exclude_none=exclude_none)
         if not mapping:
@@ -94,7 +94,7 @@ class BaseSchema(ABC, Generic[T]):
             exclude_none: bool = True,
     ) -> T:
         """
-        将 Schema 字段写回已有 Model 实例，可选保存。
+        将 Schema 字段写回已有 Model 实例，可选保存
         """
         update_data = self.to_dict(exclude_none=exclude_none)
         if fields:
@@ -120,7 +120,7 @@ class BaseSchema(ABC, Generic[T]):
             auto_validate: Optional[bool] = None,
     ) -> SchemaType:
         """
-        将外部 payload 转为 Schema；auto_validate 控制是否立即校验。
+        将外部 payload 转为 Schema；auto_validate 控制是否立即校验
         """
         instance = cls(**data)  # type: ignore[arg-type]
         if auto_validate or (auto_validate is None and cls.auto_validate):
@@ -136,7 +136,7 @@ class BaseSchema(ABC, Generic[T]):
             extra: Dict[str, Any] | None = None,
     ) -> SchemaType:
         """
-        将 Model 实例转换为 Schema，可通过 field_map 指定属性映射。
+        将 Model 实例转换为 Schema，可通过 field_map 指定属性映射
         """
         payload: Dict[str, Any] = {}
         attr_map = field_map or {}

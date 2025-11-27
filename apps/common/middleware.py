@@ -11,7 +11,7 @@ from apps.common.utils.request_context import (
 
 class RequestContextMiddleware(MiddlewareMixin):
     """
-    在请求生命周期内写入 request_id、用户、方法、路径、IP，供日志过滤器使用。
+    在请求生命周期内写入 request_id、用户、方法、路径、IP，供日志过滤器使用
     """
 
     def process_request(self, request):

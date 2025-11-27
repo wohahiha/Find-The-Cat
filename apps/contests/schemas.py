@@ -11,15 +11,16 @@ from django.utils import timezone
 from apps.common.base.base_schema import BaseSchema
 from apps.common.exceptions import ValidationError
 
-# Schema 层：负责请求入参的结构化与校验，禁止写业务逻辑。
+
+# Schema 层：负责请求入参的结构化与校验，禁止写业务逻辑
 
 
 @dataclass
 class ContestCreateSchema(BaseSchema[None]):
     """
     创建比赛入参：
-    - 覆盖比赛基础信息、时间配置与赛制开关。
-    - 自动校验时间合法性与人数上限。
+    - 覆盖比赛基础信息、时间配置与赛制开关
+    - 自动校验时间合法性与人数上限
     """
     auto_validate: ClassVar[bool] = True
     # 比赛名称
@@ -42,7 +43,8 @@ class ContestCreateSchema(BaseSchema[None]):
     max_team_members: int = 4
 
     def validate(self) -> None:
-        """校验时间顺序、封榜区间与人数上限。"""
+        """校验时间顺序、封榜区间与人数上限"""
+
         def ensure_dt(value: datetime | str | None) -> datetime:
             # 将字符串或 naive datetime 统一转换为时区感知的 datetime
             if isinstance(value, str):
@@ -74,7 +76,7 @@ class ContestCreateSchema(BaseSchema[None]):
 @dataclass
 class AnnouncementCreateSchema(BaseSchema[None]):
     """
-    创建或维护比赛公告的入参。
+    创建或维护比赛公告的入参
     """
     auto_validate: ClassVar[bool] = True
     # 比赛标识
@@ -87,7 +89,7 @@ class AnnouncementCreateSchema(BaseSchema[None]):
     is_active: bool = True
 
     def validate(self) -> None:
-        """校验公告基础字段。"""
+        """校验公告基础字段"""
         if not self.contest_slug:
             raise ValidationError(message="缺少比赛标识")
         if not self.title:
@@ -98,7 +100,7 @@ class AnnouncementCreateSchema(BaseSchema[None]):
 
 @dataclass
 class TeamCreateSchema(BaseSchema[None]):
-    """创建队伍入参：包含比赛标识与队伍信息。"""
+    """创建队伍入参：包含比赛标识与队伍信息"""
     auto_validate: ClassVar[bool] = True
     # 比赛标识
     contest_slug: str
@@ -108,14 +110,14 @@ class TeamCreateSchema(BaseSchema[None]):
     description: str = ""
 
     def validate(self) -> None:
-        """校验队伍名称必填。"""
+        """校验队伍名称必填"""
         if not self.name:
             raise ValidationError(message="队伍名称不能为空")
 
 
 @dataclass
 class TeamJoinSchema(BaseSchema[None]):
-    """加入队伍入参：通过比赛标识与邀请码。"""
+    """加入队伍入参：通过比赛标识与邀请码"""
     auto_validate: ClassVar[bool] = True
     # 比赛标识
     contest_slug: str
@@ -123,33 +125,33 @@ class TeamJoinSchema(BaseSchema[None]):
     invite_token: str
 
     def validate(self) -> None:
-        """校验邀请码必填。"""
+        """校验邀请码必填"""
         if not self.invite_token:
             raise ValidationError(message="请输入队伍邀请码")
 
 
 @dataclass
 class TeamLeaveSchema(BaseSchema[None]):
-    """退出队伍入参：仅需比赛标识。"""
+    """退出队伍入参：仅需比赛标识"""
     auto_validate: ClassVar[bool] = True
     # 比赛标识
     contest_slug: str
 
     def validate(self) -> None:
-        """校验比赛标识必填。"""
+        """校验比赛标识必填"""
         if not self.contest_slug:
             raise ValidationError(message="缺少比赛标识")
 
 
 @dataclass
 class TeamDisbandSchema(BaseSchema[None]):
-    """解散队伍入参：仅管理员或队长使用。"""
+    """解散队伍入参：仅管理员或队长使用"""
     auto_validate: ClassVar[bool] = True
     # 队伍主键
     team_id: int
 
     def validate(self) -> None:
-        """校验队伍 ID 合法性。"""
+        """校验队伍 ID 合法性"""
         if self.team_id <= 0:
             raise ValidationError(message="非法的队伍 ID")
 
@@ -157,14 +159,14 @@ class TeamDisbandSchema(BaseSchema[None]):
 @dataclass
 class TeamInviteResetSchema(BaseSchema[None]):
     """
-    重置队伍邀请码入参。
+    重置队伍邀请码入参
     """
     auto_validate: ClassVar[bool] = True
     # 队伍主键
     team_id: int
 
     def validate(self) -> None:
-        """校验队伍 ID 合法性。"""
+        """校验队伍 ID 合法性"""
         if self.team_id <= 0:
             raise ValidationError(message="非法的队伍 ID")
 
@@ -172,7 +174,7 @@ class TeamInviteResetSchema(BaseSchema[None]):
 @dataclass
 class TeamTransferSchema(BaseSchema[None]):
     """
-    队长移交入参。
+    队长移交入参
     """
     auto_validate: ClassVar[bool] = True
     # 队伍主键
@@ -181,7 +183,7 @@ class TeamTransferSchema(BaseSchema[None]):
     new_captain_id: int
 
     def validate(self) -> None:
-        """校验队伍与新队长 ID 合法性。"""
+        """校验队伍与新队长 ID 合法性"""
         if self.team_id <= 0:
             raise ValidationError(message="非法的队伍 ID")
         if self.new_captain_id <= 0:

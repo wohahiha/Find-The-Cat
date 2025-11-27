@@ -15,14 +15,15 @@ from .schemas import MachineStartSchema, MachineStopSchema
 from .services import MachineStartService, MachineStopService, serialize_machine
 from .repo import MachineRepo
 
-# 视图层：提供靶机启动、停止与列表接口。
+
+# 视图层：提供靶机启动、停止与列表接口
 
 
 class MachineListCreateView(APIView):
     """
     靶机列表/启动接口：
-    - GET：查询当前用户的靶机实例。
-    - POST：为指定比赛/题目启动靶机。
+    - GET：查询当前用户的靶机实例
+    - POST：为指定比赛/题目启动靶机
     """
 
     permission_classes = [IsAuthenticated]
@@ -54,7 +55,7 @@ class MachineListCreateView(APIView):
 class MachineStopView(APIView):
     """
     靶机停止接口：
-    - POST：停止指定实例。
+    - POST：停止指定实例
     """
 
     permission_classes = [IsAuthenticated]

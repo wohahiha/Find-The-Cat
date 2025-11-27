@@ -7,14 +7,14 @@ from rest_framework.test import APIClient
 
 class AuthenticatedAPIMixin:
     """
-    提供统一的登录与认证客户端构造工具，减少各测试用例的重复代码。
+    提供统一的登录与认证客户端构造工具，减少各测试用例的重复代码
     """
 
     login_url: str = "/api/accounts/auth/login/"
 
     def api_login(self, identifier: str, password: str, expect_status: int = 200) -> str:
         """
-        登录并返回访问令牌，默认期望 200 状态。
+        登录并返回访问令牌，默认期望 200 状态
         """
         resp = self.client.post(
             self.login_url,
@@ -27,7 +27,7 @@ class AuthenticatedAPIMixin:
 
     def auth_client(self, identifier: str, password: str) -> APIClient:
         """
-        构造附带 Authorization 头的 APIClient。
+        构造附带 Authorization 头的 APIClient
         """
         token = self.api_login(identifier, password)
         client = APIClient()

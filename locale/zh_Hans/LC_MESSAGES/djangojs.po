@@ -16,10 +16,10 @@ msgstr ""
 
 # Django admin SelectFilter2 helptext overrides (JS)
 msgid "Choose %s by selecting them and then select the \"Choose\" arrow button."
-msgstr "请选择 %s，点击右侧“添加”箭头。"
+msgstr "请选择 %s，点击右侧“添加”箭头"
 
 msgid "Remove %s by selecting them and then select the \"Remove\" arrow button."
-msgstr "如需移除 %s，请选中后点击左侧“移除”箭头。"
+msgstr "如需移除 %s，请选中后点击左侧“移除”箭头"
 
 msgid "Choose selected %s"
 msgstr "添加所选 %s"

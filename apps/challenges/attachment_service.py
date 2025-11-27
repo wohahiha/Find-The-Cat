@@ -12,8 +12,8 @@ from .schemas import AttachmentUploadSchema
 class AttachmentUploadService(BaseService[dict]):
     """
     题目附件上传服务：
-    - 业务场景：管理员上传题目附件，存储并返回可访问 URL。
-    - 模块角色：封装存储逻辑，按比赛/题目标识组织子目录。
+    - 业务场景：管理员上传题目附件，存储并返回可访问 URL
+    - 模块角色：封装存储逻辑，按比赛/题目标识组织子目录
     """
 
     atomic_enabled = False

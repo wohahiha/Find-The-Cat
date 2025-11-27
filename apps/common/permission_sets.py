@@ -2,8 +2,8 @@ from __future__ import annotations
 
 """
 权限集中台：
-- 业务目标：统一维护整个平台的权限清单，以“ 大类-子类-具体功能 ”命名，便于后台展示与沟通。
-- 模块角色：所有默认权限配置（内置用户组等）都依赖此处数据，避免分散硬编码。
+- 业务目标：统一维护整个平台的权限清单，以“ 大类-子类-具体功能 ”命名，便于后台展示与沟通
+- 模块角色：所有默认权限配置（内置用户组等）都依赖此处数据，避免分散硬编码
 """
 
 from dataclasses import dataclass
@@ -85,7 +85,7 @@ PERMISSION_LABELS: Dict[PermissionKey, str] = {
 def get_permission_label(value: str | PermissionKey) -> str:
     """
     将 Django 内部的 permission code（app.codename 或 (app, codename)）转换成
-    定义好的中文名称。若未在权限集中定义，则回退到原始 code，便于排查。
+    定义好的中文名称若未在权限集中定义，则回退到原始 code，便于排查
     """
 
     if isinstance(value, tuple):
@@ -124,7 +124,7 @@ GROUP_PERMISSION_PRESETS: Dict[str, Tuple[PermissionKey, ...]] = {
 
 def iter_permission_labels(keys: Iterable[str | PermissionKey]) -> List[str]:
     """
-    批量转换权限 code，保持输出顺序稳定。
+    批量转换权限 code，保持输出顺序稳定
     """
 
     labels: List[str] = []

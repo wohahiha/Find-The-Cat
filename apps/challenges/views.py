@@ -19,11 +19,12 @@ from .repo import ChallengeRepo
 from .schemas import AttachmentUploadSchema
 from apps.submissions.services import SubmissionService
 
-# 视图层：提供题目列表/创建、详情/更新、提交 Flag 的接口。仅做参数转换与服务调用。
+
+# 视图层：提供题目列表/创建、详情/更新、提交 Flag 的接口仅做参数转换与服务调用
 
 
 class ChallengeListView(APIView):
-    """题目列表/创建接口：GET 需登录查看，POST 需管理员创建。"""
+    """题目列表/创建接口：GET 需登录查看，POST 需管理员创建"""
     permission_classes = [IsAuthenticated]
     context_service = ContestContextService()
     challenge_repo = ChallengeRepo()
@@ -60,7 +61,7 @@ class ChallengeListView(APIView):
 
 
 class ChallengeDetailView(APIView):
-    """题目详情/更新接口：GET 需登录查看，PATCH 需管理员更新。"""
+    """题目详情/更新接口：GET 需登录查看，PATCH 需管理员更新"""
     permission_classes = [IsAuthenticated]
     context_service = ContestContextService()
     challenge_repo = ChallengeRepo()
@@ -96,7 +97,7 @@ class ChallengeDetailView(APIView):
 
 
 class ChallengeHintListView(APIView):
-    """题目提示列表：需登录，未解锁提示不返回内容。"""
+    """题目提示列表：需登录，未解锁提示不返回内容"""
     permission_classes = [IsAuthenticated]
     hint_service = ChallengeHintService()
 
@@ -112,7 +113,7 @@ class ChallengeHintListView(APIView):
 
 
 class ChallengeHintUnlockView(APIView):
-    """解锁提示：需登录，扣分提示需先解锁。"""
+    """解锁提示：需登录，扣分提示需先解锁"""
     permission_classes = [IsAuthenticated]
     hint_service = ChallengeHintService()
 
@@ -132,8 +133,8 @@ class ChallengeHintUnlockView(APIView):
 
 class AttachmentUploadView(APIView):
     """
-    题目附件上传接口：仅管理员可用，返回存储路径与 URL。
-    - 支持可选 contest_slug/challenge_slug 归档子目录。
+    题目附件上传接口：仅管理员可用，返回存储路径与 URL
+    - 支持可选 contest_slug/challenge_slug 归档子目录
     """
 
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -143,7 +144,7 @@ class AttachmentUploadView(APIView):
 
     @extend_schema(
         summary="上传题目附件",
-        description="管理员上传附件文件，返回存储路径与访问 URL（仅保存元信息，不包含文件内容）。",
+        description="管理员上传附件文件，返回存储路径与访问 URL（仅保存元信息，不包含文件内容）",
         request=OpenApiTypes.OBJECT,
         responses=OpenApiTypes.OBJECT,
     )
