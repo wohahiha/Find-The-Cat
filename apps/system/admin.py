@@ -999,7 +999,15 @@ class SystemLogAdmin(admin.ModelAdmin):
         extra_context["next_limit"] = next_limit
         extra_context["can_load_more"] = current_limit < self.max_limit
         extra_context["default_limit"] = self.default_limit
+        extra_context["next_limit_url"] = self._build_limit_url(request, next_limit)
+        extra_context["default_limit_url"] = self._build_limit_url(request, self.default_limit)
         return super().changelist_view(request, extra_context=extra_context)
+
+    def _build_limit_url(self, request: HttpRequest, limit: int) -> str:
+        params = request.GET.copy()
+        params["limit"] = limit
+        query = params.urlencode()
+        return f"{request.path}?{query}" if query else f"{request.path}?limit={limit}"
 
     def get_urls(self):
         """添加自定义 URL：日志导出（支持3种格式：TXT/CSV/JSON）"""

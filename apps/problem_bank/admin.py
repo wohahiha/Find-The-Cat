@@ -21,6 +21,27 @@ class BankCategoryInline(admin.TabularInline):
     fields = ("name", "slug")
     prepopulated_fields = {"slug": ("name",)}
 
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        help_texts = {
+            "name": "题库内部的分类名称，例如 Web/Pwn/Misc",
+            "slug": "分类标识（英文/短横线），系统会用它来匹配比赛分类",
+        }
+
+        class FormWithHelp(formset.form):
+            def __init__(self2, *args, **inner_kwargs):
+                super().__init__(*args, **inner_kwargs)
+                for field, text in help_texts.items():
+                    if field in self2.fields:
+                        self2.fields[field].help_text = text
+
+        formset.form = FormWithHelp
+        return formset
+
+    class Media:
+        css = {"all": ("problem_bank/css/category_inline.css",)}
+        js = ("problem_bank/js/category_inline.js",)
+
 
 class BankChallengeInlineForm(forms.ModelForm):
     """题库题目内联表单：支持选择比赛/分类/题目导入"""
@@ -57,17 +78,21 @@ class BankChallengeInlineForm(forms.ModelForm):
         self.request = request
         self.fields["title"].required = False
         self.fields["title"].label = "题目标题"
+        self.fields["title"].help_text = "系统会自动填充该字段，用于展示导入后的题目名称"
         self.fields["category"].label = "题库分类"
         self.fields["category"].required = False
+        self.fields["category"].help_text = "可选：将题目归入某个题库分类，便于前端筛选"
         if bank:
             self.fields["category"].queryset = bank.categories.all().order_by("name")
         else:
             self.fields["category"].queryset = BankCategory.objects.none()
+        self.fields["category"].label_from_instance = lambda obj: obj.name
         self.fields["is_active"].label = "是否可见"
+        self.fields["is_active"].help_text = "控制题库中该题目是否对选手展示"
 
         self.fields["contest"].widget.attrs.setdefault(
             "data-category-url",
-            reverse("admin:challenges_challenge_category_options"),
+            reverse("admin:problem_bank_problemcategory_options"),
         )
         self.fields["contest"].widget.attrs.setdefault(
             "data-challenge-url",
@@ -144,15 +169,19 @@ class BankChallengeInlineForm(forms.ModelForm):
 class BankChallengeInlineFormSet(BaseInlineFormSet):
     """自定义 formset：向表单传入题库实例"""
 
-    def __init__(self, *args, bank: ProblemBank | None = None, request=None, **kwargs):
-        self.bank = bank
-        self.request = request
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Django Admin 在构造 change_message 时会访问 new_objects/changed_objects/deleted_objects
+        # 由于我们自定义保存逻辑，表单集不会自动填充这些属性，这里手动初始化为空列表以避免 AttributeError
+        self.new_objects: list[BankChallenge] = []
+        self.changed_objects: list[tuple[BankChallenge, list[str]]] = []
+        self.deleted_objects: list[BankChallenge] = []
 
-    def _construct_form(self, i, **kwargs):
-        kwargs["bank"] = self.bank
-        kwargs["request"] = self.request
-        return super()._construct_form(i, **kwargs)
+    def get_form_kwargs(self, index):
+        kwargs = super().get_form_kwargs(index)
+        kwargs["bank"] = getattr(self, "bank", None)
+        kwargs["request"] = getattr(self, "request", None)
+        return kwargs
 
 
 class BankChallengeInline(admin.TabularInline):
@@ -170,14 +199,9 @@ class BankChallengeInline(admin.TabularInline):
 
     def get_formset(self, request, obj=None, **kwargs):
         FormSet = super().get_formset(request, obj, **kwargs)
-
-        class WrappedFormSet(FormSet):
-            def __init__(self2, *args, **kw):
-                kw["bank"] = obj
-                kw["request"] = request
-                super().__init__(*args, **kw)
-
-        return WrappedFormSet
+        FormSet.bank = obj
+        FormSet.request = request
+        return FormSet
 
 
 @admin.register(ProblemBank)
@@ -229,10 +253,14 @@ class ProblemBankAdmin(admin.ModelAdmin):
                 continue
             if inline_form.cleaned_data.get("DELETE"):
                 if inline_form.instance.pk:
+                    formset.deleted_objects.append(inline_form.instance)
                     inline_form.instance.delete()
                 continue
             if inline_form.instance and inline_form.instance.pk:
+                changed_fields = list(inline_form.changed_data)
                 inline_form.save()
+                if changed_fields:
+                    formset.changed_objects.append((inline_form.instance, changed_fields))
                 continue
             contest = inline_form.cleaned_data.get("source_contest")
             category = inline_form.cleaned_data.get("source_category")
@@ -258,6 +286,7 @@ class ProblemBankAdmin(admin.ModelAdmin):
                 inline_form.add_error(None, exc)
                 continue
             total_imported += len(created)
+            formset.new_objects.extend(created)
         if total_imported:
             self.message_user(request, f"已导入 {total_imported} 道题目", level=messages.SUCCESS)
 
@@ -290,12 +319,32 @@ class ProblemBankAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom = [
             path(
+                "category-options/",
+                self.admin_site.admin_view(self.category_options_view),
+                name="problem_bank_problemcategory_options",
+            ),
+            path(
                 "challenge-options/",
                 self.admin_site.admin_view(self.challenge_options_view),
                 name="problem_bank_problemchallenge_options",
             ),
         ]
         return custom + urls
+
+    def category_options_view(self, request):
+        contest_id = request.GET.get("contest_id")
+        if not contest_id:
+            return JsonResponse({"results": []})
+        qs = ChallengeCategory.objects.filter(contest_id=contest_id).order_by("name", "id")
+        results = [
+            {
+                "id": str(item.id),
+                "name": item.name,
+                "slug": item.slug,
+            }
+            for item in qs
+        ]
+        return JsonResponse({"results": results})
 
     def challenge_options_view(self, request):
         contest_id = request.GET.get("contest_id")

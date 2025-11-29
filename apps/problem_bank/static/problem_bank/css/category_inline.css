@@ -1,0 +1,18 @@
+.dynamic-bankcategory_set.marked-for-delete {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+.inline-delete-toggle {
+    background: #f5222d;
+    border: none;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.dynamic-bankcategory_set.marked-for-delete .inline-delete-toggle {
+    background: #1890ff;
+}
