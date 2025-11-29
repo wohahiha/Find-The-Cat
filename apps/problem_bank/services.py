@@ -31,6 +31,7 @@ from .repo import (
     BankHintRepo,
     BankSolveRepo,
 )
+from .importer import BankChallengeImporter
 from .schemas import (
     ProblemBankCreateSchema,
     BankImportFromContestSchema,
@@ -58,77 +59,6 @@ class ProblemBankCreateService(BaseService[ProblemBank]):
         return bank
 
 
-class _BankChallengeCopier:
-    """内部工具：将比赛题目深拷贝到题库"""
-
-    def __init__(
-            self,
-            bank_repo: ProblemBankRepo,
-            bank_challenge_repo: BankChallengeRepo,
-            category_repo: BankCategoryRepo,
-            attachment_repo: BankAttachmentRepo,
-            hint_repo: BankHintRepo,
-    ):
-        self.bank_repo = bank_repo
-        self.bank_challenge_repo = bank_challenge_repo
-        self.category_repo = category_repo
-        self.attachment_repo = attachment_repo
-        self.hint_repo = hint_repo
-
-    def copy_challenge(self, *, bank: ProblemBank, challenge: Challenge, author=None) -> BankChallenge:
-        category = None
-        if challenge.category:
-            category = self.category_repo.get_or_create_slug(bank, challenge.category.name)
-        # 生成唯一 slug，避免冲突
-        base_slug = challenge.slug
-        slug = base_slug
-        idx = 1
-        while self.bank_challenge_repo.filter(bank=bank, slug=slug).exists():
-            idx += 1
-            slug = f"{base_slug}-{idx}"
-        data = {
-            "bank": bank,
-            "category": category,
-            "title": challenge.title,
-            "slug": slug,
-            "short_description": challenge.short_description,
-            "content": challenge.content,
-            "difficulty": challenge.difficulty,
-            "flag": challenge.flag,
-            "flag_case_insensitive": challenge.flag_case_insensitive,
-            "flag_type": challenge.flag_type,
-            "dynamic_prefix": challenge.dynamic_prefix,
-            "is_active": True,
-            "author": author or challenge.author,
-        }
-        bank_challenge = self.bank_challenge_repo.create(data)
-        self._copy_attachments(bank_challenge, challenge)
-        self._copy_hints(bank_challenge, challenge)
-        return bank_challenge
-
-    def _copy_attachments(self, bank_challenge: BankChallenge, challenge: Challenge) -> None:
-        for att in challenge.attachments.all().order_by("order", "id"):
-            self.attachment_repo.create(
-                {
-                    "challenge": bank_challenge,
-                    "name": att.name,
-                    "url": att.url,
-                    "order": att.order,
-                }
-            )
-
-    def _copy_hints(self, bank_challenge: BankChallenge, challenge: Challenge) -> None:
-        for idx, hint in enumerate(challenge.hints.all().order_by("order", "id"), start=1):
-            self.hint_repo.create(
-                {
-                    "challenge": bank_challenge,
-                    "title": hint.title,
-                    "content": hint.content,
-                    "order": hint.order or idx,
-                }
-            )
-
-
 class BankImportFromContestService(BaseService[list[BankChallenge]]):
     """从比赛导入全部题目到题库（深拷贝）"""
 
@@ -145,7 +75,7 @@ class BankImportFromContestService(BaseService[list[BankChallenge]]):
         self.bank_repo = bank_repo or ProblemBankRepo()
         self.contest_repo = contest_repo or ContestRepo()
         self.challenge_repo = challenge_repo or ChallengeRepo()
-        self.copier = _BankChallengeCopier(
+        self.importer = BankChallengeImporter(
             bank_repo=self.bank_repo,
             bank_challenge_repo=bank_challenge_repo or BankChallengeRepo(),
             category_repo=category_repo or BankCategoryRepo(),
@@ -161,9 +91,7 @@ class BankImportFromContestService(BaseService[list[BankChallenge]]):
         if not contest.has_ended:
             raise ConflictError(message="比赛尚未结束，禁止导入题库")
         challenges = self.challenge_repo.filter(contest=contest).prefetch_related("attachments", "hints", "category")
-        imported: list[BankChallenge] = []
-        for ch in challenges:
-            imported.append(self.copier.copy_challenge(bank=bank, challenge=ch))
+        imported = self.importer.copy_many(bank=bank, challenges=challenges)
         logger.info(
             "比赛题目导入题库",
             extra=logger_extra({"bank": bank.name, "contest": contest.slug, "count": len(imported)}),
@@ -197,7 +125,7 @@ class BankImportChallengesService(BaseService[list[BankChallenge]]):
         self.bank_repo = bank_repo or ProblemBankRepo()
         self.contest_repo = contest_repo or ContestRepo()
         self.challenge_repo = challenge_repo or ChallengeRepo()
-        self.copier = _BankChallengeCopier(
+        self.importer = BankChallengeImporter(
             bank_repo=self.bank_repo,
             bank_challenge_repo=bank_challenge_repo or BankChallengeRepo(),
             category_repo=category_repo or BankCategoryRepo(),
@@ -216,8 +144,7 @@ class BankImportChallengesService(BaseService[list[BankChallenge]]):
             qs = self.challenge_repo.filter(contest=contest, slug__in=schema.challenge_slugs).prefetch_related(
                 "attachments", "hints", "category"
             )
-            for ch in qs:
-                imported.append(self.copier.copy_challenge(bank=bank, challenge=ch))
+            imported = self.importer.copy_many(bank=bank, challenges=qs)
         else:
             raise ValidationError(message="暂不支持题库间导入，请指定比赛标识")
         logger.info(

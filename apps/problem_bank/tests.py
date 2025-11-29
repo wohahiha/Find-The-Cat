@@ -88,7 +88,11 @@ class ProblemBankAPITests(AuthenticatedAPIMixin, APITestCase):
     def setUpTestData(cls):
         now = timezone.now()
         cls.admin = User.objects.create_superuser(username="admin", email="a@example.com", password="Passw0rd123")
+        cls.admin.is_email_verified = True
+        cls.admin.save()
         cls.user = User.objects.create_user(username="alice", email="alice@example.com", password="Passw0rd123")
+        cls.user.is_email_verified = True
+        cls.user.save()
         cls.contest = Contest.objects.create(
             name="Importable",
             slug="importable",

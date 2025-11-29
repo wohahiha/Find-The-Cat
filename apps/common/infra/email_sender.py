@@ -7,7 +7,8 @@ from typing import Iterable
 from django.core.mail import EmailMessage, get_connection, send_mail
 from django.conf import settings
 
-from apps.accounts.models import MailAccount
+# MailAccount 已迁移至系统模块
+from apps.system.models import MailAccount
 from apps.system.services import ConfigService
 
 config_service = ConfigService()

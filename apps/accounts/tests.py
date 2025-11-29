@@ -8,7 +8,9 @@ from django.conf import settings
 from django.test import override_settings
 from rest_framework.test import APITestCase
 
-from apps.accounts.models import User, EmailVerificationCode
+# EmailVerificationCode 已迁移至 system 模块
+from apps.system.models import EmailVerificationCode
+from apps.accounts.models import User
 from apps.common.tests_utils import AuthenticatedAPIMixin
 
 
@@ -38,12 +40,16 @@ class AccountsAPITestCase(AuthenticatedAPIMixin, APITestCase):
             email="admin@example.com",
             password="stevenxu5190",
         )
+        cls.admin.is_email_verified = True
+        cls.admin.save()
         # 创建普通用户
         cls.user = User.objects.create_user(
             username="tester",
             email="tester@example.com",
             password="Passw0rd123",
         )
+        cls.user.is_email_verified = True
+        cls.user.save()
 
     def setUp(self):
         # 清理 throttle 缓存，避免跨用例触发限流

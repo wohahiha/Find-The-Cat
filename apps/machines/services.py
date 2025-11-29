@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import secrets
 import random
 from typing import Optional
-from django.conf import settings
 
 from apps.common.base.base_service import BaseService
 from apps.common.exceptions import ConflictError, PermissionDeniedError, NotFoundError, ValidationError
@@ -81,11 +79,15 @@ class MachineStartService(BaseService[MachineInstance]):
         if self.machine_repo.running_for_user(contest=contest, challenge=challenge, user=user):
             raise ConflictError(message="已有运行中的靶机实例，请先停止再创建")
 
+        config = getattr(challenge, "machine_config", None)
+        if not config:
+            raise ConflictError(message="题目未配置靶机模板，请在后台补充后再试")
+
         # 4) 生成端口（动态 Flag 由挑战模块负责校验，不在靶机保存）
-        port = self._allocate_port()
+        port = self._allocate_port(config)
 
         # 5) 启动容器（占位调用 docker_manager，如未实现则使用假 ID）
-        container_id = self._start_container(challenge_slug=challenge.slug, port=port)
+        container_id = self._start_container(challenge=challenge, port=port)
 
         # 6) 创建实例记录
         instance = self.machine_repo.create(
@@ -116,7 +118,7 @@ class MachineStartService(BaseService[MachineInstance]):
         )
         return instance
 
-    def _allocate_port(self) -> int:
+    def _allocate_port(self, config) -> int:
         """
         使用 redis + db 双重校验的端口分配（简化版）：
         - 先从 redis 集合读占用，如果未配置则回退数据库检查
@@ -125,36 +127,37 @@ class MachineStartService(BaseService[MachineInstance]):
         key = machine_ports_key()
         used_redis = set(redis_client.get_json(key) or [])
         used = used_db.union(used_redis)
+        ttl = getattr(config, "port_cache_ttl", 300)
         for _ in range(200):
             port = random.randint(20000, 40000)
             if port not in used:
                 # 写入 redis 记录占用，设置短期过期以防泄漏
-                ttl = getattr(settings, "MACHINE_PORT_CACHE_TTL", 300)
                 redis_client.set_json(key, list(used | {port}), ex=ttl)
                 return port
         logger.warning("端口分配失败", extra=logger_extra({"used_count": len(used)}))
         raise ConflictError(message="端口分配失败，请稍后重试")
 
-    def _start_container(self, challenge_slug: str, port: int) -> str:
+    def _start_container(self, challenge, port: int) -> str:
         """
         启动容器并返回 ID，支持 mock
         """
-        # 镜像名可通过环境变量前缀/标签定制，默认使用题目 slug
-        image_prefix = docker_manager.IMAGE_PREFIX if hasattr(docker_manager, "IMAGE_PREFIX") else ""
-        image_tag = docker_manager.IMAGE_TAG if hasattr(docker_manager, "IMAGE_TAG") else "latest"
-        image = f"{image_prefix}{challenge_slug}:{image_tag}" if image_prefix or image_tag else challenge_slug
+        config = getattr(challenge, "machine_config", None)
+        image = config.image
+        container_port = config.container_port
+        env_vars = config.environment or None
         try:
             return docker_manager.start_container(
                 image,
                 port=port,
-                container_port=getattr(docker_manager, "CONTAINER_PORT", None),
+                env=env_vars,
+                container_port=container_port,
                 network=getattr(docker_manager, "DOCKER_NETWORK", None),
             )
         except Exception:
             # 记录异常并提示前端稍后重试，避免产生无法控制的实例记录
             logger.exception(
                 "启动靶机容器失败",
-                extra=logger_extra({"challenge": challenge_slug, "port": port}),
+                extra=logger_extra({"challenge": challenge.slug, "port": port}),
             )
             raise ConflictError(message="靶机启动失败，请稍后重试")
 

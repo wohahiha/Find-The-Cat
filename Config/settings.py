@@ -15,14 +15,13 @@ from datetime import timedelta
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
-from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # --------------------------------------------------------------------------------------
 # 基本路径
 # --------------------------------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -30,18 +29,20 @@ load_dotenv(BASE_DIR / ".env")
 # --------------------------------------------------------------------------------------
 # 安全与调试
 # --------------------------------------------------------------------------------------
-# 开发环境
-SECRET_KEY = 'django-insecure-a!(0n*euw%0(fy%sq*v#n8j2+0klghi^4oxsavef1u8$fcs@!l'
+# 注意：以下配置为默认值（开发环境），首次启动后会自动填入后台"基础配置"
+# 生产环境请在后台修改为安全值后重启服务
+
+# Django 核心安全密钥（必须在生产环境通过后台修改为强随机值）
+SECRET_KEY = 'django-insecure-DEFAULT-KEY-CHANGE-IN-PRODUCTION-VIA-ADMIN'
+
+# 调试模式（生产环境通过后台设为 False）
 DEBUG = True
-ALLOWED_HOSTS = ["*"]  # 允许访问的域名/IP
 
-# 是否允许登录不带图形验证码（生产建议 False；测试/DEBUG 可设 True）
-ALLOW_LOGIN_WITHOUT_CAPTCHA: bool = DEBUG
+# 允许访问的主机列表（生产环境通过后台配置实际域名/IP）
+ALLOWED_HOSTS = ["*"]
 
-# 生产环境（部署时启用）
-# SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-a!(0n*euw%0(fy%sq*v#n8j2+0klghi^4oxsavef1u8$fcs@!l")
-# DEBUG = os.getenv("DEBUG", "False") == "True"
-# ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+# 是否允许登录跳过图形验证码（生产环境应通过后台设为 False）
+ALLOW_LOGIN_WITHOUT_CAPTCHA = True
 
 
 # --------------------------------------------------------------------------------------
@@ -87,13 +88,13 @@ AUTHENTICATION_BACKENDS = [
 # 中间件
 # --------------------------------------------------------------------------------------
 MIDDLEWARE = [
-    "apps.common.middleware.RequestContextMiddleware",
     'corsheaders.middleware.CorsMiddleware',  # 必须放最前
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    "apps.common.middleware.RequestContextMiddleware",  # 放在认证后，确保能获取用户上下文
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -123,40 +124,52 @@ WSGI_APPLICATION = 'Config.wsgi.application'
 
 
 # --------------------------------------------------------------------------------------
-# 数据库（默认 sqlite；可通过环境变量切换到 MySQL / Postgres）
+# 数据库
 # --------------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+# 注意：
+# - Django 启动时必须连接数据库，因此数据库配置必须在 settings.py 中提供
+# - 默认使用 sqlite3（开发环境），生产环境可通过后台"基础配置"切换为 MySQL/PostgreSQL
+# - 切换数据库引擎后需要：① 在后台填写连接参数 ② 重启 Django 服务
 
-DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite').lower()
+# 数据库引擎默认值（开发环境使用 sqlite，生产环境通过后台改为 mysql/postgres）
+DB_ENGINE = 'sqlite'
+DB_NAME = 'db.sqlite3'
+DB_USER = ''
+DB_PASSWORD = ''
+DB_HOST = ''
+DB_PORT = ''
 
-if DB_ENGINE in ('my', 'mysql'):
+# 根据 DB_ENGINE 构建 DATABASES 配置
+if DB_ENGINE.lower() in ('my', 'mysql'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.getenv('DB_NAME', 'mysql'),
-            'USER': os.getenv('DB_USER', 'defaultUser'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'mysql'),
-            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-            'PORT': os.getenv('DB_PORT', '3306'),
+            'NAME': DB_NAME,
+            'USER': DB_USER,
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': DB_PORT,
             'OPTIONS': {'charset': 'utf8mb4'},
         }
     }
-elif DB_ENGINE in ('post', 'postgre', 'postgres', 'postgresql', 'psql'):
+elif DB_ENGINE.lower() in ('post', 'postgre', 'postgres', 'postgresql', 'psql'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'postgres'),
-            'USER': os.getenv('DB_USER', 'defaultUser'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'postgresql'),
-            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-            'PORT': os.getenv('DB_PORT', '5432'),
+            'NAME': DB_NAME,
+            'USER': DB_USER,
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': DB_PORT,
         }
     }
 else:
+    # 默认 sqlite3（本地开发，无需额外配置）
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': BASE_DIR / DB_NAME,
         }
     }
 
@@ -282,9 +295,14 @@ SPECTACULAR_SETTINGS = {
 # --------------------------------------------------------------------------------------
 # 缓存（Redis）
 # --------------------------------------------------------------------------------------
-REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
-REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
-REDIS_DB_CACHE = int(os.getenv("REDIS_DB_CACHE", "0"))
+# 注意：
+# - Redis 配置的默认值适用于本地开发环境（127.0.0.1:6379）
+# - 生产环境可通过后台"基础配置"修改为实际 Redis 服务器地址
+# - Redis 用于：缓存、限流、记分板、Celery 队列，修改后需重启服务生效
+
+REDIS_HOST = "127.0.0.1"
+REDIS_PORT = 6379
+REDIS_DB_CACHE = 0
 
 CACHES = {
     "default": {
@@ -299,74 +317,31 @@ CACHES = {
 # --------------------------------------------------------------------------------------
 # Docker 配置（用于靶机容器）
 # --------------------------------------------------------------------------------------
-DOCKER_HOST = os.getenv("DOCKER_HOST", None)  # Docker API endpoint，None 则用本地 socket/管道
-DOCKER_TLS_VERIFY = os.getenv("DOCKER_TLS_VERIFY", "0")  # 远程 TLS 校验开关
-DOCKER_CERT_PATH = os.getenv("DOCKER_CERT_PATH", None)  # TLS 证书路径（包含 ca/cert/key）
-DOCKER_USE_MOCK = os.getenv("DOCKER_USE_MOCK", "0") == "1"  # 是否启用 mock Docker
-DOCKER_IMAGE_PREFIX = os.getenv("DOCKER_IMAGE_PREFIX", "")  # 镜像前缀（如私有仓库）
-DOCKER_IMAGE_TAG = os.getenv("DOCKER_IMAGE_TAG", "latest")  # 镜像标签
-DOCKER_CONTAINER_PORT = int(os.getenv("DOCKER_CONTAINER_PORT", "80"))  # 容器内服务端口
-DOCKER_NETWORK = os.getenv("DOCKER_NETWORK", None)  # 可选 Docker 网络
+# 注意：
+# - Docker 配置默认值适用于本地开发环境（使用本地 Docker Desktop/Daemon）
+# - 生产环境可通过后台"基础配置"配置远程 Docker 节点、TLS 证书、镜像仓库等
+# - 修改后需重启服务生效
 
-# 靶机运行时长（分钟）与清理间隔（秒）
-MACHINE_MAX_RUNTIME_MINUTES = int(os.getenv("MACHINE_MAX_RUNTIME_MINUTES", "30"))  # 单实例最长运行时间
-MACHINE_CLEAN_INTERVAL_SECONDS = int(os.getenv("MACHINE_CLEAN_INTERVAL_SECONDS", "300"))  # 超时清理任务间隔
-MACHINE_PORT_CACHE_TTL = int(os.getenv("MACHINE_PORT_CACHE_TTL", "300"))  # 端口占用缓存 TTL
-SCOREBOARD_CACHE_TTL = int(os.getenv("SCOREBOARD_CACHE_TTL", "30"))  # 记分板缓存秒数
+DOCKER_HOST = None  # Docker API endpoint，None 则用本地 socket/管道
+DOCKER_TLS_VERIFY = False  # 远程 TLS 校验开关（远程 Docker 节点需启用）
+DOCKER_CERT_PATH = None  # TLS 证书路径（包含 ca/cert/key）
+DOCKER_USE_MOCK = False  # 是否启用 mock Docker（测试环境可设为 True）
+DOCKER_NETWORK = None  # 可选 Docker 网络名称
+
+# 靶机运行时默认值（题目模板可覆盖）
+MACHINE_MAX_RUNTIME_MINUTES = 30  # 默认单个靶机实例最长运行时间（分钟）
+MACHINE_CLEAN_INTERVAL_SECONDS = 300  # Celery 清理任务默认执行间隔（秒）
+MACHINE_PORT_CACHE_TTL = 300  # 端口占用 Redis 缓存默认 TTL（秒）
 
 # --------------------------------------------------------------------------------------
 # 邮件配置
 # --------------------------------------------------------------------------------------
+# 注意：
+# 开发环境使用 console 后端（邮件输出到控制台，不实际发送）
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-
-EMAIL_PROVIDER = os.getenv('EMAIL_PROVIDER', '').lower()
-
-PROVIDER_DEFAULTS = {
-    'qq': {'host': 'smtp.qq.com', 'port': 587, 'use_tls': True, 'use_ssl': False},
-    '163': {'host': 'smtp.163.com', 'port': 465, 'use_tls': False, 'use_ssl': True},
-    'gmail': {'host': 'smtp.gmail.com', 'port': 587, 'use_tls': True, 'use_ssl': False},
-    'outlook': {'host': 'smtp.office365.com', 'port': 587, 'use_tls': True, 'use_ssl': False},
-}
-
-provider_config = PROVIDER_DEFAULTS.get(EMAIL_PROVIDER, {})
-
-EMAIL_HOST = os.getenv('EMAIL_HOST', provider_config.get('host', ''))
-EMAIL_PORT = int(os.getenv('EMAIL_PORT') or provider_config.get('port', 587))
-EMAIL_USE_TLS = (os.getenv('EMAIL_USE_TLS') or str(provider_config.get('use_tls', True))) == 'True'
-EMAIL_USE_SSL = (os.getenv('EMAIL_USE_SSL') or str(provider_config.get('use_ssl', False))) == 'True'
-
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'no-reply@ftc.local')
-
-
-# --------------------------------------------------------------------------------------
-# 邮件配置强校验
-# --------------------------------------------------------------------------------------
-
-def _require_setting(name: str, value: str) -> None:
-    if not value:
-        raise ImproperlyConfigured(f"邮件配置错误：{name} 不能为空，请检查环境变量 .env")
-
-
-# 只在使用 SMTP 后端 且 非 DEBUG 环境时强校验
-if EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend' and not DEBUG:
-    # 1. 必须有合法的 provider（或自定义 EMAIL_HOST）
-    if not EMAIL_PROVIDER and not EMAIL_HOST:
-        raise ImproperlyConfigured(
-            "邮件配置错误：必须设置 EMAIL_PROVIDER 或 EMAIL_HOST 其一"
-        )
-    if EMAIL_PROVIDER and EMAIL_PROVIDER not in PROVIDER_DEFAULTS:
-        raise ImproperlyConfigured(
-            f"邮件配置错误：不支持的 EMAIL_PROVIDER={EMAIL_PROVIDER}，"
-            f"可选值为：{', '.join(PROVIDER_DEFAULTS.keys())}"
-        )
-
-    # 2. 必须设置发信账号、授权码和默认发件人
-    _require_setting("EMAIL_HOST_USER", EMAIL_HOST_USER)
-    _require_setting("EMAIL_HOST_PASSWORD", EMAIL_HOST_PASSWORD)
-    _require_setting("DEFAULT_FROM_EMAIL", DEFAULT_FROM_EMAIL)
+# 生产环境应通过 system 模块的 MailAccount 配置 SMTP
+# MailAccount 会动态选择默认账号或指定账号发送邮件
 
 # --------------------------------------------------------------------------------------
 # CORS (跨域资源共享) 设置
@@ -387,58 +362,68 @@ CORS_ALLOW_ALL_ORIGINS = True
 from apps.common import openapi as _common_openapi  # noqa: F401
 
 # --------------------------------------------------------------------------------------
-# 日志配置：默认输出到本地日志文件（不落 stdout）
+# 日志配置
 # --------------------------------------------------------------------------------------
+# 注意：
+# - 日志配置的默认值适用于本地开发环境
+# - 生产环境可通过后台"基础配置"调整日志级别、格式、文件路径
+# - 修改后需重启服务生效
+
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
-LOG_FILE = os.getenv("LOG_FILE", str(LOG_DIR / "ftc.log"))
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-LOG_FORMAT = os.getenv("LOG_FORMAT", "json").lower()
+LOG_FILE = str(LOG_DIR / "ftc.log")  # 日志文件路径（默认 logs/ftc.log）
+# --------------------------------------------------------------------------------------
+# 日志配置
+# --------------------------------------------------------------------------------------
+# 注意：
+# - 日志配置现在从系统配置（SystemConfig）中读取LOG_OUTPUT_LEVEL和LOG_PATH
+# - 禁用Django默认的LOGGING配置，使用FTC自定义日志系统（apps/common/infra/logger.py）
+# - 日志系统在应用启动时通过SystemConfig.apps.ready()初始化
+# - 符合标准：docs/日志标准.md
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "plain": {
-            "format": "%(asctime)s %(levelname)s %(name)s %(message)s [request_id=%(request_id)s user_id=%(user_id)s ip=%(ip)s path=%(path)s method=%(method)s]",
-        },
-        "json": {
-            "format": '{"time":"%(asctime)s","level":"%(levelname)s","logger":"%(name)s","message":"%(message)s","request_id":"%(request_id)s","user_id":"%(user_id)s","ip":"%(ip)s","path":"%(path)s","method":"%(method)s"}',
-        },
-    },
-    "handlers": {
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": LOG_FILE,
-            "formatter": "json" if LOG_FORMAT == "json" else "plain",
-            "encoding": "utf-8",
-            "filters": ["request_context"],
-        },
-    },
-    "filters": {
-        "request_context": {
-            "()": "apps.common.infra.logger.RequestContextFilter",
-        }
-    },
-    "root": {
-        "handlers": ["file"],
-        "level": LOG_LEVEL,
-    },
-}
+# 禁用Django默认的日志配置
+LOGGING_CONFIG = None
+
+# 日志系统默认值（用于首次启动时初始化SystemConfig）
+LOG_OUTPUT_LEVEL = "Medium"  # 日志输出级别：Low/Medium/High
+LOG_PATH = "logs/"  # 日志文件路径
+
+# 以下配置已废弃，保留用于参考
+# LOG_LEVEL = "INFO"  # 已迁移至 SystemConfig.LOG_OUTPUT_LEVEL
+# LOG_FORMAT = "json"  # 日志格式由日志标准统一规定（PLAIN格式）
+# LOG_FILE = ...  # 已迁移至 SystemConfig.LOG_PATH
+
+# 提前初始化日志系统（使用 settings 默认值，避免 AppConfig.ready 阶段访问数据库）
+from apps.common.infra.logger import (  # noqa: E402
+    configure_logging as _configure_ftc_logging,
+    get_log_level_from_settings as _ftc_log_level_from_settings,
+    get_log_path_from_settings as _ftc_log_path_from_settings,
+)
+
+_configure_ftc_logging(
+    force=True,
+    level=_ftc_log_level_from_settings(),
+    log_file_path=_ftc_log_path_from_settings(),
+)
 
 # --------------------------------------------------------------------------------------
 # Celery 配置
 # --------------------------------------------------------------------------------------
-CELERY_BROKER_URL = os.getenv(
-    "CELERY_BROKER_URL",
-    f"redis://{REDIS_HOST}:{REDIS_PORT}/{os.getenv('REDIS_DB_CELERY', '1')}",
-)
-CELERY_RESULT_BACKEND = os.getenv(
-    "CELERY_RESULT_BACKEND",
-    f"redis://{REDIS_HOST}:{REDIS_PORT}/{os.getenv('REDIS_DB_CELERY_RESULT', '2')}",
-)
+# 注意：
+# - Celery 用于异步任务（如定时清理超时靶机）
+# - Broker 和 Result Backend 默认使用 Redis 的不同库（避免键冲突）
+# - 生产环境可通过后台"基础配置"调整 Redis 库索引、队列名称等
+# - 修改后需重启 Celery Worker 和 Beat 生效
+
+# Celery Broker（任务队列）使用 Redis DB 1
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/1"
+
+# Celery Result Backend（任务结果存储）使用 Redis DB 2
+CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/2"
+
 # 默认队列名称
-CELERY_TASK_DEFAULT_QUEUE = os.getenv("CELERY_TASK_DEFAULT_QUEUE", "default")
+CELERY_TASK_DEFAULT_QUEUE = "default"
+
 # Celery Beat 定时任务：靶机超时清理
 CELERY_BEAT_SCHEDULE = {
     "cleanup-expired-machines": {

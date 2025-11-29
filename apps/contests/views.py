@@ -9,8 +9,9 @@ from drf_spectacular.types import OpenApiTypes
 
 from apps.common import response
 from apps.common.permissions import IsAuthenticated, IsAdmin, AllowAny
+from apps.common.exceptions import PermissionDeniedError
 from apps.challenges.repo import ChallengeRepo
-from apps.challenges.serializers import serialize_challenge
+from apps.challenges.serializers import serialize_challenge, serialize_category
 from apps.submissions.services import SubmissionService, serialize_submission
 from apps.common.pagination import StandardPagination
 from django.db.models import Count, Q
@@ -24,6 +25,7 @@ from .services import (
     ContestAnnouncementService,
     TeamInviteResetService,
     TeamTransferService,
+    ContestCategoryUpdateService,
     serialize_announcement,
 )
 from .schemas import (
@@ -35,6 +37,7 @@ from .schemas import (
     AnnouncementCreateSchema,
     TeamInviteResetSchema,
     TeamTransferSchema,
+    ContestCategoryUpdateSchema,
 )
 from .services import (
     CreateContestService,
@@ -55,6 +58,7 @@ class ContestListView(APIView):
     """比赛列表/创建接口：GET 公共访问，POST 仅管理员"""
     permission_classes = [AllowAny]
     pagination_class = StandardPagination
+    context_service = ContestContextService()
 
     @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
     def get(self, request: Request) -> Response:
@@ -78,13 +82,17 @@ class ContestListView(APIView):
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:
-        # 运行时切换为管理员权限
-        self.permission_classes = [IsAdmin]  # type: ignore[assignment]
+        if not request.user.is_authenticated or not request.user.is_staff:
+            raise PermissionDeniedError(message="仅管理员可以创建比赛")
         # 管理员创建比赛：先用 Schema 校验，再调用服务层持久化
         # 序列化并创建比赛
         schema = ContestCreateSchema.from_dict(request.data, auto_validate=True)
         contest = CreateContestService().execute(schema)
-        return response.created({"contest": serialize_contest(contest)}, message="比赛已创建")
+        categories = self.context_service.list_categories(contest)
+        return response.created(
+            {"contest": serialize_contest(contest, categories=categories)},
+            message="比赛已创建",
+        )
 
 
 class ContestDetailView(APIView):
@@ -102,8 +110,9 @@ class ContestDetailView(APIView):
         # 获取比赛对象，填充基础信息
         # 获取比赛与基础信息
         contest = self.context_service.get_contest(contest_slug)
+        categories = self.context_service.list_categories(contest)
         data = {
-            "contest": serialize_contest(contest),
+            "contest": serialize_contest(contest, categories=categories),
         }
         # 若已登录，附上用户所在队伍信息
         if request.user.is_authenticated:
@@ -313,6 +322,37 @@ class TeamTransferView(APIView):
         schema = TeamTransferSchema.from_dict(payload, auto_validate=True)
         team = TeamTransferService().execute(request.user, schema)
         return response.success({"team": serialize_team(team)}, message="队长已移交")
+
+
+class ContestCategoryView(APIView):
+    """
+    比赛题目分类管理：
+    - GET：公开查询比赛下的分类列表
+    - PUT：管理员更新比赛分类
+    """
+
+    permission_classes = [AllowAny]
+    context_service = ContestContextService()
+    service = ContestCategoryUpdateService()
+
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
+    def get(self, request: Request, contest_slug: str) -> Response:
+        contest = self.context_service.get_contest(contest_slug)
+        categories = self.context_service.list_categories(contest)
+        return response.success({"items": [serialize_category(cat) for cat in categories]})
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
+    def put(self, request: Request, contest_slug: str) -> Response:
+        if not request.user.is_authenticated or not request.user.is_staff:
+            raise PermissionDeniedError(message="仅管理员可以更新题目分类")
+        payload = dict(request.data or {})
+        payload["contest_slug"] = contest_slug
+        schema = ContestCategoryUpdateSchema.from_dict(payload, auto_validate=True)
+        categories = self.service.execute(schema)
+        return response.success(
+            {"items": [serialize_category(cat) for cat in categories]},
+            message="题目分类已更新",
+        )
 
 
 class ContestAnnouncementView(APIView):

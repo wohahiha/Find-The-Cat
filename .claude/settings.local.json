@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python manage.py check:*)",
+      "Bash(python:*)",
+      "Bash(del \"apps\\accounts\\migrations\\0012_delete_emailverificationcode.py\")",
+      "Bash(del \"apps\\system\\migrations\\0010_systemlog_alter_systemconfig_options_and_more.py\")",
+      "Bash(cat:*)",
+      "Bash(del:*)",
+      "Bash(timeout /t 3)",
+      "Bash(dir:*)",
+      "Bash(ren:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

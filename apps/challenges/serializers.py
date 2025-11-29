@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from .models import Challenge, ChallengeHint
+from .models import Challenge, ChallengeHint, ChallengeCategory
 
 
 def serialize_hint(hint: ChallengeHint, *, unlocked: bool) -> dict:
@@ -19,6 +19,17 @@ def serialize_hint(hint: ChallengeHint, *, unlocked: bool) -> dict:
         "cost": hint.cost,
         "order": hint.order,
         "unlocked": unlocked or hint.is_free,
+    }
+
+
+def serialize_category(category: ChallengeCategory) -> dict:
+    """题目分类序列化：用于比赛详情/配置接口"""
+    return {
+        "id": category.id,
+        "contest": category.contest.slug if category.contest_id else None,
+        "name": category.name,
+        "slug": category.slug,
+        "description": category.description,
     }
 
 

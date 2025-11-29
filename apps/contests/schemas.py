@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import ClassVar, Optional
 
@@ -37,10 +37,12 @@ class ContestCreateSchema(BaseSchema[None]):
     end_time: datetime = None  # type: ignore[assignment]
     # 封榜时间
     freeze_time: Optional[datetime] = None
-    # 是否组队赛
+    # 团队赛（True） / 个人赛（False）
     is_team_based: bool = True
     # 队伍人数上限
     max_team_members: int = 4
+    # 题目分类列表
+    categories: list[str] = field(default_factory=list)
 
     def validate(self) -> None:
         """校验时间顺序、封榜区间与人数上限"""
@@ -71,6 +73,15 @@ class ContestCreateSchema(BaseSchema[None]):
                 raise ValidationError(message="封榜时间必须介于比赛时间范围内")
         if self.max_team_members < 1:
             raise ValidationError(message="队伍人数下限为 1")
+        cleaned_categories: list[str] = []
+        for name in self.categories:
+            name_str = str(name).strip()
+            if not name_str:
+                continue
+            if name_str in cleaned_categories:
+                continue
+            cleaned_categories.append(name_str)
+        self.categories = cleaned_categories
 
 
 @dataclass
@@ -188,3 +199,27 @@ class TeamTransferSchema(BaseSchema[None]):
             raise ValidationError(message="非法的队伍 ID")
         if self.new_captain_id <= 0:
             raise ValidationError(message="非法的队员 ID")
+
+
+@dataclass
+class ContestCategoryUpdateSchema(BaseSchema[None]):
+    """
+    比赛题目分类更新入参：列表传入分类名称集合
+    """
+
+    auto_validate: ClassVar[bool] = True
+    contest_slug: str
+    categories: list[str] = field(default_factory=list)
+
+    def validate(self) -> None:
+        if not self.contest_slug:
+            raise ValidationError(message="缺少比赛标识")
+        cleaned: list[str] = []
+        for name in self.categories:
+            value = str(name).strip()
+            if not value:
+                continue
+            if value in cleaned:
+                continue
+            cleaned.append(value)
+        self.categories = cleaned

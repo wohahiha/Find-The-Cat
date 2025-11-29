@@ -125,8 +125,14 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
             email="admin@example.com",
             password="stevenxu5190",
         )
+        cls.admin.is_email_verified = True
+        cls.admin.save()
         cls.user1 = User.objects.create_user(username="alice", email="alice@example.com", password="Passw0rd123")
+        cls.user1.is_email_verified = True
+        cls.user1.save()
         cls.user2 = User.objects.create_user(username="bob", email="bob@example.com", password="Passw0rd123")
+        cls.user2.is_email_verified = True
+        cls.user2.save()
 
     def setUp(self):
         """每个测试前重置时间窗口并清理缓存以避免限流影响"""
@@ -135,20 +141,19 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         self.now_plus = timezone.now() + timezone.timedelta(hours=1)
         cache.clear()
 
-    def _create_contest(self, client: APIClient, slug: str) -> str:
+    def _create_contest(self, client: APIClient, slug: str, categories: list[str] | None = None) -> str:
         """使用管理员创建比赛，返回 slug"""
-        resp = client.post(
-            "/api/contests/",
-            {
-                "name": f"{slug} contest",
-                "slug": slug,
-                "description": "desc",
-                "start_time": self.now_minus.isoformat(),
-                "end_time": self.now_plus.isoformat(),
-                "is_team_based": True,
-            },
-            format="json",
-        )
+        payload = {
+            "name": f"{slug} contest",
+            "slug": slug,
+            "description": "desc",
+            "start_time": self.now_minus.isoformat(),
+            "end_time": self.now_plus.isoformat(),
+            "is_team_based": True,
+        }
+        if categories is not None:
+            payload["categories"] = categories
+        resp = client.post("/api/contests/", payload, format="json")
         self.assertEqual(resp.status_code, 201)
         return resp.data["data"]["contest"]["slug"]
 
@@ -168,12 +173,15 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         # 列表 running 应包含该比赛
         resp = self.client.get("/api/contests/?status=running")
         self.assertEqual(resp.status_code, 200, resp.content)
-        self.assertTrue(any(item["slug"] == slug for item in resp.data["data"]["items"]))
+        listing = next((item for item in resp.data["data"]["items"] if item["slug"] == slug), None)
+        self.assertIsNotNone(listing)
+        self.assertEqual(listing["status"], "进行中")
 
         # 详情包含公告与挑战列表字段
         resp = self.client.get(f"/api/contests/{slug}/")
         self.assertEqual(resp.status_code, 200, resp.content)
         self.assertIn("announcements", resp.data["data"])
+        self.assertEqual(resp.data["data"]["contest"]["status"], "进行中")
 
     def test_team_lifecycle(self):
         """验证队伍创建、加入、队长移交、邀请码重置与解散全链路"""
@@ -221,3 +229,26 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         # 解散队伍
         resp = admin_client.post(f"/api/contests/teams/{team_id}/disband/", {}, format="json")
         self.assertEqual(resp.status_code, 200)
+
+    def test_contest_category_management(self):
+        """验证比赛题目分类在创建及后续更新中可配置"""
+        admin_client = self._auth_client("wohahiha", "stevenxu5190")
+        slug = self._create_contest(admin_client, "category-contest", categories=["Web", "Pwn"])
+
+        detail_resp = self.client.get(f"/api/contests/{slug}/")
+        self.assertEqual(detail_resp.status_code, 200)
+        contest_payload = detail_resp.data["data"]["contest"]
+        self.assertIn("categories", contest_payload)
+        self.assertEqual(sorted(cat["name"] for cat in contest_payload["categories"]), ["Pwn", "Web"])
+
+        update_resp = admin_client.put(
+            f"/api/contests/{slug}/categories/",
+            {"categories": ["Web", "Crypto"]},
+            format="json",
+        )
+        self.assertEqual(update_resp.status_code, 200, update_resp.content)
+        self.assertEqual(len(update_resp.data["data"]["items"]), 2)
+
+        list_resp = self.client.get(f"/api/contests/{slug}/categories/")
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertEqual(sorted(cat["name"] for cat in list_resp.data["data"]["items"]), ["Crypto", "Web"])

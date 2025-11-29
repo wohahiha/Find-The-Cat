@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Optional
+from django.db import models
 from django.db.models import Prefetch
 
 from django.utils.text import slugify
@@ -29,16 +30,80 @@ from apps.accounts.models import User
 class ChallengeCategoryRepo(BaseRepo[ChallengeCategory]):
     """
     题目分类仓储：
-    - 业务场景：创建/更新题目时需要按名称获取或创建分类
-    - 功能：根据名称生成 slug，若不存在则自动创建分类
+    - 业务场景：按比赛维护题目分类，供题目创建选择
+    - 功能：支持按名称/slug 获取、按比赛批量同步
     """
+
     model = ChallengeCategory
 
-    def get_or_create_slug(self, name: str) -> ChallengeCategory:
-        # 基于名称生成 slug 并尝试获取，不存在则创建
-        slug = slugify(name) or name.lower()
-        obj, _ = self.model.objects.get_or_create(slug=slug, defaults={"name": name})
-        return obj
+    def list_by_contest(self, contest: Contest):
+        """返回比赛下的全部题目分类"""
+        return (
+            self.filter(contest=contest)
+            .select_related("contest")
+            .order_by("name", "id")
+        )
+
+    def resolve_for_contest(self, contest: Contest, value: str) -> Optional[ChallengeCategory]:
+        """根据名称或 slug 获取比赛内的分类"""
+        if not value:
+            return None
+        slug = slugify(value) or value.lower()
+        return (
+            self.filter(contest=contest)
+            .filter(models.Q(slug=slug) | models.Q(name=value) | models.Q(name__iexact=value))
+            .first()
+        )
+
+    def sync_for_contest(self, contest: Contest, categories: list[str]) -> list[ChallengeCategory]:
+        """
+        批量同步题目分类：
+        - 未在列表中的旧分类将删除
+        - 新名称将创建
+        """
+        normalized: list[tuple[str, str]] = []
+        seen_slug: set[str] = set()
+        for name in categories or []:
+            clean_name = str(name).strip()
+            if not clean_name:
+                continue
+            slug = slugify(clean_name) or clean_name.lower()
+            if slug in seen_slug:
+                continue
+            seen_slug.add(slug)
+            normalized.append((clean_name, slug))
+
+        existing = {
+            cat.slug: cat
+            for cat in self.filter(contest=contest).select_related("contest")
+        }
+        retained_ids: list[int] = []
+        results: list[ChallengeCategory] = []
+        for name, slug in normalized:
+            if slug in existing:
+                cat = existing[slug]
+                if cat.name != name:
+                    cat.name = name
+                    cat.save(update_fields=["name"])
+                retained_ids.append(cat.id)
+                results.append(cat)
+                continue
+            cat = self.create(
+                {
+                    "contest": contest,
+                    "name": name,
+                    "slug": slug,
+                }
+            )
+            retained_ids.append(cat.id)
+            results.append(cat)
+
+        # 删除未保留的分类
+        if retained_ids:
+            self.filter(contest=contest).exclude(id__in=retained_ids).delete()
+        else:
+            self.filter(contest=contest).delete()
+        return results
 
 
 class ChallengeRepo(BaseRepo[Challenge]):

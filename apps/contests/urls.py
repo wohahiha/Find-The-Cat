@@ -14,6 +14,7 @@ from .views import (
     TeamTransferView,
     ContestExportView,
     ContestSubmissionView,
+    ContestCategoryView,
 )
 
 # 路由配置：声明比赛、队伍、公告相关的 API 路径
@@ -25,8 +26,8 @@ urlpatterns = [
     path("", ContestListView.as_view(), name="list"),
     # 比赛数据导出（管理员）
     path("<slug:contest_slug>/export/", ContestExportView.as_view(), name="export"),
-    # 比赛详情（含挑战、公告、记分板）
-    path("<slug:contest_slug>/", ContestDetailView.as_view(), name="detail"),
+    # 比赛题目分类
+    path("<slug:contest_slug>/categories/", ContestCategoryView.as_view(), name="categories"),
     # 队伍列表 / 创建
     path("<slug:contest_slug>/teams/", ContestTeamsView.as_view(), name="teams"),
     # 加入队伍
@@ -48,4 +49,6 @@ urlpatterns = [
         "<slug:contest_slug>/challenges/",
         include(("apps.challenges.urls", "challenges"), namespace="contest-challenges"),
     ),
+    # 比赛详情（含挑战、公告、记分板）
+    path("<slug:contest_slug>/", ContestDetailView.as_view(), name="detail"),
 ]

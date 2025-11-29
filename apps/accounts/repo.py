@@ -16,7 +16,8 @@ from apps.common.exceptions import ValidationError, NotFoundError
 
 from .utils import assign_default_admin_permissions, assign_default_user_permissions
 
-from .models import EmailVerificationCode
+# EmailVerificationCode 已迁移至 system 模块
+from apps.system.models import EmailVerificationCode
 
 User = get_user_model()
 

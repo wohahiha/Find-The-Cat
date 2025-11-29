@@ -10,7 +10,9 @@ from rest_framework.test import APITestCase
 from django.test import TestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from apps.accounts.models import User, EmailVerificationCode
+# EmailVerificationCode 已迁移至 system 模块
+from apps.system.models import EmailVerificationCode
+from apps.accounts.models import User
 from apps.common.tests_utils import AuthenticatedAPIMixin
 from apps.contests.models import Contest
 from apps.contests.schemas import TeamCreateSchema
@@ -21,6 +23,7 @@ from apps.common.exceptions import ValidationError
 from .schemas import ChallengeCreateSchema
 from .services import ChallengeCreateService
 from .repo import ChallengeRepo
+from .models import ChallengeCategory
 from apps.submissions.schemas import SubmissionCreateSchema
 from apps.submissions.services import SubmissionService
 
@@ -45,7 +48,12 @@ class ChallengeServiceTests(TestCase):
             end_time=now + timezone.timedelta(hours=5),
         )
         self.author = User.objects.create_user(username="author", email="author@example.com", password="Pass1234")
+        self.author.is_email_verified = True
+        self.author.save()
         self.player = User.objects.create_user(username="player", email="player@example.com", password="Pass1234")
+        self.player.is_email_verified = True
+        self.player.save()
+        self._ensure_category(self.contest, "Misc")
 
     def test_challenge_create_and_fetch(self):
         """创建题目后可通过仓储按 slug 获取"""
@@ -151,6 +159,13 @@ class ChallengeServiceTests(TestCase):
         """按照服务端逻辑构造动态 Flag，供断言使用"""
         return challenge.build_expected_flag(user=user, secret=settings.SECRET_KEY)
 
+    def _ensure_category(self, contest: Contest, name: str):
+        ChallengeCategory.objects.get_or_create(
+            contest=contest,
+            slug=name.lower(),
+            defaults={"name": name},
+        )
+
 
 @override_settings(
     REST_FRAMEWORK={
@@ -173,7 +188,11 @@ class ChallengesAPITestCase(AuthenticatedAPIMixin, APITestCase):
             email="admin@example.com",
             password="stevenxu5190",
         )
+        cls.admin.is_email_verified = True
+        cls.admin.save()
         cls.player = User.objects.create_user(username="alice", email="alice@example.com", password="Passw0rd123")
+        cls.player.is_email_verified = True
+        cls.player.save()
         now = timezone.now()
         cls.contest = Contest.objects.create(
             name="API CTF",

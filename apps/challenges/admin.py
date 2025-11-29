@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from django.contrib import admin, messages
 from django import forms
-from django.urls import reverse
+from django.urls import reverse, path
 from django.utils.html import format_html, format_html_join
+from django.http import JsonResponse
 from apps.common.infra.logger import get_logger, logger_extra
 
 logger = get_logger(__name__)
@@ -64,7 +65,7 @@ class AdminAuditMixin:
 
 
 from .models import ChallengeCategory, Challenge, ChallengeSolve, ChallengeAttachment
-from apps.machines.models import MachineInstance
+from apps.machines.models import ChallengeMachineConfig
 from .services import AttachmentUploadService
 from .schemas import AttachmentUploadSchema
 from .repo import ChallengeAttachmentRepo
@@ -149,11 +150,12 @@ class ChallengeAdminForm(forms.ModelForm):
 @admin.register(ChallengeCategory)
 class ChallengeCategoryAdmin(AdminAuditMixin, admin.ModelAdmin):
     """题目分类后台：支持名称/slug 搜索与自动填充"""
-    list_select_related = ()
+    list_select_related = ("contest",)
     # 列表展示字段
-    list_display = ("name", "slug")
+    list_display = ("name", "contest", "slug")
     # 支持按名称/slug 搜索
-    search_fields = ("name", "slug")
+    search_fields = ("name", "slug", "contest__name", "contest__slug")
+    list_filter = ("contest",)
     # 根据 name 自动生成 slug
     prepopulated_fields = {"slug": ("name",)}
 
@@ -161,8 +163,9 @@ class ChallengeCategoryAdmin(AdminAuditMixin, admin.ModelAdmin):
         """为分类详情页字段添加说明，避免命名冲突"""
         form = super().get_form(request, obj, **kwargs)
         help_texts = {
+            "contest": "分类所属比赛，仅能在该比赛下选择",
             "name": "分类名称，用于后台分组与前台展示",
-            "slug": "分类标识，需唯一，建议使用英文/短横线组合",
+            "slug": "分类标识，需唯一（同一比赛内），建议使用英文/短横线组合",
         }
         for name, text in help_texts.items():
             if name in form.base_fields:
@@ -204,7 +207,7 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
         "min_score": "动态计分可衰减到的最低分，防止分值过低",
         "is_active": "关闭后选手不可见该题目，适合维护/下架",
         "dynamic_prefix": "可选前缀，最终 Flag = 前缀 + '{' + Flag 值 + '}'；无需手写花括号",
-        "flag": "静态：填写完整 Flag 值；动态：填写种子，系统生成唯一值",
+        "flag": "静态：填写完整 Flag 值；动态：填写种子（盐），系统生成唯一值",
         "flag_case_insensitive": "勾选后校验时不区分大小写",
         "blood_reward_type": "n 血奖励：无/加分/前 n 血不衰减（仅动态计分可选）",
         "blood_reward_count": "前 n 名解题享受奖励的数量，设置为 0 关闭",
@@ -265,12 +268,40 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
     class Media:
         """后台表单静态资源：按计分模式动态显示衰减字段"""
         js = ("challenges/js/challenge_admin.js",)
+        css = {
+            "all": ("challenges/css/challenge_admin.css",),
+        }
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         for name, help_text in self.field_help_texts.items():
             if name in form.base_fields:
                 form.base_fields[name].help_text = help_text
+        contest_id = self._get_contest_id(request, obj=obj)
+        contest_field = form.base_fields.get("contest")
+        if contest_field:
+            contest_field.widget.attrs.setdefault(
+                "data-category-url", reverse("admin:challenges_challenge_category_options")
+            )
+            if contest_id:
+                contest_field.initial = contest_id
+        category_field = form.base_fields.get("category")
+        if category_field:
+            if contest_id:
+                category_field.queryset = ChallengeCategory.objects.filter(contest_id=contest_id)
+                category_field.empty_label = "---------"
+            else:
+                category_field.queryset = ChallengeCategory.objects.none()
+                category_field.empty_label = "请先选择比赛"
+            initial_category = None
+            if obj and obj.category_id:
+                initial_category = obj.category_id
+            elif request.POST.get("category"):
+                initial_category = request.POST.get("category")
+            if initial_category:
+                category_field.widget.attrs["data-initial"] = str(initial_category)
+            else:
+                category_field.widget.attrs["data-initial"] = ""
         return form
 
     def save_model(self, request, obj: Challenge, form, change):
@@ -300,6 +331,19 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
             except Exception as exc:  # pragma: no cover
                 messages.error(request, f"上传附件失败：{exc}")
 
+    def save_formset(self, request, form, formset, change):
+        """
+        保存内联对象时，确保靶机配置与题目绑定
+        """
+        instances = formset.save(commit=False)
+        for inline_obj in instances:
+            if isinstance(inline_obj, ChallengeMachineConfig):
+                inline_obj.challenge = form.instance
+            inline_obj.save()
+        for deleted in formset.deleted_objects:
+            deleted.delete()
+        formset.save_m2m()
+
     @admin.display(description="已上传附件")
     def existing_attachments(self, obj: Challenge):
         """
@@ -314,28 +358,92 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
             [(att.url, att.name, att.order) for att in attachments],
         )
 
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        contest_id = request.GET.get("contest")
+        if contest_id:
+            initial["contest"] = contest_id
+        return initial
 
-class MachineInstanceInline(admin.TabularInline):
-    """靶机实例内联：在题目下查看关联实例"""
+    def _get_contest_id(self, request, obj=None):
+        contest_id = request.POST.get("contest") or request.GET.get("contest")
+        if contest_id:
+            return contest_id
+        if obj:
+            return obj.contest_id
+        resolver = getattr(request, "resolver_match", None)
+        if resolver and resolver.kwargs.get("object_id"):
+            obj_id = resolver.kwargs["object_id"]
+            return (
+                Challenge.objects.filter(pk=obj_id)
+                .values_list("contest_id", flat=True)
+                .first()
+            )
+        return None
 
-    model = MachineInstance
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                "category-options/",
+                self.admin_site.admin_view(self.category_options_view),
+                name="challenges_challenge_category_options",
+            ),
+        ]
+        return custom + urls
+
+    def category_options_view(self, request):
+        contest_id = request.GET.get("contest_id")
+        results = []
+        if contest_id:
+            results = list(
+                ChallengeCategory.objects.filter(contest_id=contest_id)
+                .values("id", "name")
+                .order_by("name", "id")
+            )
+        return JsonResponse({"results": results})
+
+
+class MachineConfigInline(admin.StackedInline):
+    """靶机配置内联：供出题人录入镜像/端口等模板信息"""
+
+    model = ChallengeMachineConfig
     fk_name = "challenge"
     extra = 0
-    fields = ("contest", "user", "team", "host", "port", "status", "created_at")
-    readonly_fields = ("contest", "user", "team", "host", "port", "status", "created_at")
+    min_num = 1
     can_delete = False
-
-    def has_add_permission(self, request, obj=None):
-        """靶机实例由业务启动，不允许后台新增"""
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        """靶机实例信息只读"""
-        return False
+    validate_min = True
+    max_num = 1
+    verbose_name = "靶机配置"
+    verbose_name_plural = "靶机配置"
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "image",
+                    "container_port",
+                    "max_instances_per_user",
+                    "max_runtime_minutes",
+                    "clean_interval_seconds",
+                    "port_cache_ttl",
+                ),
+                "description": "必填：配置靶机镜像、端口与运行时策略（实例数量、运行分钟数、清理间隔、端口缓存）",
+            },
+        ),
+        (
+            "高级选项",
+            {
+                "fields": ("environment",),
+                "classes": ("collapse",),
+                "description": "可选环境变量（JSON 格式），启动实例时会传递给容器",
+            },
+        ),
+    )
 
 
 # 仅在定义完成后追加内联，保持 ChallengeAdmin 结构清晰
-ChallengeAdmin.inlines = ChallengeAdmin.inlines + (MachineInstanceInline,)  # type: ignore
+ChallengeAdmin.inlines = ChallengeAdmin.inlines + (MachineConfigInline,)  # type: ignore
 
 
 @admin.register(ChallengeSolve)

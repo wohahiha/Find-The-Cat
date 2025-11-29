@@ -161,6 +161,16 @@ class CaptchaValidationError(AuthError):
     http_status = 400
 
 
+class EmailNotVerifiedError(AuthError):
+    """
+    邮箱尚未完成验证：
+    - 登录、重置密码等敏感操作需要确保邮箱已通过验证码校验
+    """
+    default_code = 40105
+    default_message = "邮箱未验证，请先完成邮箱验证"
+    http_status = 400
+
+
 class PermissionDeniedError(BizError):
     """
     权限不足：
@@ -228,6 +238,28 @@ class TeamNotMemberError(TeamError):
     """用户不是该队伍成员"""
     default_code = 47003
     default_message = "你不是该队伍成员，不能进行此操作"
+
+
+# ======================
+# 账户领域错误
+# ======================
+
+class AccountError(BizError):
+    """账户相关通用错误基类"""
+    default_code = 40950
+    default_message = "账户相关错误"
+    http_status = 400
+
+
+class AccountIdLimitError(AccountError):
+    """
+    账户ID分配达到上限：
+    - 超级管理员数量已达上限（10个）
+    - 普通管理员数量已达上限（990个）
+    """
+    default_code = 40951
+    default_message = "账户ID分配已达上限，无法创建新用户"
+    http_status = 400
 
 
 # ======================

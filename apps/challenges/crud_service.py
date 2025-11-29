@@ -52,7 +52,9 @@ class ChallengeCreateService(BaseService[Challenge]):
         contest = self.contest_repo.get_by_slug(schema.contest_slug)
         category = None
         if schema.category:
-            category = self.category_repo.get_or_create_slug(schema.category)
+            category = self.category_repo.resolve_for_contest(contest, schema.category)
+            if category is None:
+                raise ValidationError(message="该题目分类未在当前比赛中配置")
         # 2) 准备 payload 并剥离子任务/附件
         payload = schema.to_dict(exclude_none=True)
         payload.pop("contest_slug", None)
@@ -152,7 +154,9 @@ class ChallengeUpdateService(BaseService[Challenge]):
         # 2) 处理分类
         category = challenge.category
         if schema.category:
-            category = self.category_repo.get_or_create_slug(schema.category)
+            category = self.category_repo.resolve_for_contest(contest, schema.category)
+            if category is None:
+                raise ValidationError(message="该题目分类未在当前比赛中配置")
         # 3) 更新字段并保存
         payload = schema.to_dict(exclude_none=True)
         payload.pop("contest_slug", None)

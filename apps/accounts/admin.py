@@ -30,62 +30,51 @@ from apps.common.permission_sets import (
 )
 from apps.common.infra.logger import get_logger, logger_extra
 from .models import (
-    EmailVerificationCode,
-    MailAccount,
     PlayerUser,
     StaffUser,
     User,
 )
+# 注意：EmailVerificationCode 已迁移至 apps.system 模块
+from apps.system.models import EmailVerificationCode
+
+# 注意：MailAccount 模型已迁移至 apps.system 模块
+# 邮件账号在后台的 SYSTEM → 发信账号 中管理
 
 logger = get_logger(__name__)
 
 
 class AdminAuditMixin:
-    """后台审计日志：记录增删改关键对象"""
+    """
+    后台审计日志：记录增删改关键对象
+
+    符合FTC日志标准，自动包含：
+    - username: 从请求上下文自动获取
+    - account_id: 从请求上下文自动获取
+    - ip_address: 从请求上下文自动获取
+    - 操作详情：模型名、对象ID、操作类型
+    """
 
     audit_model = ""
 
     def log_change(self, request, object, message):
+        """记录修改操作"""
         super().log_change(request, object, message)
-        logger.info(
-            "Admin修改",
-            extra=logger_extra(
-                {
-                    "admin": getattr(request.user, "username", None),
-                    "model": self.audit_model or object.__class__.__name__,
-                    "object_id": getattr(object, "pk", None),
-                    "action": "change",
-                }
-            ),
-        )
+        model_name = self.audit_model or object.__class__.__name__
+        object_id = getattr(object, "pk", None)
+        logger.info(f"管理员修改{model_name}对象 (ID={object_id}): {message}")
 
     def log_addition(self, request, object, message):
+        """记录新增操作"""
         super().log_addition(request, object, message)
-        logger.info(
-            "Admin新增",
-            extra=logger_extra(
-                {
-                    "admin": getattr(request.user, "username", None),
-                    "model": self.audit_model or object.__class__.__name__,
-                    "object_id": getattr(object, "pk", None),
-                    "action": "add",
-                }
-            ),
-        )
+        model_name = self.audit_model or object.__class__.__name__
+        object_id = getattr(object, "pk", None)
+        logger.info(f"管理员创建{model_name}对象 (ID={object_id}): {message}")
 
     def log_deletion(self, request, object, object_repr):
+        """记录删除操作"""
         super().log_deletion(request, object, object_repr)
-        logger.info(
-            "Admin删除",
-            extra=logger_extra(
-                {
-                    "admin": getattr(request.user, "username", None),
-                    "model": self.audit_model or object.__class__.__name__,
-                    "object_repr": object_repr,
-                    "action": "delete",
-                }
-            ),
-        )
+        model_name = self.audit_model or object.__class__.__name__
+        logger.info(f"管理员删除{model_name}对象: {object_repr}")
 
 
 class FTCAdminAuthenticationForm(AdminAuthenticationForm):
@@ -222,7 +211,10 @@ class StaffUserCreationForm(BaseAccountCreationForm):
     管理员创建表单：限制创建时的权限范围
 
     - 默认不开放团队字段，专注账户本身
-    - save 时写入管理员标志，防止误授超级管理员
+    - save 时写入管理员标志，强制 is_superuser=False，防止误授超级管理员
+    - 注意：通过此表单创建的管理员不是超级管理员
+    - 超级管理员（account_id 1-10，最多10个）只能通过命令行创建：
+      python manage.py createsuperuser
     """
 
     class Meta(UserCreationForm.Meta):  # type: ignore[misc]
@@ -260,6 +252,7 @@ class BaseUserAdmin(DjangoUserAdmin):
         help_texts = {
             "username": "唯一的登录名，保存后不可随意修改",
             "email": "用于找回密码、通知等场景，必须唯一有效",
+            "account_id": "账户ID（自动分配，不可修改）：1-10超管，11-1000管理员，1001+普通用户",
             "nickname": "展示用昵称，前台显示使用",
             "avatar": "用户头像文件，留空则显示默认头像",
             "bio": "个人简介，前台资料页展示",
@@ -270,7 +263,7 @@ class BaseUserAdmin(DjangoUserAdmin):
             "is_active": "关闭后用户无法登录，保留数据",
             "groups": "后台权限组，决定可访问的模块与操作范围",
             "user_permissions": "细粒度权限，补充或覆盖所属用户组权限",
-            "password": "存储加密后的密码，修改请使用“更改密码”表单",
+            "password": "存储加密后的密码，修改请使用\"更改密码\"表单",
         }
         for field_name, text in help_texts.items():
             if field_name in form.base_fields:
@@ -279,7 +272,7 @@ class BaseUserAdmin(DjangoUserAdmin):
 
     # 详情页字段布局：基础信息/个人信息/状态
     fieldsets = (
-        ("基础信息", {"fields": ("username", "password", "email")}),
+        ("基础信息", {"fields": ("username", "password", "email", "account_id")}),
         (
             "个人信息",
             {
@@ -301,8 +294,8 @@ class BaseUserAdmin(DjangoUserAdmin):
             },
         ),
     )
-    # 只读字段：登陆时间/注册时间与权限汇总，避免被编辑
-    readonly_fields = ("display_last_login", "display_date_joined", "display_effective_permissions")
+    # 只读字段：登陆时间/注册时间/账户ID与权限汇总，避免被编辑
+    readonly_fields = ("account_id", "display_last_login", "display_date_joined", "display_effective_permissions")
     # 新增表单布局：限制字段，降低误填
     add_fieldsets = (
         (
@@ -316,6 +309,7 @@ class BaseUserAdmin(DjangoUserAdmin):
     # 列表展示：核心身份信息 + 状态
     list_display = (
         "display_username",
+        "account_id",
         "display_email",
         "nickname",
         "display_active",
@@ -584,6 +578,8 @@ class StaffUserAdmin(AdminAuditMixin, BaseUserAdmin):
     - queryset 仅包含 account_type=ADMIN
     - 仅超级管理员可增删改，保障后台安全链路
     - 保存时为普通管理员自动分配默认管理员组
+    - 注意：此处只能创建普通管理员，超级管理员（最多10个）必须通过命令行创建：
+      python manage.py createsuperuser
     """
     add_form = StaffUserCreationForm
     # 管理员不涉及队伍信息，保持表单简洁
@@ -610,6 +606,7 @@ class StaffUserAdmin(AdminAuditMixin, BaseUserAdmin):
     # 列表展示：额外展示超级管理员标志
     list_display = (
         "display_username",
+        "account_id",
         "display_email",
         "nickname",
         "display_active",
@@ -706,116 +703,5 @@ class StaffUserAdmin(AdminAuditMixin, BaseUserAdmin):
     audit_model = "StaffUser"
 
 
-# @admin.register：注册邮箱验证码记录的后台管理
-@admin.register(EmailVerificationCode)
-class EmailVerificationCodeAdmin(admin.ModelAdmin):
-    """邮箱验证码后台：支持按场景筛选与代码搜索，便于排查邮件发送问题"""
-    # 列表展示字段：邮箱、场景、验证码、是否使用、过期时间、创建时间
-    list_display = ("email", "scene", "code", "is_used", "expires_at", "created_at")
-    # 过滤条件：按场景、使用状态、创建时间筛选
-    list_filter = ("scene", "is_used", "created_at")
-    # 搜索字段：支持按邮箱或验证码查找
-    search_fields = ("email", "code")
-    # 详情页只读，防止误改历史验证码
-    readonly_fields = ("email", "scene", "code", "is_used", "expires_at", "verified_at", "created_at", "updated_at")
-
-    def get_form(self, request, obj=None, **kwargs):
-        """为验证码详情页字段添加说明，方便审计定位"""
-        form = super().get_form(request, obj, **kwargs)
-        help_texts = {
-            "email": "验证码发送目标邮箱",
-            "scene": "验证码使用场景，例如注册、找回密码、修改邮箱",
-            "code": "发送给用户的验证码内容",
-            "is_used": "标记是否已被验证通过",
-            "expires_at": "验证码过期时间，过期后不可再使用",
-            "verified_at": "用户完成验证的时间",
-        }
-        for name, text in help_texts.items():
-            if name in form.base_fields:
-                form.base_fields[name].help_text = text
-        return form
-
-    # 阻止新增/修改/删除，保持审计只读
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
-# @admin.register：注册邮件账号配置的后台管理
-@admin.register(MailAccount)
-class MailAccountAdmin(AdminAuditMixin, admin.ModelAdmin):
-    """
-    邮件账号后台：用于管理发送邮箱及其优先级
-
-    - 列表展示基础配置与启用状态
-    - 支持按提供商/启用/默认过滤
-    - 排序按 priority，优先级越小越靠前
-    """
-    # 列表展示字段：基础 SMTP 配置信息与启用状态/优先级
-    list_display = (
-        "name",
-        "provider",
-        "username",
-        "host",
-        "port",
-        "is_active",
-        "is_default",
-        "priority",
-    )
-    # 过滤条件：按提供商/启用状态/默认标志筛选
-    list_filter = ("provider", "is_active", "is_default")
-    # 搜索字段：支持按名称/用户名/主机搜索
-    search_fields = ("name", "username", "host")
-    # 排序规则：按优先级升序排列，优先级越小越靠前
-    ordering = ("priority",)
-    audit_model = "MailAccount"
-
-    class MailAccountAdminForm(forms.ModelForm):
-        """自定义表单：host 可留空，按服务商自动填充"""
-
-        class Meta:
-            model = MailAccount
-            fields = "__all__"
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            if "host" in self.fields:
-                self.fields["host"].required = True
-
-        def clean(self):
-            cleaned = super().clean()
-            if not cleaned.get("host"):
-                raise ValidationError("SMTP 主机不能为空，请手动填写")
-            return cleaned
-
-    form = MailAccountAdminForm
-
-    def get_form(self, request, obj=None, **kwargs):
-        """为邮件账号详情页字段添加说明，避免误配发信参数；启用自定义表单"""
-        kwargs.setdefault("form", self.form)
-        form = super().get_form(request, obj, **kwargs)
-        help_texts = {
-            "name": "发信账号的显示名称，便于后台识别",
-            "provider": "邮件服务提供商类型（如 SMTP、企业邮箱等）",
-            "username": "发信账号用户名，通常为邮箱地址",
-            "password": "发信授权码或密码，注意保密",
-            "host": "SMTP 服务器地址（示例：QQ smtp.qq.com，163 smtp.163.com，Gmail smtp.gmail.com，Outlook smtp.office365.com）",
-            "port": "SMTP 服务器端口，通常 465(SSL)/587(TLS)",
-            "use_ssl": "是否使用 SSL 连接，需与端口匹配",
-            "use_tls": "是否使用 TLS，避免与 SSL 重复开启",
-            "is_active": "关闭后不会参与发信",
-            "is_default": "标记默认发信账号，优先使用",
-            "priority": "数字越小优先级越高，同一场景按优先级选择账号",
-            "from_name": "发信名称 (From: 发信名称 <发信邮箱>)；留空则只显示邮箱地址",
-            "from_email": "发信邮箱 (From: 发信名称 <发信邮箱>)；留空则使用用户名字段的邮箱",
-            "reply_to": "设置回复地址，留空则默认发件人",
-        }
-        for name, text in help_texts.items():
-            if name in form.base_fields:
-                form.base_fields[name].help_text = text
-        return form
+# 注意：EmailVerificationCodeAdmin 已迁移至 apps.system.admin
+# 邮箱验证码现在在后台的 SYSTEM → 系统日志 - 邮箱验证码 中管理

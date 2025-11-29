@@ -20,6 +20,7 @@ class RequestContextMiddleware(MiddlewareMixin):
         set_request_context(
             request_id=request.headers.get("X-Request-ID") or generate_request_id(),
             user_id=getattr(user, "id", None) if user and user.is_authenticated else None,
+            account_id=getattr(user, "account_id", None) if user and user.is_authenticated else None,
             username=getattr(user, "username", "") if user and user.is_authenticated else "",
             path=getattr(request, "path", ""),
             method=getattr(request, "method", ""),

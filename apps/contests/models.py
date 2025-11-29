@@ -36,8 +36,8 @@ class Contest(models.Model):
     end_time = models.DateTimeField("结束时间")
     # 封榜时间，可为空
     freeze_time = models.DateTimeField("封榜时间", null=True, blank=True)
-    # 是否组队赛，影响队伍逻辑
-    is_team_based = models.BooleanField("是否组队赛", default=True)
+    # 团队赛 / 个人赛
+    is_team_based = models.BooleanField("团队赛", default=True)
     # 队伍人数上限
     max_team_members = models.PositiveIntegerField("队伍人数上限", default=4)
     # 记录创建时间

@@ -29,7 +29,8 @@ urlpatterns = [
     path('api/accounts/', include('apps.accounts.urls')),
     path('api/contests/', include('apps.contests.urls')),
     path('api/challenges/', include('apps.challenges.urls')),
-    # submissions/machines 独立入口移除，改由比赛/题目下访问
+    path('api/submissions/', include('apps.submissions.urls')),
+    path('api/machines/', include('apps.machines.urls')),
     path('api/problem-bank/', include('apps.problem_bank.urls')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

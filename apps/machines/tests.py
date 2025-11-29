@@ -13,8 +13,9 @@ from apps.challenges.schemas import ChallengeCreateSchema
 from apps.challenges.services import ChallengeCreateService
 from apps.machines.schemas import MachineStartSchema, MachineStopSchema
 from apps.machines.services import MachineStartService, MachineStopService
-from apps.machines.models import MachineInstance
+from apps.machines.models import MachineInstance, ChallengeMachineConfig
 from apps.common.tests_utils import AuthenticatedAPIMixin
+from apps.challenges.repo import ChallengeRepo
 
 
 class MachineServiceTests(TestCase):
@@ -42,6 +43,15 @@ class MachineServiceTests(TestCase):
                 flag_type="dynamic",
                 dynamic_prefix="flag",
             ),
+        )
+        # 为题目配置靶机模板
+        challenge = ChallengeRepo().get_by_slug(contest=self.contest, slug="pwn")
+        ChallengeMachineConfig.objects.create(
+            challenge=challenge,
+            image="test/pwn:latest",
+            container_port=80,
+            max_instances_per_user=1,
+            max_runtime_minutes=30,
         )
 
     def test_start_and_stop_machine(self):
@@ -73,8 +83,12 @@ class MachinesAPITestCase(AuthenticatedAPIMixin, APITestCase):
         """全局准备管理员/用户、比赛与题目，启用 Docker mock"""
         docker_manager._USE_MOCK = True
         cls.user = User.objects.create_user(username="alice", email="alice@example.com", password="Passw0rd123")
+        cls.user.is_email_verified = True
+        cls.user.save()
         cls.admin = User.objects.create_superuser(username="wohahiha", email="admin@example.com",
                                                   password="stevenxu5190")
+        cls.admin.is_email_verified = True
+        cls.admin.save()
         now = timezone.now()
         cls.contest = Contest.objects.create(
             name="API Machines",
@@ -92,6 +106,15 @@ class MachinesAPITestCase(AuthenticatedAPIMixin, APITestCase):
                 flag="demo",
                 dynamic_prefix="flag",
             ),
+        )
+        # 为题目配置靶机模板
+        challenge = ChallengeRepo().get_by_slug(contest=cls.contest, slug="warmup")
+        ChallengeMachineConfig.objects.create(
+            challenge=challenge,
+            image="test/warmup:latest",
+            container_port=80,
+            max_instances_per_user=1,
+            max_runtime_minutes=30,
         )
 
     def setUp(self):

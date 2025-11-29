@@ -127,5 +127,128 @@
         if (rewardCount) {
             rewardCount.addEventListener('input', syncBloodRewardFields);
         }
+        initContestCategoryOptions();
+
+        // 隐藏靶机配置 inline 的 "靶机配置: #1" 标题
+        hideMachineConfigInlineTitle();
     });
+
+    function hideMachineConfigInlineTitle() {
+        // 查找靶机配置的 inline group
+        const machineGroup = document.querySelector('#challengemachineconfig_set-group');
+        if (machineGroup) {
+            // 查找并隐藏所有 h3 标签（"靶机配置: #1"）
+            const h3Elements = machineGroup.querySelectorAll('h3');
+            h3Elements.forEach(function(h3) {
+                h3.style.display = 'none';
+            });
+        }
+
+        // 备用方案：通过 class 查找
+        const inlineRelated = document.querySelectorAll('.inline-group .inline-related h3');
+        inlineRelated.forEach(function(h3) {
+            if (h3.textContent && h3.textContent.indexOf('靶机配置') !== -1) {
+                h3.style.display = 'none';
+            }
+        });
+    }
+
+    function initContestCategoryOptions() {
+        const contestSelect = document.querySelector('#id_contest');
+        const categorySelect = document.querySelector('#id_category');
+        if (!contestSelect || !categorySelect) return;
+        const endpoint = contestSelect.dataset.categoryUrl;
+        if (!endpoint) return;
+
+        const initialContest = contestSelect.value;
+        const initialCategory = categorySelect.dataset.initial || categorySelect.value;
+        updateCategoryOptions(endpoint, contestSelect, categorySelect, initialContest, initialCategory);
+
+        contestSelect.addEventListener('change', function () {
+            updateCategoryOptions(endpoint, contestSelect, categorySelect, contestSelect.value, null);
+        });
+    }
+
+    function requestCategoryOptions(url, onSuccess, onError) {
+        onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};
+        onError = typeof onError === 'function' ? onError : function () {};
+        if (window.fetch && window.Promise) {
+            window.fetch(url, { credentials: 'same-origin' })
+                .then(function (resp) { return resp.json(); })
+                .then(onSuccess)
+                .catch(onError);
+            return;
+        }
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4) return;
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    onSuccess(data);
+                } catch (err) {
+                    onError(err);
+                }
+            } else {
+                onError(new Error('Request failed'));
+            }
+        };
+        xhr.send();
+    }
+
+    function updateCategoryOptions(endpoint, contestSelect, categorySelect, contestId, selectedId) {
+        if (!categorySelect) return;
+        resetCategorySelect(categorySelect);
+        if (!contestId) {
+            categorySelect.disabled = true;
+            return;
+        }
+        categorySelect.disabled = true;
+        requestCategoryOptions(
+            endpoint + '?contest_id=' + encodeURIComponent(contestId),
+            function (data) {
+                const results = data && data.results ? data.results : [];
+                populateCategoryOptions(categorySelect, results, selectedId);
+                categorySelect.disabled = false;
+            },
+            function () {
+                categorySelect.disabled = false;
+            }
+        );
+    }
+
+    function resetCategorySelect(select) {
+        while (select.options.length > 0) {
+            select.remove(0);
+        }
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = '请先选择比赛';
+        select.appendChild(placeholder);
+        select.value = '';
+    }
+
+    function populateCategoryOptions(select, items, selectedId) {
+        resetCategorySelect(select);
+        const placeholder = select.options[0];
+        if (!items.length) {
+            placeholder.textContent = '当前比赛暂无分类，请到“题目分类”中新增';
+            select.value = '';
+            return;
+        }
+        placeholder.textContent = '---------';
+        items.forEach(function (item) {
+            const option = document.createElement('option');
+            option.value = String(item.id);
+            option.textContent = item.name;
+            select.appendChild(option);
+        });
+        if (selectedId) {
+            select.value = String(selectedId);
+        } else {
+            select.value = '';
+        }
+    }
 })();

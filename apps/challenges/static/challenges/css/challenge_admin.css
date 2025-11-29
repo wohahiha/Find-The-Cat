@@ -1,0 +1,27 @@
+/* 挑战后台样式：隐藏靶机配置 inline 对象的标题行（"靶机配置: #1"） */
+/* 保留 h2 板块标题，只隐藏 h3 对象标题 */
+
+/* 方案1：通过ID选择器 */
+#challengemachineconfig_set-group .inline-related h3 {
+    display: none !important;
+}
+
+/* 方案2：通过class选择器 */
+.inline-group#challengemachineconfig_set-group h3 {
+    display: none !important;
+}
+
+/* 方案3：更通用的选择器，针对所有靶机配置相关的h3 */
+#challengemachineconfig_set-group h3 {
+    display: none !important;
+}
+
+/* 方案4：通过tabular inline的h3标签 */
+.inline-group .tabular.inline-related h3 {
+    display: none !important;
+}
+
+/* 方案5：stacked inline的h3标签 */
+.inline-group .stacked.inline-related h3 {
+    display: none !important;
+}

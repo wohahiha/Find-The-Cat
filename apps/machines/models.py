@@ -6,6 +6,66 @@ from django.conf import settings
 # 模型定义：管理靶机实例生命周期（启动/关闭）、端口、动态 Flag 等
 
 User = settings.AUTH_USER_MODEL
+DEFAULT_CONTAINER_PORT = 80
+DEFAULT_RUNTIME_MINUTES = getattr(settings, "MACHINE_MAX_RUNTIME_MINUTES", 30)
+
+
+class ChallengeMachineConfig(models.Model):
+    """
+    题目级靶机配置：
+    - 由出题人在后台录入靶机镜像/端口等模板信息
+    - 实例启动时优先读取此配置，未配置则回退全局默认值
+    """
+
+    challenge = models.OneToOneField(
+        "challenges.Challenge",
+        verbose_name="题目",
+        related_name="machine_config",
+        on_delete=models.CASCADE,
+        help_text="关联的题目，每题仅允许配置一份靶机模板",
+    )
+    image = models.CharField("容器镜像", max_length=255,
+                             help_text="完整镜像名称，例如 registry.example.com/ftc/web:latest")
+    container_port = models.PositiveIntegerField(
+        "容器服务端口",
+        default=DEFAULT_CONTAINER_PORT,
+        help_text="镜像内部服务监听端口，用于主机端口映射",
+    )
+    max_instances_per_user = models.PositiveIntegerField(
+        "单用户最大实例数",
+        default=1,
+        help_text="限制单个用户可同时运行的实例数量",
+    )
+    max_runtime_minutes = models.PositiveIntegerField(
+        "实例最长运行分钟数",
+        default=DEFAULT_RUNTIME_MINUTES,
+        help_text="单个实例允许的最长运行时间，超过后将自动清理",
+    )
+    clean_interval_seconds = models.PositiveIntegerField(
+        "清理扫描间隔（秒）",
+        default=300,
+        help_text="Celery 清理任务扫描超时实例的频率",
+    )
+    port_cache_ttl = models.PositiveIntegerField(
+        "端口占用缓存 TTL（秒）",
+        default=300,
+        help_text="端口占用在 Redis 中的缓存时间",
+    )
+    environment = models.JSONField(
+        "环境变量",
+        default=dict,
+        blank=True,
+        help_text="以 JSON 格式记录启动所需的环境变量键值对",
+    )
+    created_at = models.DateTimeField("创建时间", auto_now_add=True)
+    updated_at = models.DateTimeField("更新时间", auto_now=True)
+
+    class Meta:
+        verbose_name = "题目靶机配置"
+        verbose_name_plural = "题目靶机配置"
+
+    def __str__(self) -> str:
+        return f"{self.challenge.slug} -> {self.image}"
 
 
 class MachineInstance(models.Model):

@@ -107,8 +107,12 @@ class SubmissionsAPITestCase(AuthenticatedAPIMixin, APITestCase):
     def setUpTestData(cls):
         """一次性创建用户、管理员、比赛与题目，供接口测试复用"""
         cls.user = User.objects.create_user(username="alice", email="alice@example.com", password="Passw0rd123")
+        cls.user.is_email_verified = True
+        cls.user.save()
         cls.admin = User.objects.create_superuser(username="wohahiha", email="admin@example.com",
                                                   password="stevenxu5190")
+        cls.admin.is_email_verified = True
+        cls.admin.save()
         now = timezone.now()
         cls.contest = Contest.objects.create(
             name="API Submit",

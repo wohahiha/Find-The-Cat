@@ -24,13 +24,18 @@ from apps.common.exceptions import (
     InvalidCredentialsError,
     AccountInactiveError,
     CaptchaValidationError,
+    EmailNotVerifiedError,
 )
 
 from apps.common.infra.email_sender import send_mail_with_account, send_mail_with_settings
 from apps.common.infra.logger import get_logger, logger_extra
 
-from .models import User, EmailVerificationCode, MailAccount
+# EmailVerificationCode 已迁移至 system 模块
+from .models import User
+from apps.system.models import EmailVerificationCode
 from .repo import UserRepo, EmailVerificationCodeRepo
+# MailAccount 已迁移至系统模块
+from apps.system.models import MailAccount
 from .schemas import (
     SendEmailCodeSchema,
     RegisterSchema,
@@ -149,9 +154,15 @@ class SendEmailVerificationService(BaseService[EmailVerificationCode]):
         # 注册场景要求：邮箱未被注册
         if scene == EmailVerificationCode.Scene.REGISTER and self.user_repo.email_exists(email):
             raise ConflictError(message="该邮箱已注册账户")
-        # 重置密码场景要求：邮箱必须存在
-        if scene == EmailVerificationCode.Scene.RESET_PASSWORD and not self.user_repo.email_exists(email):
-            raise NotFoundError(message="账号不存在")
+        # 重置密码场景要求：邮箱必须存在且已完成验证
+        if scene == EmailVerificationCode.Scene.RESET_PASSWORD:
+            user = self.user_repo.get_queryset().filter(email=email).first()
+            if not user:
+                raise NotFoundError(message="账号不存在")
+            if not user.is_email_verified:
+                raise EmailNotVerifiedError(message="邮箱未验证，无法重置密码")
+        else:
+            user = None
 
         # 限流：指定窗口内已有验证码则拒绝
         if self.code_repo.has_recent_code(email=email, scene=scene, seconds=self.cooldown_seconds):
@@ -274,6 +285,13 @@ class LoginService(BaseService[dict[str, object]]):
             )
             raise AccountInactiveError(message="账户失效，请联系管理员")
 
+        if not user.is_email_verified:
+            logger.warning(
+                "登录失败：邮箱未验证",
+                extra=logger_extra({"user_id": getattr(user, 'id', None), "identifier": identifier}),
+            )
+            raise EmailNotVerifiedError(message="邮箱未验证，请先完成邮箱验证")
+
         if not user.check_password(schema.password):
             logger.warning(
                 "登录失败：密码错误",
@@ -328,6 +346,8 @@ class ResetPasswordService(BaseService[User]):
         email = schema.email.lower()
         self.code_repo.consume(email=email, scene=EmailVerificationCode.Scene.RESET_PASSWORD, code=schema.code)
         user = self.user_repo.get_by_email(email)
+        if not user.is_email_verified:
+            raise EmailNotVerifiedError(message="邮箱未验证，无法重置密码")
         user = self.user_repo.set_password(user, schema.new_password)
         logger.info(
             "重置密码成功",

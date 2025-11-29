@@ -52,15 +52,15 @@ def cleanup_expired_machines() -> int:
     - 兼容 mock 模式（docker_manager 内部已处理），异常仅记录日志
     """
     start = time.time()
-    max_minutes = int(getattr(settings, "MACHINE_MAX_RUNTIME_MINUTES", 30))
-    if max_minutes <= 0:
+    max_minutes_global = int(getattr(settings, "MACHINE_MAX_RUNTIME_MINUTES", 30))
+    if max_minutes_global <= 0:
         return 0
     logger.info(
         "清理任务开始",
-        extra=logger_extra({"max_minutes": max_minutes}),
+        extra=logger_extra({"default_max_minutes": max_minutes_global}),
     )
 
-    cutoff = timezone.now() - timedelta(minutes=max_minutes)
+    cutoff = timezone.now() - timedelta(minutes=max_minutes_global)
     repo = MachineRepo()
     expired_qs = repo.running_before(cutoff).select_related("contest", "challenge", "user")
 
@@ -68,6 +68,11 @@ def cleanup_expired_machines() -> int:
     for instance in expired_qs:
         container_id = instance.container_id
         port = instance.port
+        per_challenge_runtime = getattr(instance.challenge, "machine_config", None)
+        max_minutes = getattr(per_challenge_runtime, "max_runtime_minutes", max_minutes_global)
+        cutoff_time = timezone.now() - timedelta(minutes=max_minutes)
+        if instance.created_at >= cutoff_time:
+            continue
         try:
             _stop_container(container_id)
             _release_port_from_cache(port)

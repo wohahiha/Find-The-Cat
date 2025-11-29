@@ -16,7 +16,8 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from apps.common.base.base_schema import BaseSchema
 from apps.common.exceptions import ValidationError
 
-from .models import EmailVerificationCode
+# EmailVerificationCode 已迁移至 system 模块
+from apps.system.models import EmailVerificationCode
 
 USERNAME_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]{3,32}$")
 EMAIL_CODE_PATTERN = re.compile(r"^\d{6}$")

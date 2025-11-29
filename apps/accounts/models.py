@@ -12,6 +12,7 @@ from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from apps.common.exceptions import AccountIdLimitError
 
 
 class FTCUserManager(UserManager):
@@ -23,9 +24,16 @@ class FTCUserManager(UserManager):
     """
 
     def create_superuser(self, username, email=None, password=None, **extra_fields):
-        """创建超管：附带数量上限校验与默认权限标志"""
-        if self.filter(is_superuser=True).count() >= 3:
-            raise ValueError("Superuser limit reached (maximum 3). Use existing accounts.")
+        """
+        创建超管：附带数量上限校验与默认权限标志
+
+        超级管理员限制：
+        - 数量上限：10 个（对应 account_id 1-10）
+        - 创建方式：仅允许通过命令行 `python manage.py createsuperuser` 创建
+        - 安全考虑：限制高权限账号数量，降低安全风险
+        """
+        if self.filter(is_superuser=True).count() >= 10:
+            raise AccountIdLimitError("超级管理员数量已达上限（10个），无法创建新的超级管理员")
         extra_fields.setdefault("account_type", self.model.AccountType.ADMIN)
         extra_fields.setdefault("is_staff", True)
         return super().create_superuser(username, email=email, password=password, **extra_fields)
@@ -72,6 +80,14 @@ class User(AbstractUser):
     updated_at = models.DateTimeField("更新时间", auto_now=True)
     account_type = models.CharField("账号类型", max_length=10, choices=AccountType.choices, default=AccountType.USER,
                                     db_index=True)
+    account_id = models.PositiveIntegerField(
+        "ID",
+        unique=True,
+        null=True,  # 允许为空，方便数据迁移
+        blank=True,
+        db_index=True,
+        help_text="账户ID：1-10超管，11-1000管理员，1001+普通用户"
+    )
 
     objects = FTCUserManager()
 
@@ -84,10 +100,79 @@ class User(AbstractUser):
         verbose_name_plural = "用户"
 
     def save(self, *args, **kwargs):
-        """保存前自动补充昵称，避免空昵称影响展示"""
+        """
+        保存前自动处理：
+        1. 自动补充昵称（避免空昵称影响展示）
+        2. 自动分配 account_id（如果尚未分配）
+        """
+        # 1. 自动补充昵称
         if not self.nickname:
             self.nickname = self.username
+
+        # 2. 自动分配 account_id（仅在创建新用户且 account_id 为空时）
+        if self.account_id is None:
+            self.account_id = self._assign_account_id()
+
         super().save(*args, **kwargs)
+
+    def _assign_account_id(self) -> int:
+        """
+        根据用户角色自动分配 account_id
+
+        分配规则：
+        - 超级管理员（is_superuser=True）：1-10（最多10个，自动复用缺口）
+        - 普通管理员（is_staff=True, is_superuser=False）：11-1000（最多990个，自动复用缺口）
+        - 普通用户（is_staff=False）：1001-∞（无限制，按最大值递增）
+
+        Returns:
+            分配的 account_id
+
+        Raises:
+            AccountIdLimitError: 超管或管理员数量达到上限
+        """
+        if self.is_superuser:
+            # 超管区间（1-10）逐个查找缺口，确保删除旧账号后可以复用编号
+            return self._find_available_account_id(1, 10, role_label="超级管理员")
+
+        if self.is_staff:
+            # 管理员区间（11-1000）支持自动复用缺口，只有全部占满才会阻止创建
+            return self._find_available_account_id(11, 1000, role_label="管理员")
+
+        # 普通用户区间（1001+）不设硬性上限，沿用最大值递增
+        max_id = (
+            User.objects.filter(account_id__gte=1001)
+            .aggregate(models.Max("account_id"))
+            .get("account_id__max")
+            or 1000
+        )
+        return max_id + 1
+
+    def _find_available_account_id(self, start: int, end: int, *, role_label: str) -> int:
+        """
+        查找指定区间内可用的 account_id （复用缺口）
+
+        处理流程：
+        1. 拉取区间内所有已占用 ID，并按升序遍历
+        2. 找到第一个缺失的数字直接返回，实现“真实占满才到上限”
+        3. 若遍历结束且期望值仍在区间内，说明尾部未满，可直接使用
+        4. 区间被完全占满时抛出 AccountIdLimitError
+        """
+        existing_ids = list(
+            User.objects.filter(account_id__gte=start, account_id__lte=end)
+            .order_by("account_id")
+            .values_list("account_id", flat=True)
+        )
+
+        expected = start
+        for current in existing_ids:
+            if current != expected:
+                return expected
+            expected += 1
+
+        if expected <= end:
+            return expected
+
+        raise AccountIdLimitError(f"{role_label}数量已达上限（{start}-{end}），无法创建新的{role_label}")
 
     @property
     def display_name(self) -> str:
@@ -95,50 +180,9 @@ class User(AbstractUser):
         return self.nickname or self.username
 
 
-class EmailVerificationCode(models.Model):
-    """
-    邮箱验证码记录：
-    - 业务场景：注册、找回密码、绑定邮箱等操作的验证码校验
-    - 模块角色：验证码存储与状态管理，被发送/校验服务调用
-    - 功能：记录验证码、场景、过期与使用状态，提供过期判断与使用标记
-    """
-
-    class Scene(models.TextChoices):
-        REGISTER = "register", "注册"
-        RESET_PASSWORD = "reset_password", "找回密码"
-        BIND_EMAIL = "bind_email", "绑定邮箱"
-
-    email = models.EmailField("邮箱")  # 目标邮箱地址
-    scene = models.CharField("场景", max_length=32, choices=Scene.choices)  # 使用场景：注册/重置/绑定
-    code = models.CharField("验证码", max_length=6)  # 实际验证码内容
-    is_used = models.BooleanField("是否已使用", default=False)  # 是否已被消费
-    expires_at = models.DateTimeField("过期时间")  # 过期时间点
-    verified_at = models.DateTimeField("验证时间", null=True, blank=True)  # 验证通过的时间
-    created_at = models.DateTimeField("创建时间", auto_now_add=True)  # 记录创建时间
-    updated_at = models.DateTimeField("更新时间", auto_now=True)  # 记录更新时间
-
-    class Meta:
-        indexes = [
-            models.Index(fields=["email", "scene", "is_used"]),
-            models.Index(fields=["scene", "created_at"]),
-        ]
-        ordering = ["-created_at"]
-        verbose_name = "邮箱验证码"
-        verbose_name_plural = "邮箱验证码"
-
-    def __str__(self) -> str:
-        return f"{self.email} ({self.scene})"
-
-    @property
-    def is_expired(self) -> bool:
-        """是否已过期：供校验逻辑快速判断有效性"""
-        return timezone.now() >= self.expires_at
-
-    def mark_used(self) -> None:
-        """标记验证码已使用并记录验证时间"""
-        self.is_used = True
-        self.verified_at = timezone.now()
-        self.save(update_fields=["is_used", "verified_at", "updated_at"])
+# 注意：EmailVerificationCode 模型已迁移至 apps.system.models
+# 如需使用邮箱验证码，请从 apps.system.models 导入：
+# from apps.system.models import EmailVerificationCode
 
 
 class PlayerUser(User):
@@ -159,90 +203,6 @@ class StaffUser(User):
         verbose_name_plural = "管理员"
 
 
-class MailAccountQuerySet(models.QuerySet):
-    """发信账号 QuerySet：封装启用状态与默认账号的获取"""
-
-    def active(self):
-        """获取已启用的发信账号列表"""
-        return self.filter(is_active=True)
-
-    def get_default(self):
-        """获取默认发信账号，若无默认则按优先级取第一个启用账号"""
-        account = (
-            self.active()
-            .filter(is_default=True)
-            .order_by("priority", "-updated_at")
-            .first()
-        )
-        if account:
-            return account
-        return self.active().order_by("priority", "-updated_at").first()
-
-
-class MailAccount(models.Model):
-    """
-    可配置的发信邮箱账户，支持不同服务商：
-    - 业务场景：统一管理平台发信 SMTP 账户，供验证码/通知邮件使用
-    - 模块角色：存储发信配置、优先级与默认标记，被邮件发送组件选择
-    - 功能：预置常用服务商默认参数，保存时保证默认账号唯一
-    """
-
-    class Provider(models.TextChoices):
-        QQ = "qq", "QQ 邮箱"
-        NETEASE_163 = "163", "163 邮箱"
-        GMAIL = "gmail", "Gmail"
-        OUTLOOK = "outlook", "Outlook 邮箱"
-        CUSTOM = "custom", "自定义 SMTP"
-
-    provider = models.CharField("服务商", max_length=20, choices=Provider.choices, default=Provider.QQ)  # 邮件服务商
-    name = models.CharField("名称", max_length=50, help_text="后台展示用名称")  # 后台展示名称
-    host = models.CharField("SMTP 主机", max_length=120)  # SMTP 主机地址（必填，可由服务商默认填充）
-    port = models.PositiveIntegerField("端口", default=587)  # SMTP 端口
-    use_tls = models.BooleanField("启用 TLS", default=True)  # 是否启用 TLS
-    use_ssl = models.BooleanField("启用 SSL", default=False)  # 是否启用 SSL
-    username = models.EmailField("用户名", help_text="邮箱账号")  # 登录邮箱
-    password = models.CharField("密码", max_length=255, help_text="授权码或应用专用密码")  # 授权码/密码
-    from_name = models.CharField("发信名称", max_length=100, blank=True, help_text="展示名")  # 发信展示名
-    from_email = models.EmailField("发信邮箱", blank=True, help_text="用于 From 的邮箱地址，默认等于 username")  # 发件人邮箱
-    priority = models.PositiveIntegerField("优先级", default=100, help_text="数字越小优先级越高")  # 选用优先级
-    is_active = models.BooleanField("启用", default=True)  # 是否启用账号
-    is_default = models.BooleanField("默认账号", default=False,
-                                     help_text="设为 True 后其余账号将自动取消默认")  # 是否为默认账号
-    created_at = models.DateTimeField("创建时间", auto_now_add=True)  # 创建时间
-    updated_at = models.DateTimeField("更新时间", auto_now=True)  # 更新时间
-
-    objects = MailAccountQuerySet.as_manager()
-
-    class Meta:
-        ordering = ["priority", "-updated_at"]
-        verbose_name = "发信账号"
-        verbose_name_plural = "发信账号"
-
-    PROVIDER_DEFAULTS = {
-        Provider.QQ: {"host": "smtp.qq.com", "port": 587, "use_tls": True, "use_ssl": False},
-        Provider.NETEASE_163: {"host": "smtp.163.com", "port": 465, "use_tls": False, "use_ssl": True},
-        Provider.GMAIL: {"host": "smtp.gmail.com", "port": 587, "use_tls": True, "use_ssl": False},
-        Provider.OUTLOOK: {"host": "smtp.office365.com", "port": 587, "use_tls": True, "use_ssl": False},
-    }
-
-    def apply_provider_defaults(self):
-        """占位：不再自动填充主机端口，避免覆盖手工配置"""
-        return
-
-    def save(self, *args, **kwargs):
-        """保存前填充默认配置、默认发信邮箱，并确保默认账号唯一"""
-        self.apply_provider_defaults()
-        if not self.from_email:
-            self.from_email = self.username
-        if not self.host:
-            raise ValidationError("SMTP 主机不能为空，请选择服务商或手动填写")
-        super().save(*args, **kwargs)
-        if self.is_default:
-            MailAccount.objects.exclude(pk=self.pk).update(is_default=False)
-
-    @property
-    def from_display(self) -> str:
-        """格式化发信人展示，例如 Name <email>"""
-        if self.from_name:
-            return f"{self.from_name} <{self.from_email}>"
-        return self.from_email
+# 注意：MailAccount 模型已迁移至 apps.system.models
+# 如需使用发信账号，请从 apps.system.models 导入：
+# from apps.system.models import MailAccount

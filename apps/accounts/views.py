@@ -22,7 +22,8 @@ from apps.common import response
 from apps.common.permissions import IsAuthenticated, AllowAny
 from apps.common.throttles import LoginRateThrottle, UserPostRateThrottle
 
-from .models import EmailVerificationCode
+# EmailVerificationCode 已迁移至 system 模块
+from apps.system.models import EmailVerificationCode
 from .schemas import (
     SendEmailCodeSchema,
     RegisterSchema,

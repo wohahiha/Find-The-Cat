@@ -3,6 +3,8 @@ from __future__ import annotations
 import secrets
 from typing import Optional
 
+from datetime import datetime
+
 from django.utils import timezone
 from django.conf import settings
 
@@ -16,8 +18,13 @@ from apps.common.exceptions import (
 from django.db import transaction
 from apps.accounts.models import User
 from apps.challenges.models import ChallengeSolve
-from apps.challenges.repo import ChallengeRepo, ChallengeSolveRepo, ChallengeHintUnlockRepo
-from apps.challenges.serializers import serialize_challenge
+from apps.challenges.repo import (
+    ChallengeRepo,
+    ChallengeSolveRepo,
+    ChallengeHintUnlockRepo,
+    ChallengeCategoryRepo,
+)
+from apps.challenges.serializers import serialize_challenge, serialize_category
 from apps.submissions.repo import SubmissionRepo
 from apps.common.infra import redis_client
 from apps.common.utils.redis_keys import scoreboard_key
@@ -34,6 +41,7 @@ from .schemas import (
     AnnouncementCreateSchema,
     TeamInviteResetSchema,
     TeamTransferSchema,
+    ContestCategoryUpdateSchema,
 )
 
 # 服务层：实现比赛、公告、队伍的业务流程，依赖仓储与 Schema 校验
@@ -41,9 +49,31 @@ from .schemas import (
 logger = get_logger(__name__)
 
 
-def serialize_contest(contest: Contest) -> dict:
+def determine_contest_status(contest: Contest, *, now: datetime | None = None) -> str:
+    """
+    计算比赛当前状态：
+    - 未开始：当前时间早于开始时间
+    - 进行中：已开赛且未封榜/未结束
+    - 进行中（已封榜）：已开赛未结束且封榜时间已到
+    - 已结束：当前时间晚于结束时间
+    """
+    reference = now or timezone.now()
+    if not contest.has_started:
+        return "未开始"
+    if not contest.has_ended:
+        if contest.freeze_time and reference >= contest.freeze_time:
+            return "进行中（已封榜）"
+        return "进行中"
+    return "已结束"
+
+
+def serialize_contest(
+        contest: Contest,
+        *,
+        categories: list | None = None,
+) -> dict:
     """比赛序列化：提供比赛基础信息与状态，用于 API 返回"""
-    return {
+    data = {
         "id": contest.id,
         "name": contest.name,
         "slug": contest.slug,
@@ -55,7 +85,11 @@ def serialize_contest(contest: Contest) -> dict:
         "is_team_based": contest.is_team_based,
         "max_team_members": contest.max_team_members,
         "is_active": contest.is_active,
+        "status": determine_contest_status(contest),
     }
+    if categories is not None:
+        data["categories"] = [serialize_category(cat) for cat in categories]
+    return data
 
 
 def serialize_announcement(announcement: ContestAnnouncement) -> dict:
@@ -107,6 +141,7 @@ class ContestContextService(BaseService[Contest]):
         self.team_repo = team_repo or TeamRepo()
         # 公告仓储：用于列表查询
         self.announcement_repo = ContestAnnouncementRepo()
+        self.category_repo = ChallengeCategoryRepo()
 
     def get_contest(self, slug: str) -> Contest:
         """根据 slug 获取比赛对象"""
@@ -144,6 +179,10 @@ class ContestContextService(BaseService[Contest]):
         """获取比赛公告列表（仅返回有效公告）"""
         return self.announcement_repo.list_active(contest)
 
+    def list_categories(self, contest: Contest):
+        """返回比赛下配置的题目分类"""
+        return self.category_repo.list_by_contest(contest)
+
 
 def serialize_team_member(member: TeamMember) -> dict:
     """队伍成员序列化：导出场景下附带用户基础标识"""
@@ -159,16 +198,20 @@ def serialize_team_member(member: TeamMember) -> dict:
 class CreateContestService(BaseService[Contest]):
     """创建比赛：封装仓储写入与 Schema 转换"""
 
-    def __init__(self, repo: ContestRepo | None = None):
+    def __init__(self, repo: ContestRepo | None = None, category_repo: ChallengeCategoryRepo | None = None):
         """允许外部传入自定义仓储，默认使用实际仓储"""
         self.repo = repo or ContestRepo()
+        self.category_repo = category_repo or ChallengeCategoryRepo()
 
     def perform(self, schema: ContestCreateSchema) -> Contest:
         """将校验后的比赛入参写入数据库，生成新的比赛记录"""
         # 将 Schema 转为字典，去除无关字段后落库
         data = schema.to_dict(exclude_none=True)
         data.pop("contest_slug", None)
+        categories = data.pop("categories", [])
         contest = self.repo.create(data)
+        if categories:
+            self.category_repo.sync_for_contest(contest=contest, categories=categories)
         logger.info("创建比赛", extra=logger_extra({"contest": contest.slug}))
         return contest
 
@@ -201,6 +244,25 @@ class ContestAnnouncementService(BaseService[ContestAnnouncement]):
             extra=logger_extra({"contest": contest.slug, "announcement": announcement.id}),
         )
         return announcement
+
+
+class ContestCategoryUpdateService(BaseService[list]):
+    """
+    比赛题目分类更新服务：同步比赛下的分类集合
+    """
+
+    def __init__(
+            self,
+            contest_repo: ContestRepo | None = None,
+            category_repo: ChallengeCategoryRepo | None = None,
+    ):
+        self.contest_repo = contest_repo or ContestRepo()
+        self.category_repo = category_repo or ChallengeCategoryRepo()
+
+    def perform(self, schema: ContestCategoryUpdateSchema) -> list:
+        contest = self.contest_repo.get_by_slug(schema.contest_slug)
+        categories = self.category_repo.sync_for_contest(contest=contest, categories=schema.categories or [])
+        return categories
 
 
 class TeamCreateService(BaseService[Team]):
@@ -623,6 +685,7 @@ class ContestExportService(BaseService[dict]):
             submission_repo: SubmissionRepo | None = None,
             scoreboard_service: ScoreboardService | None = None,
             hint_unlock_repo: ChallengeHintUnlockRepo | None = None,
+            category_repo: ChallengeCategoryRepo | None = None,
     ):
         """集中注入比赛、队伍、成员、题目、解题、提交与榜单依赖"""
         # 仓储与服务依赖：集中注入，方便测试替换
@@ -634,6 +697,7 @@ class ContestExportService(BaseService[dict]):
         self.submission_repo = submission_repo or SubmissionRepo()
         self.scoreboard_service = scoreboard_service or ScoreboardService()
         self.hint_unlock_repo = hint_unlock_repo or ChallengeHintUnlockRepo()
+        self.category_repo = category_repo or ChallengeCategoryRepo()
 
     def perform(self, contest_slug: str) -> dict:
         """导出指定比赛的数据快照"""
@@ -708,8 +772,9 @@ class ContestExportService(BaseService[dict]):
         # 记分板快照（与详情页相同计算逻辑）
         scoreboard_payload = self.scoreboard_service.execute(contest)
 
+        contest_categories = self.category_repo.list_by_contest(contest)
         return {
-            "contest": serialize_contest(contest),
+            "contest": serialize_contest(contest, categories=contest_categories),
             "teams": teams_payload,
             "challenges": challenges_payload,
             "solves": solves_payload,
