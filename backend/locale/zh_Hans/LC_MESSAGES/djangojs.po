@@ -1,0 +1,28 @@
+# Chinese translations for admin JS overrides.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: PROJECT\n"
+"Language-Team: zh_Hans\n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+# Django admin SelectFilter2 helptext overrides (JS)
+msgid "Choose %s by selecting them and then select the \"Choose\" arrow button."
+msgstr "请选择 %s，点击右侧“添加”箭头"
+
+msgid "Remove %s by selecting them and then select the \"Remove\" arrow button."
+msgstr "如需移除 %s，请选中后点击左侧“移除”箭头"
+
+msgid "Choose selected %s"
+msgstr "添加所选 %s"
+
+msgid "Remove selected %s"
+msgstr "移除所选 %s"

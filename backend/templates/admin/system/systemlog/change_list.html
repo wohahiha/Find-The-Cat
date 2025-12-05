@@ -1,0 +1,29 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  {% if export_urls %}
+    <li><a class="button" href="{{ export_urls.txt }}">导出TXT</a></li>
+    <li><a class="button" href="{{ export_urls.csv }}">导出CSV</a></li>
+    <li><a class="button" href="{{ export_urls.json }}">导出JSON</a></li>
+  {% endif %}
+  {% if show_load_more %}
+    {% if can_load_more %}
+      <li>
+        <a class="button" href="{{ next_limit_url }}">
+          加载更多（至 {{ next_limit }} 条）
+        </a>
+      </li>
+    {% else %}
+      <li><span class="button disabled">已加载全部日志</span></li>
+    {% endif %}
+    {% if log_limit|default:0 > default_limit %}
+      <li>
+        <a class="button" href="{{ default_limit_url }}">
+          恢复默认（{{ default_limit }} 条）
+        </a>
+      </li>
+    {% endif %}
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

@@ -1,0 +1,2915 @@
+openapi: 3.0.3
+info:
+  title: FTC API
+  version: 1.0.0
+paths:
+  /health/:
+    get:
+      operationId: health_check
+      summary: 健康检查
+      description: |-
+        健康检查接口：
+        - 返回 {"status":"ok"} 供探针与负载均衡使用
+      tags:
+      - health
+      security: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: 健康状态
+                    example: ok
+                required:
+                - status
+          description: ''
+  /api/auth/roles/:
+    get:
+      operationId: auth_roles_list
+      summary: 角色列表
+      description: |-
+        获取角色列表（占位接口）：
+        - 仅管理员可用
+        - 当前返回空列表，后续将补充 RBAC 角色管理
+      tags:
+      - auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    description: 业务状态码
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                    required:
+                    - items
+                required:
+                - code
+                - message
+                - data
+          description: ''
+  /api/auth/permissions/:
+    get:
+      operationId: auth_permissions_list
+      summary: 权限列表
+      description: |-
+        获取权限列表（占位接口）：
+        - 仅管理员可用
+        - 返回当前内置权限清单，后续可扩展编辑能力
+      tags:
+      - auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                    required:
+                    - items
+                required:
+                - code
+                - message
+                - data
+          description: ''
+  /ws/notify/:
+    get:
+      operationId: ws_notify
+      summary: WebSocket 通知通道
+      description: |-
+        WebSocket 通知：
+        - 连接地址：`ws(s)://<host>/ws/notify/`
+        - 鉴权：Authorization Bearer Token 或 query 参数 token
+        - 事件：submission_accepted、hint_unlocked、force_logout 等，payload 统一包含自增 seq
+      tags:
+      - websocket
+      responses:
+        '101':
+          description: WebSocket 升级成功
+  /ws/contests/{contest_slug}/:
+    get:
+      operationId: ws_contest_events
+      summary: 比赛事件通道
+      description: |-
+        比赛事件 WebSocket：
+        - 连接地址：`ws(s)://<host>/ws/contests/{contest_slug}/`
+        - 需具备 contests.view_contest 权限
+        - 事件：scoreboard_updated、team_joined、team_disbanded 等
+      tags:
+      - websocket
+      parameters:
+      - name: contest_slug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '101':
+          description: WebSocket 升级成功
+  /api/accounts/auth/captcha/:
+    get:
+      operationId: accounts_auth_captcha_retrieve
+      description: |-
+        获取登录图形验证码：
+        - 返回 captcha_key 与验证码图片 URL
+        - 前端需输入验证码并连同 key 传给登录接口
+      summary: 获取登录图形验证码：
+      tags:
+      - accounts
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaptchaResponse'
+          description: ''
+  /api/accounts/auth/login/:
+    post:
+      operationId: accounts_auth_login_create
+      description: |-
+        登录流程：
+        - 校验 identifier/password
+        - 校验 captcha_key/captcha_code 图形验证码
+        - 执行 LoginService 获取 token 与用户信息
+        - 写入 HttpOnly JWT Cookie（可配置关闭）
+      summary: 登录流程：
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              登录请求示例:
+                value:
+                  identifier: alice 或 alice@example.com
+                  password: Passw0rd123
+                  captcha_key: abcd1234
+                  captcha_code: XyZ1
+                description: captcha_key/captcha_code 由获取验证码接口返回与输入
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                登录请求示例:
+                  value:
+                    identifier: alice 或 alice@example.com
+                    password: Passw0rd123
+                    captcha_key: abcd1234
+                    captcha_code: XyZ1
+                  description: captcha_key/captcha_code 由获取验证码接口返回与输入
+          description: ''
+  /api/accounts/auth/password/change/:
+    post:
+      operationId: accounts_auth_password_change_create
+      description: |-
+        修改密码：
+        - 校验旧密码、邮箱验证码、新密码与确认密码
+        - 调用服务写入新密码
+      summary: 修改密码：
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangePasswordResponse'
+          description: ''
+  /api/accounts/auth/password/reset/:
+    post:
+      operationId: accounts_auth_password_reset_create
+      description: |-
+        重置密码：
+        - 校验重置入参（邮箱/验证码/新密码）
+        - 调用服务消费验证码并写入新密码
+      summary: 重置密码：
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordReset'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetResponse'
+          description: ''
+  /api/accounts/auth/password/reset/request/:
+    post:
+      operationId: accounts_auth_password_reset_request_create
+      description: |-
+        申请重置：
+        - 将场景设置为 RESET_PASSWORD
+        - 调用发送验证码服务
+      summary: 申请重置：
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetSendResponse'
+          description: ''
+  /api/accounts/auth/register/:
+    post:
+      operationId: accounts_auth_register_create
+      description: |-
+        提交注册：
+        - 校验注册入参
+        - 执行注册服务，创建用户并分配默认权限
+      summary: 提交注册：
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+          description: ''
+  /api/accounts/email/change/:
+    post:
+      operationId: accounts_email_change_create
+      description: |-
+        修改邮箱：
+        - 校验当前密码
+        - 消费绑定邮箱验证码
+        - 更新邮箱并返回最新资料
+      summary: 修改邮箱：
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeEmail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangeEmail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangeEmail'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeEmailResponse'
+          description: ''
+  /api/accounts/email/verification/:
+    post:
+      operationId: accounts_email_verification_create
+      description: |-
+        发送验证码：
+        - 从请求体构建 SendEmailCodeSchema（自动校验）
+        - 执行发送服务；DEBUG 下输出 debug_code 便于测试
+      summary: 发送验证码：
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailCodeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailCodeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailCodeRequest'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailCodeResponse'
+          description: ''
+  /api/accounts/me/:
+    get:
+      operationId: accounts_me_retrieve
+      description: 获取当前用户资料
+      summary: 获取当前用户资料
+      tags:
+      - accounts
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileDetailResponse'
+          description: ''
+    patch:
+      operationId: accounts_me_partial_update
+      description: |-
+        部分更新个人资料：
+        - 校验至少包含一个可更新字段
+        - 调用更新服务后返回最新用户信息
+      summary: 部分更新个人资料：
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdate'
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileUpdateResponse'
+          description: ''
+  /api/accounts/me/avatar/:
+    post:
+      operationId: accounts_me_avatar_create
+      description: |-
+        上传并更新头像：
+        - 校验图片类型与大小
+        - 保存后返回头像 URL
+      summary: 上传并更新头像
+      tags:
+      - accounts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AvatarUpload'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarUploadResponse'
+          description: ''
+  /api/accounts/me/deactivate/:
+    post:
+      operationId: accounts_me_deactivate_create
+      description: |-
+        注销流程：
+        - 校验当前密码
+        - 调用服务进行软删除处理（禁用账号、清除可识别信息）
+      summary: 注销流程：
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeleteAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeleteAccount'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteAccountResponse'
+          description: ''
+  /api/contests/:
+    get:
+      operationId: contest_list
+      description: 比赛列表/创建接口：GET 公共访问，POST 仅管理员
+      summary: 比赛列表
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContestListResponse'
+          description: ''
+  /api/contests/{contest_slug}/:
+    get:
+      operationId: contest_detail
+      description: 比赛详情接口：返回比赛、挑战、公告、记分板及我的队伍
+      summary: 比赛详情
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContestDetailResponse'
+          description: ''
+  /api/contests/{contest_slug}/announcements/:
+    get:
+      operationId: contests_announcements_retrieve
+      description: |-
+        比赛公告接口：
+        - GET：任何人可查看比赛公告列表
+        - POST：管理员创建公告
+      summary: 比赛公告列表
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnouncementListResponse'
+          description: ''
+  /api/contests/{contest_slug}/categories/:
+    get:
+      operationId: contests_categories_retrieve
+      description: |-
+        比赛题目分类管理：
+        - GET：公开查询比赛下的分类列表
+        - PATCH：管理员更新比赛分类
+      summary: 比赛分类列表
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContestCategoryListResponse'
+          description: ''
+  /api/contests/{contest_slug}/challenges/:
+    get:
+      operationId: contest_challenges_list
+      description: 比赛下的题目列表/创建接口
+      summary: 题目列表（按比赛）
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - challenges
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContestChallengeListResponse'
+          description: ''
+  /api/contests/{contest_slug}/challenges/{challenge_slug}/:
+    get:
+      operationId: contest_challenge_detail
+      description: 比赛下的题目详情/更新接口
+      summary: 题目详情（按比赛）
+      parameters:
+      - in: path
+        name: challenge_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - challenges
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContestChallengeDetailResponse'
+          description: ''
+  /api/contests/{contest_slug}/challenges/{challenge_slug}/attachments/{attachment_id}/download/:
+    get:
+      operationId: contests_challenges_attachments_download_retrieve
+      description: 题目附件下载：需登录，返回附件下载 URL
+      summary: 下载题目附件
+      parameters:
+      - in: path
+        name: attachment_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: challenge_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - challenges
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeAttachmentDownloadResponse'
+          description: ''
+  /api/contests/{contest_slug}/challenges/{challenge_slug}/hints/:
+    get:
+      operationId: contest_challenge_hint_list
+      description: 比赛下的题目提示列表
+      summary: 提示列表（按比赛）
+      parameters:
+      - in: path
+        name: challenge_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - challenges
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeHintListResponse'
+          description: ''
+  /api/contests/{contest_slug}/challenges/{challenge_slug}/hints/{hint_id}/unlock/:
+    post:
+      operationId: contest_challenge_hint_unlock
+      description: 比赛下的题目提示解锁
+      summary: 解锁提示（按比赛）
+      parameters:
+      - in: path
+        name: challenge_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: hint_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - challenges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeHintUnlockResponse'
+          description: ''
+  /api/contests/{contest_slug}/register/:
+    post:
+      operationId: contest_register
+      description: 报名后生成/更新参赛记录，未开赛为已报名，开赛后为进行中
+      summary: 报名参赛
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - contests
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContestRegisterResponse'
+          description: ''
+  /api/contests/{contest_slug}/submissions/:
+    get:
+      operationId: contests_submissions_retrieve
+      description: |-
+        查看当前用户的提交记录：
+        - scope=personal（默认）：仅本人提交
+        - scope=team（组队赛）：查看所在队伍的提交
+      summary: 我的提交记录
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - submissions
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContestSubmissionListResponse'
+          description: ''
+    post:
+      operationId: contests_submissions_create
+      description: 比赛作用域内提交 Flag
+      summary: 比赛内提交 Flag
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - submissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContestSubmissionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ContestSubmissionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContestSubmissionRequest'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContestSubmissionResponse'
+          description: ''
+  /api/contests/{contest_slug}/teams/:
+    get:
+      operationId: contests_teams_retrieve
+      description: 比赛队伍列表 / 创建接口：需登录
+      summary: 比赛队伍列表
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - teams
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContestTeamListResponse'
+          description: ''
+    post:
+      operationId: contests_teams_create
+      description: 比赛队伍列表 / 创建接口：需登录
+      summary: 创建队伍
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - teams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TeamCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TeamCreateRequest'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamCreateResponse'
+          description: ''
+  /api/contests/{contest_slug}/teams/join/:
+    post:
+      operationId: contests_teams_join_create
+      description: 加入队伍接口：需登录，通过邀请码加入
+      summary: 加入队伍
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - teams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamJoinRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TeamJoinRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TeamJoinRequest'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamJoinResponse'
+          description: ''
+  /api/contests/{contest_slug}/teams/leave/:
+    post:
+      operationId: contests_teams_leave_create
+      description: 退出队伍接口：需登录，队长多人时需先转移/解散
+      summary: 退出队伍
+      parameters:
+      - in: path
+        name: contest_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - teams
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamLeaveResponse'
+          description: ''
+  /api/contests/teams/{team_id}/disband/:
+    post:
+      operationId: contests_teams_disband_create
+      description: 解散队伍接口：需登录，队长或管理员可操作
+      summary: 解散队伍
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - teams
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamDisbandResponse'
+          description: ''
+  /api/contests/teams/{team_id}/invite/reset/:
+    post:
+      operationId: contests_teams_invite_reset_create
+      description: |-
+        重置队伍邀请码：
+        - 队长或管理员操作
+      summary: 重置队伍邀请码
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - teams
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamInviteResetResponse'
+          description: ''
+  /api/contests/teams/{team_id}/transfer/:
+    post:
+      operationId: contests_teams_transfer_create
+      description: |-
+        队长移交：
+        - 队长或管理员可操作，将队长角色转给指定队员
+      summary: 队长移交
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - teams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamTransferRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TeamTransferRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TeamTransferRequest'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamTransferResponse'
+          description: ''
+  /api/machines/:
+    get:
+      operationId: machines_retrieve
+      description: |-
+        靶机列表/启动接口：
+        - GET：查询当前用户的靶机实例
+        - POST：为指定比赛/题目启动靶机
+      summary: 我的靶机列表
+      tags:
+      - machines
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MachineListResponse'
+          description: ''
+    post:
+      operationId: machines_create
+      description: |-
+        靶机列表/启动接口：
+        - GET：查询当前用户的靶机实例
+        - POST：为指定比赛/题目启动靶机
+      summary: 启动靶机
+      tags:
+      - machines
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MachineStartRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MachineStartRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MachineStartRequest'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MachineStartResponse'
+          description: ''
+  /api/machines/{machine_id}/stop/:
+    post:
+      operationId: machines_stop_create
+      description: |-
+        靶机停止接口：
+        - POST：停止指定实例
+      summary: 停止靶机
+      parameters:
+      - in: path
+        name: machine_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - machines
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MachineStopResponse'
+          description: ''
+  /api/problem-bank/:
+    get:
+      operationId: problem_bank_list
+      description: 题库列表/创建：GET 登录可见公开题库，POST 管理员创建题库
+      summary: 题库列表
+      tags:
+      - problem-bank
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemBankListResponse'
+          description: ''
+  /api/problem-bank/{bank_slug}/:
+    get:
+      operationId: problem_bank_challenge_list
+      description: 题库题目列表：需登录，可见公开题库
+      summary: 题库题目列表
+      parameters:
+      - in: path
+        name: bank_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - problem-bank
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankChallengeListResponse'
+          description: ''
+  /api/problem-bank/{bank_slug}/{challenge_slug}/:
+    get:
+      operationId: problem_bank_challenge_detail
+      description: 题库题目详情：需登录
+      summary: 题库题目详情
+      parameters:
+      - in: path
+        name: bank_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: challenge_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - problem-bank
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankChallengeDetailResponse'
+          description: ''
+  /api/problem-bank/{bank_slug}/{challenge_slug}/submit/:
+    post:
+      operationId: problem_bank_submit_create
+      description: 题库作答：需登录，不计分，仅记录解题状态
+      summary: 题库内提交 Flag
+      parameters:
+      - in: path
+        name: bank_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: challenge_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - submissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankSubmitRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BankSubmitRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BankSubmitRequest'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankSubmitResponse'
+          description: ''
+  /api/problem-bank/{bank_slug}/meta/:
+    get:
+      operationId: problem_bank_meta_retrieve
+      description: 题库元信息查看/更新：GET 查看，PATCH 管理员更新
+      summary: 题库详情
+      parameters:
+      - in: path
+        name: bank_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - problem-bank
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemBankDetailResponse'
+          description: ''
+  /api/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      summary: OpenApi3 schema for this API. Format can be selected via content negotiation.
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - schema
+      security:
+      - JWTAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+components:
+  schemas:
+    Announcement:
+      type: object
+      properties:
+        id:
+          type: integer
+        contest:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - content
+      - contest
+      - id
+      - is_active
+      - title
+    AnnouncementListData:
+      type: object
+      properties:
+        items:
+          $ref: '#/components/schemas/Announcement'
+      required:
+      - items
+    AnnouncementListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/AnnouncementListData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    BankChallengeDetailData:
+      type: object
+      properties:
+        challenge:
+          $ref: '#/components/schemas/BankChallengeSummary'
+      required:
+      - challenge
+    BankChallengeDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/BankChallengeDetailData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    BankChallengeListData:
+      type: object
+      properties:
+        items:
+          $ref: '#/components/schemas/BankChallengeSummary'
+      required:
+      - items
+    BankChallengeListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/BankChallengeListData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    BankChallengeSummary:
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        short_description:
+          type: string
+        difficulty:
+          type: string
+        solved:
+          type: boolean
+      required:
+      - slug
+      - title
+    BankSubmitData:
+      type: object
+      properties:
+        solved_at:
+          type: string
+          format: date-time
+          description: 解题时间
+      required:
+      - solved_at
+    BankSubmitRequest:
+      type: object
+      properties:
+        flag:
+          type: string
+          description: 提交的 Flag
+      required:
+      - flag
+    BankSubmitResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/BankSubmitData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    CaptchaData:
+      type: object
+      properties:
+        captcha_key:
+          type: string
+        image_url:
+          type: string
+      required:
+      - captcha_key
+      - image_url
+    CaptchaResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/CaptchaData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ChallengeAttachmentDownloadData:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 附件名称
+        url:
+          type: string
+          description: 附件下载 URL
+      required:
+      - name
+      - url
+    ChallengeAttachmentDownloadResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ChallengeAttachmentDownloadData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ChallengeHintListData:
+      type: object
+      properties:
+        items:
+          $ref: '#/components/schemas/HintItem'
+      required:
+      - items
+    ChallengeHintListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ChallengeHintListData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ChallengeHintUnlockData:
+      type: object
+      properties:
+        hint:
+          $ref: '#/components/schemas/HintItem'
+      required:
+      - hint
+    ChallengeHintUnlockResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ChallengeHintUnlockData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ChallengeSummary:
+      type: object
+      properties:
+        slug:
+          type: string
+          description: 题目标识
+        title:
+          type: string
+          description: 题目标题
+        category:
+          type: string
+          nullable: true
+          description: 分类
+        current_points:
+          type: integer
+          description: 当前可得分
+        difficulty:
+          type: string
+        solved:
+          type: boolean
+          description: 是否已解（如有）
+      required:
+      - slug
+      - title
+    ChangeEmail:
+      type: object
+      properties:
+        new_email:
+          type: string
+          format: email
+        email_code:
+          type: string
+        current_password:
+          type: string
+      required:
+      - current_password
+      - email_code
+      - new_email
+    ChangeEmailData:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserSummary'
+      required:
+      - user
+    ChangeEmailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ChangeEmailData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ChangePassword:
+      type: object
+      properties:
+        old_password:
+          type: string
+        email_code:
+          type: string
+          description: 邮箱验证码
+        new_password:
+          type: string
+        confirm_password:
+          type: string
+      required:
+      - confirm_password
+      - email_code
+      - new_password
+      - old_password
+    ChangePasswordResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - message
+    AvatarUpload:
+      type: object
+      properties:
+        avatar:
+          type: string
+          format: binary
+          description: 头像图片文件
+      required:
+      - avatar
+    AvatarUploadData:
+      type: object
+      properties:
+        avatar:
+          type: string
+          description: 头像访问 URL
+      required:
+      - avatar
+    AvatarUploadResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/AvatarUploadData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ContestCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+        contest:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+      required:
+      - id
+      - name
+      - slug
+    ContestCategoryListData:
+      type: object
+      properties:
+        items:
+          $ref: '#/components/schemas/ContestCategory'
+      required:
+      - items
+    ContestCategoryListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContestCategoryListData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ContestChallengeDetailData:
+      type: object
+      properties:
+        challenge:
+          $ref: '#/components/schemas/ChallengeSummary'
+      required:
+      - challenge
+    ContestChallengeDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContestChallengeDetailData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ContestChallengeListData:
+      type: object
+      properties:
+        items:
+          $ref: '#/components/schemas/ChallengeSummary'
+      required:
+      - items
+    ContestChallengeListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContestChallengeListData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ContestDetailData:
+      type: object
+      properties:
+        contest:
+          $ref: '#/components/schemas/ContestSummary'
+        my_team:
+          $ref: '#/components/schemas/TeamSummary'
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChallengeSummary'
+        announcements:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+            description: 公告对象
+        scoreboard:
+          description: 记分板数据
+      required:
+      - announcements
+      - challenges
+      - contest
+      - my_team
+      - scoreboard
+    ContestDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContestDetailData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ContestListData:
+      type: object
+      properties:
+        items:
+          $ref: '#/components/schemas/ContestSummary'
+      required:
+      - items
+    ContestListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContestListData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ContestRegisterData:
+      type: object
+      properties:
+        contest:
+          $ref: '#/components/schemas/ContestSummary'
+        status:
+          type: string
+          description: 报名状态
+      required:
+      - contest
+      - status
+    ContestRegisterResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContestRegisterData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ContestSubmissionData:
+      type: object
+      properties:
+        challenge:
+          $ref: '#/components/schemas/ChallengeSummary'
+        submission:
+          $ref: '#/components/schemas/SubmissionPayload'
+        awarded_points:
+          type: integer
+          description: 总得分
+        bonus_points:
+          type: integer
+          description: 额外加分
+        solved_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - awarded_points
+      - bonus_points
+      - challenge
+      - submission
+    ContestSubmissionListData:
+      type: object
+      properties:
+        items:
+          $ref: '#/components/schemas/SubmissionPayload'
+      required:
+      - items
+    ContestSubmissionListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContestSubmissionListData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ContestSubmissionRequest:
+      type: object
+      properties:
+        challenge_slug:
+          type: string
+          description: 题目标识
+        flag:
+          type: string
+          description: 提交的 Flag
+      required:
+      - challenge_slug
+      - flag
+    ContestSubmissionResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContestSubmissionData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ContestSummary:
+      type: object
+      properties:
+        slug:
+          type: string
+          description: 比赛标识
+        name:
+          type: string
+          description: 比赛名称
+        description:
+          type: string
+          description: 描述
+        start_time:
+          type: string
+          format: date-time
+          description: 开始时间
+        end_time:
+          type: string
+          format: date-time
+          description: 结束时间
+        status:
+          type: string
+          description: 状态
+        is_team_based:
+          type: boolean
+          description: 是否组队赛
+      required:
+      - end_time
+      - is_team_based
+      - name
+      - slug
+      - start_time
+      - status
+    ContestTeamListData:
+      type: object
+      properties:
+        items:
+          $ref: '#/components/schemas/TeamSummary'
+        contest:
+          type: string
+          description: 比赛标识
+      required:
+      - contest
+      - items
+    ContestTeamListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContestTeamListData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    DeleteAccount:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+      - password
+    DeleteAccountResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - message
+    HintItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 提示 ID
+        title:
+          type: string
+          description: 提示标题
+        content:
+          type: string
+          description: 提示内容（未解锁可为空）
+        order:
+          type: integer
+          description: 排序
+      required:
+      - title
+    LoginData:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserSummary'
+        access:
+          type: string
+          description: 访问令牌
+        refresh:
+          type: string
+          description: 刷新令牌
+      required:
+      - access
+      - refresh
+      - user
+    LoginRequest:
+      type: object
+      properties:
+        identifier:
+          type: string
+          description: 用户名或邮箱
+        password:
+          type: string
+        captcha_key:
+          type: string
+        captcha_code:
+          type: string
+      required:
+      - identifier
+      - password
+    LoginResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/LoginData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    MachineInstance:
+      type: object
+      properties:
+        id:
+          type: integer
+        contest:
+          type: string
+        challenge:
+          type: string
+        user:
+          type: integer
+        team:
+          type: integer
+          nullable: true
+        container_id:
+          type: string
+        host:
+          type: string
+        port:
+          type: integer
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - challenge
+      - container_id
+      - contest
+      - created_at
+      - host
+      - id
+      - port
+      - status
+      - updated_at
+      - user
+    MachineListData:
+      type: object
+      properties:
+        items:
+          $ref: '#/components/schemas/MachineInstance'
+      required:
+      - items
+    MachineListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/MachineListData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    MachineStartData:
+      type: object
+      properties:
+        machine:
+          $ref: '#/components/schemas/MachineInstance'
+      required:
+      - machine
+    MachineStartRequest:
+      type: object
+      properties:
+        contest_slug:
+          type: string
+          description: 比赛标识
+        challenge_slug:
+          type: string
+          description: 题目标识
+      required:
+      - challenge_slug
+      - contest_slug
+    MachineStartResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/MachineStartData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    MachineStopData:
+      type: object
+      properties:
+        machine:
+          $ref: '#/components/schemas/MachineInstance'
+      required:
+      - machine
+    MachineStopResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/MachineStopData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    PasswordReset:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          description: 邮箱验证码
+        new_password:
+          type: string
+        confirm_password:
+          type: string
+      required:
+      - code
+      - confirm_password
+      - email
+      - new_password
+    PasswordResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    PasswordResetResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - message
+    PasswordResetSendData:
+      type: object
+      properties:
+        sent:
+          type: boolean
+      required:
+      - sent
+    PasswordResetSendResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PasswordResetSendData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    PatchedProfileUpdate:
+      type: object
+      properties:
+        nickname:
+          type: string
+        avatar:
+          type: string
+        bio:
+          type: string
+        organization:
+          type: string
+        country:
+          type: string
+        website:
+          type: string
+    ProblemBankDetailData:
+      type: object
+      properties:
+        bank:
+          $ref: '#/components/schemas/ProblemBankSummary'
+      required:
+      - bank
+    ProblemBankDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ProblemBankDetailData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ProblemBankListData:
+      type: object
+      properties:
+        items:
+          $ref: '#/components/schemas/ProblemBankSummary'
+      required:
+      - items
+    ProblemBankListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ProblemBankListData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ProblemBankSummary:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        is_public:
+          type: boolean
+      required:
+      - is_public
+      - name
+      - slug
+    ProfileDetailData:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserSummary'
+      required:
+      - user
+    ProfileDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ProfileDetailData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    ProfileUpdateData:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserSummary'
+      required:
+      - user
+    ProfileUpdateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ProfileUpdateData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    RegisterData:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserSummary'
+      required:
+      - user
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        confirm_password:
+          type: string
+        email_code:
+          type: string
+        nickname:
+          type: string
+      required:
+      - confirm_password
+      - email
+      - email_code
+      - password
+      - username
+    RegisterResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/RegisterData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    SendEmailCodeData:
+      type: object
+      properties:
+        sent:
+          type: boolean
+          description: 是否发送成功
+        expires_at:
+          type: string
+          format: date-time
+          description: 验证码过期时间
+        debug_code:
+          type: string
+          description: 调试验证码，仅 DEBUG 返回
+      required:
+      - expires_at
+      - sent
+    SendEmailCodeRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: 接收验证码的邮箱
+        scene:
+          type: string
+          description: 验证码场景，如 register/reset_password/bind_email/change_password
+      required:
+      - email
+      - scene
+    SendEmailCodeResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SendEmailCodeData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    SubmissionPayload:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          description: 提交状态
+        is_correct:
+          type: boolean
+        awarded_points:
+          type: integer
+        bonus_points:
+          type: integer
+        blood_rank:
+          type: integer
+          nullable: true
+        message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    TeamCreateData:
+      type: object
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+      required:
+      - team
+    TeamCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 队伍名称
+        description:
+          type: string
+          description: 队伍简介
+      required:
+      - name
+    TeamCreateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TeamCreateData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    TeamDisbandData:
+      type: object
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+      required:
+      - team
+    TeamDisbandResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TeamDisbandData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    TeamInviteResetData:
+      type: object
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+      required:
+      - team
+    TeamInviteResetResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TeamInviteResetData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    TeamJoinData:
+      type: object
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+      required:
+      - team
+    TeamJoinRequest:
+      type: object
+      properties:
+        invite_token:
+          type: string
+          description: 队伍邀请码
+      required:
+      - invite_token
+    TeamJoinResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TeamJoinData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    TeamLeaveResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - message
+    TeamSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 队伍 ID
+        contest:
+          type: string
+          description: 比赛标识
+        name:
+          type: string
+          description: 队伍名称
+        slug:
+          type: string
+          description: 队伍标识
+        captain_id:
+          type: integer
+          description: 队长用户 ID
+        member_count:
+          type: integer
+          description: 队伍人数
+        is_active:
+          type: boolean
+          description: 是否有效
+      required:
+      - captain_id
+      - contest
+      - id
+      - is_active
+      - member_count
+      - name
+      - slug
+    TeamTransferData:
+      type: object
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+      required:
+      - team
+    TeamTransferRequest:
+      type: object
+      properties:
+        new_captain_id:
+          type: integer
+          description: 新队长用户 ID
+      required:
+      - new_captain_id
+    TeamTransferResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TeamTransferData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        nickname:
+          type: string
+        avatar:
+          type: string
+        is_email_verified:
+          type: boolean
+      required:
+      - email
+      - username
+  securitySchemes:
+    JWTAuth:
+      type: http
+      scheme: bearer
+tags:
+- name: accounts
+  description: 账号与认证接口
+- name: contests
+  description: 比赛管理接口
+- name: challenges
+  description: 题目管理与提示接口
+- name: submissions
+  description: 提交判题与记录接口
+- name: machines
+  description: 靶机管理接口
+- name: problem-bank
+  description: 题库管理与导入导出接口
+- name: teams
+  description: 队伍管理接口
+- name: auth
+  description: 认证与权限接口
+- name: health
+  description: 健康检查接口
+- name: websocket
+  description: WebSocket 推送通道

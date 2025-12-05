@@ -1,0 +1,41 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{# 头部扩展：追加“切换账户”按钮样式，便于后台多账号快速切换 #}
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* 切换账户表单容器：内联展示并与默认菜单留出间距 */
+    .switch-account-form {
+        display: inline;
+        margin-left: 8px;
+    }
+
+    /* 切换按钮样式：去掉默认边框与背景，保持与顶部链接风格一致 */
+    .switch-account-form button {
+        background: none;
+        border: none;
+        padding: 0 4px;
+        color: #ddd;
+        cursor: pointer;
+        font-size: 0.95em;
+    }
+
+    /* 悬停效果：提升对比度并添加下划线，提示可点击 */
+    .switch-account-form button:hover {
+        color: #fff;
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{# 顶部用户链接区域扩展：在默认链接旁增加“切换账户”入口 #}
+{% block userlinks %}
+{{ block.super }}
+<form action="{% url 'admin:logout' %}" method="post" class="switch-account-form" title="切换账户">
+    {% csrf_token %}
+    {# next 参数：登出后跳转回登录页，方便立即登录其他账户 #}
+    <input type="hidden" name="next" value="{% url 'admin:login' %}">
+    <button type="submit">切换账户</button>
+</form>
+{% endblock %}
