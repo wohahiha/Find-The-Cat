@@ -11,6 +11,7 @@ from .views import (
     TeamLeaveView,
     TeamDisbandView,
     ContestAnnouncementView,
+    ContestAnnouncementDetailView,
     TeamInviteResetView,
     TeamTransferView,
     ContestSubmissionView,
@@ -42,6 +43,12 @@ urlpatterns = [
     path("teams/<int:team_id>/transfer/", TeamTransferView.as_view(), name="team-transfer"),
     # 比赛公告列表 / 创建
     path("<slug:contest_slug>/announcements/", ContestAnnouncementView.as_view(), name="announcements"),
+    # 比赛公告详情
+    path(
+        "<slug:contest_slug>/announcements/<int:announcement_id>/",
+        ContestAnnouncementDetailView.as_view(),
+        name="announcement-detail",
+    ),
     # 提交记录与判题（比赛作用域）
     path("<slug:contest_slug>/submissions/", ContestSubmissionView.as_view(), name="submissions"),
     # 嵌套挑战路由

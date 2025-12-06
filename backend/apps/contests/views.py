@@ -4,7 +4,7 @@ from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers
 
@@ -33,8 +33,10 @@ from apps.common.schema_utils import (
     submission_payload_serializer,
     announcement_serializer,
     category_serializer,
+    pagination_parameters,
+    scoreboard_entry_serializer,
 )
-from .repo import ContestRepo, TeamRepo, TeamMemberRepo
+from .repo import ContestRepo, TeamRepo, TeamMemberRepo, ContestAnnouncementRepo
 from .services import (
     ContestContextService,
     ContestRegisterService,
@@ -68,6 +70,12 @@ from .services import (
     serialize_contest,
     serialize_team,
 )
+from apps.common.exceptions import BizError, TokenError, ValidationError, NotFoundError
+
+
+_optional_team_serializer = team_serializer()
+_optional_team_serializer.required = False
+_optional_team_serializer.allow_null = True
 
 
 # 视图层：暴露比赛、公告、队伍接口，仅做参数转换与调用服务层，不承载业务
@@ -75,7 +83,8 @@ from .services import (
 
 class ContestListView(APIView):
     """比赛列表/创建接口：GET 公共访问，POST 仅管理员"""
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, BizPermission]
+    biz_permission = "contests.view_contest"
     pagination_class = StandardPagination
     context_service = ContestContextService()
 
@@ -83,7 +92,18 @@ class ContestListView(APIView):
         summary="比赛列表",
         operation_id="contest_list",
         request=None,
-        responses=list_response("ContestList", contest_summary_serializer()),
+        responses=list_response("ContestList", contest_summary_serializer(), paginated=True),
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                location=OpenApiParameter.QUERY,
+                description="比赛状态过滤",
+                required=False,
+                type=str,
+                enum=["running", "upcoming", "ended"],
+            ),
+            *pagination_parameters(),
+        ],
     )
     def get(self, request: Request) -> Response:
         # 公开接口：任何访客都可查看比赛列表，用于前台首页
@@ -156,7 +176,8 @@ class ContestRegisterView(APIView):
 
 class ContestDetailView(APIView):
     """比赛详情接口：返回比赛、挑战、公告、记分板及我的队伍"""
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, BizPermission]
+    biz_permission = "contests.view_contest"
     context_service = ContestContextService()
     challenge_repo = ChallengeRepo()
     member_repo = TeamMemberRepo()
@@ -172,12 +193,13 @@ class ContestDetailView(APIView):
             "ContestDetail",
             {
                 "contest": contest_summary_serializer(),
-                "my_team": team_serializer(),
+                "my_team": _optional_team_serializer,
                 "challenges": serializers.ListSerializer(child=challenge_summary_serializer()),
-                "announcements": serializers.ListSerializer(
-                    child=serializers.DictField(help_text="公告对象")
+                "announcements": serializers.ListSerializer(child=announcement_serializer()),
+                "scoreboard": serializers.ListSerializer(
+                    child=scoreboard_entry_serializer(),
+                    help_text="记分板数据（按分数与时间排序）",
                 ),
-                "scoreboard": serializers.JSONField(help_text="记分板数据"),
             },
         ),
     )
@@ -253,10 +275,14 @@ class ContestExportView(APIView):
     biz_permission = "contests.export_contest_data"
     export_service = ContestExportService()
 
-    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
+    @extend_schema(
+        request=None,
+        responses=OpenApiTypes.OBJECT,
+        description="管理员导出比赛快照（比赛/题目/队伍/解题/提交/记分板），需 contests.export_contest_data 权限",
+    )
     def get(self, request: Request, contest_slug: str) -> Response:
         # contest_slug 路径参数：指定要导出的比赛
-        # 后台导出：汇总比赛、题目、队伍、解题、提交与记分板快照
+        # 后台导出：汇总比赛、题目、队伍、解题、提交与记分板快照（管理员专用）
         _ = request  # 未使用参数
         payload = self.export_service.execute(contest_slug)
         return response.success(payload, message="导出成功")
@@ -327,9 +353,21 @@ class ContestSubmissionView(APIView):
         responses=list_response(
             "ContestSubmissionList",
             submission_payload_serializer(),
+            paginated=True,
         ),
         summary="我的提交记录",
         tags=["submissions"],
+        parameters=[
+            OpenApiParameter(
+                name="scope",
+                location=OpenApiParameter.QUERY,
+                description="提交记录范围，组队赛可选 team",
+                required=False,
+                type=str,
+                enum=["personal", "team"],
+            ),
+            *pagination_parameters(),
+        ],
     )
     def get(self, request: Request, contest_slug: str) -> Response:
         """
@@ -360,6 +398,7 @@ class ContestTeamsView(APIView):
         "get": "teams.view_team",
         "post": "teams.manage_team",
     }
+    pagination_class = StandardPagination
     context_service = ContestContextService()
     team_repo = TeamRepo()
 
@@ -370,8 +409,10 @@ class ContestTeamsView(APIView):
             "ContestTeamList",
             team_serializer(),
             extra_fields={"contest": serializers.CharField(help_text="比赛标识")},
+            paginated=True,
         ),
         tags=["teams"],
+        parameters=pagination_parameters(),
     )
     def get(self, request: Request, contest_slug: str) -> Response:
         # contest_slug 路径参数：限定需查询的比赛
@@ -540,7 +581,8 @@ class ContestCategoryView(APIView):
     - PATCH：管理员更新比赛分类
     """
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, BizPermission]
+    biz_permission = "contests.view_contest"
     context_service = ContestContextService()
     service = ContestCategoryUpdateService()
 
@@ -600,14 +642,19 @@ class ContestAnnouncementView(APIView):
     - POST：管理员创建公告
     """
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, BizPermission]
+    biz_permission = "contests.view_contest"
+    pagination_class = StandardPagination
     context_service = ContestContextService()
     service = ContestAnnouncementService()
+    announcement_repo = ContestAnnouncementRepo()
 
     @extend_schema(
         summary="比赛公告列表",
+        operation_id="contests_announcements_list",
         request=None,
-        responses=list_response("AnnouncementList", announcement_serializer()),
+        responses=list_response("AnnouncementList", announcement_serializer(), paginated=True),
+        parameters=pagination_parameters(),
     )
     def get(self, request: Request, contest_slug: str) -> Response:
         # contest_slug 路径参数：限定公告所属比赛
@@ -622,10 +669,12 @@ class ContestAnnouncementView(APIView):
 
     @extend_schema(
         summary="创建比赛公告",
+        operation_id="contests_announcements_create",
         request=inline_serializer(
             name="AnnouncementCreate",
             fields={
                 "title": serializers.CharField(),
+                "summary": serializers.CharField(help_text="公告摘要"),
                 "content": serializers.CharField(),
                 "is_active": serializers.BooleanField(required=False),
             },
@@ -643,3 +692,29 @@ class ContestAnnouncementView(APIView):
         schema = AnnouncementCreateSchema.from_dict(payload, auto_validate=True)
         ann = self.service.execute(schema)
         return response.created({"announcement": serialize_announcement(ann)}, message="公告已发布")
+
+
+class ContestAnnouncementDetailView(APIView):
+    """
+    比赛公告详情：公开查看指定公告
+    """
+
+    permission_classes = [IsAuthenticated, BizPermission]
+    biz_permission = "contests.view_contest"
+    context_service = ContestContextService()
+    announcement_repo = ContestAnnouncementRepo()
+
+    @extend_schema(
+        summary="比赛公告详情",
+        operation_id="contests_announcements_detail",
+        request=None,
+        responses=api_response_schema("AnnouncementDetail", {"announcement": announcement_serializer()}),
+    )
+    def get(self, request: Request, contest_slug: str, announcement_id: int) -> Response:
+        _ = self
+        contest = self.context_service.get_contest(contest_slug)
+        self.context_service.ensure_contest_visible(contest, request.user)
+        ann = self.announcement_repo.get_by_id(announcement_id)
+        if ann.contest_id != contest.id:  # type: ignore[attr-defined]
+            raise NotFoundError(message="公告不存在")
+        return response.success({"announcement": serialize_announcement(ann)})

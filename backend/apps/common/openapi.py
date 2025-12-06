@@ -43,22 +43,47 @@ class ShortDescriptionAutoSchema(AutoSchema):
     def get_summary(self) -> str:
         summary = super().get_summary()
         if summary:
-            return summary
+            return summary.replace("：", "")
         # 使用方法 docstring 首行作为摘要
         action_name = getattr(self.view, "action", None)
         method_obj = getattr(self.view, action_name, None) if action_name else getattr(self.view, self.method.lower(), None)
         if method_obj and method_obj.__doc__:
             first = method_obj.__doc__.strip().splitlines()[0].strip()
             if first:
-                return first
+                return first.replace("：", "")
         # 再用类 docstring 首行
         doc = (getattr(self.view, "__doc__", "") or "").strip()
         if doc:
             first = doc.splitlines()[0].strip()
             if first:
-                return first
+                return first.replace("：", "")
         # 兜底：METHOD + path
-        return f"{self.method} {self.path}"
+        return f"{self.method} {self.path}".replace("：", "")
+
+    def get_tags(self):
+        tags = super().get_tags() or []
+        # 如果显式设置了且不是默认的 "api"/"accounts"，沿用
+        if tags and tags not in (["api"], ["accounts"]):
+            return tags
+        # 默认按路径推导标签，如 /api/accounts/... -> accounts，支持 accounts 子域映射
+        path = getattr(self, "path", "") or ""
+        parts = [p for p in path.strip("/").split("/") if p]
+        for part in parts:
+            if part.lower() == "api":
+                continue
+            # 账户子域映射
+            if part == "accounts" and len(parts) > 1:
+                sub = parts[1]
+                if sub == "auth":
+                    if len(parts) > 2 and parts[2] == "password":
+                        return ["accounts-password"]
+                    return ["accounts-auth"]
+                if sub == "email":
+                    return ["accounts-email"]
+                if sub == "me" or sub in {"avatar", "roles", "permissions"}:
+                    return ["accounts-profile"]
+            return [part.replace("-", "_")]
+        return ["api"]
 
 
 def _sanitize_operation_id(value: str) -> str:

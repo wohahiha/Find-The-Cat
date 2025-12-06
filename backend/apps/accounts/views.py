@@ -23,7 +23,8 @@ from apps.common import response
 from apps.common.permissions import IsAuthenticated, AllowAny
 from apps.common.throttles import LoginRateThrottle, UserPostRateThrottle, EmailCodeSendRateThrottle
 from apps.common.security import log_security_event
-from apps.common.exceptions import BizError
+from apps.common.exceptions import BizError, TokenError, ValidationError
+from rest_framework_simplejwt.tokens import RefreshToken
 from apps.common.exceptions import RateLimitError, CacheUnavailableError  # noqa: F401
 from apps.common.utils import redis_keys
 from apps.common.schema_utils import api_response_schema, user_summary_serializer
@@ -53,6 +54,50 @@ from .services import (
     serialize_user,
     AvatarUploadService,
 )
+
+
+class RolesPlaceholderView(APIView):
+    """
+    角色列表占位接口
+    - 当前返回空列表，后续补充 RBAC
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="获取角色列表（占位）",
+        description="获取角色列表（当前返回空列表占位）",
+        tags=["accounts-auth"],
+        responses=api_response_schema(
+            "RolesPlaceholder",
+            {"items": serializers.ListField(child=serializers.DictField(), default=[])},
+        ),
+    )
+    def get(self, request: Request) -> Response:
+        _ = request
+        return response.success({"items": []})
+
+
+class PermissionsPlaceholderView(APIView):
+    """
+    权限列表占位接口
+    - 当前返回空列表，后续补充 RBAC
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="获取权限列表（占位）",
+        description="获取权限列表（当前返回空列表占位）",
+        tags=["accounts-auth"],
+        responses=api_response_schema(
+            "PermissionsPlaceholder",
+            {"items": serializers.ListField(child=serializers.CharField(), default=[])},
+        ),
+    )
+    def get(self, request: Request) -> Response:
+        _ = request
+        return response.success({"items": []})
 
 
 def _set_jwt_cookie(resp: Response, access_token: str) -> None:
@@ -101,6 +146,8 @@ class SendEmailVerificationView(APIView):
     throttle_classes = [EmailCodeSendRateThrottle, UserPostRateThrottle]
 
     @extend_schema(
+        summary="发送邮箱验证码",
+        tags=["accounts-email"],
         request=inline_serializer(
             name="SendEmailCodeRequest",
             fields={
@@ -153,6 +200,8 @@ class RegisterView(APIView):
     throttle_classes = [EmailCodeSendRateThrottle, UserPostRateThrottle]
 
     @extend_schema(
+        tags=["accounts-auth"],
+        summary="注册账户",
         request=inline_serializer(
             name="RegisterRequest",
             fields={
@@ -190,6 +239,8 @@ class LoginView(APIView):
     throttle_classes = [LoginRateThrottle]
 
     @extend_schema(
+        tags=["accounts-auth"],
+        summary="登录账户",
         request=inline_serializer(
             name="LoginRequest",
             fields={
@@ -294,6 +345,62 @@ class LoginView(APIView):
         return resp
 
 
+class TokenRefreshView(APIView):
+    """刷新访问令牌：使用 refresh 获取新的 access（可选返回 user）"""
+
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="刷新访问令牌",
+        tags=["accounts-auth"],
+        request=inline_serializer(
+            name="TokenRefreshRequest",
+            fields={
+                "refresh": serializers.CharField(help_text="刷新令牌"),
+            },
+        ),
+        responses=api_response_schema(
+            "TokenRefresh",
+            {
+                "access": serializers.CharField(help_text="新的访问令牌"),
+                "refresh": serializers.CharField(help_text="刷新令牌，可继续使用"),
+                "user": user_summary_serializer(),
+            },
+        ),
+    )
+    def post(self, request: Request) -> Response:
+        _ = self
+        payload = _to_payload(request.data)
+        refresh_token = payload.get("refresh")
+        if not refresh_token:
+            raise ValidationError(message="缺少 refresh 字段")
+        try:
+            token = RefreshToken(refresh_token)
+            access = str(token.access_token)
+            user_id = token.get("user_id")
+        except Exception as exc:  # noqa: BLE001
+            raise TokenError(message="刷新令牌无效或已过期，请重新登录") from exc
+
+        user_data = None
+        if user_id:
+            from .models import User  # 局部导入避免循环
+
+            user = User.objects.filter(pk=user_id).first()
+            if user:
+                user_data = serialize_user(user)
+
+        resp = response.success(
+            {
+                "access": access,
+                "refresh": str(token),
+                "user": user_data,
+            },
+            message="刷新成功",
+        )
+        _set_jwt_cookie(resp, access_token=access)
+        return resp
+
+
 class CaptchaView(APIView):
     """
     获取登录图形验证码：
@@ -306,6 +413,8 @@ class CaptchaView(APIView):
     authentication_classes = []
 
     @extend_schema(
+        summary="获取图形验证码",
+        tags=["accounts-auth"],
         request=None,
         responses=api_response_schema(
             "Captcha",
@@ -332,6 +441,7 @@ class PasswordResetRequestView(APIView):
     throttle_classes = [UserPostRateThrottle]
 
     @extend_schema(
+        tags=["accounts-password"],
         request=inline_serializer(
             name="PasswordResetRequest",
             fields={
@@ -365,6 +475,7 @@ class PasswordResetView(APIView):
     throttle_classes = [UserPostRateThrottle]
 
     @extend_schema(
+        tags=["accounts-password"],
         request=inline_serializer(
             name="PasswordReset",
             fields={
@@ -397,6 +508,8 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        summary="获取当前用户资料",
+        tags=["accounts-profile"],
         request=None,
         responses=api_response_schema("ProfileDetail", {"user": user_summary_serializer()}),
     )
@@ -406,6 +519,8 @@ class ProfileView(APIView):
         return response.success({"user": serialize_user(request.user)})
 
     @extend_schema(
+        summary="更新个人资料",
+        tags=["accounts-profile"],
         request=inline_serializer(
             name="ProfileUpdate",
             fields={
@@ -442,6 +557,8 @@ class AvatarUploadView(APIView):
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
     @extend_schema(
+        summary="上传头像",
+        tags=["accounts-profile"],
         request=inline_serializer(
             name="AvatarUpload",
             fields={
@@ -475,6 +592,7 @@ class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        tags=["accounts-password"],
         request=inline_serializer(
             name="ChangePassword",
             fields={
@@ -507,6 +625,7 @@ class ChangeEmailView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        tags=["accounts-email"],
         request=inline_serializer(
             name="ChangeEmail",
             fields={
@@ -539,6 +658,8 @@ class DeleteAccountView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        summary="注销账号",
+        tags=["accounts-profile"],
         request=inline_serializer(
             name="DeleteAccount",
             fields={

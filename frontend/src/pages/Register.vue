@@ -17,7 +17,7 @@
                 />
               </svg>
             </div>
-            <h2 class="text-2xl font-bold leading-tight tracking-[-0.015em]">Find The Cat</h2>
+            <h2 class="text-2xl font-bold leading-tight tracking-[-0.015em]">{{ brandName }}</h2>
           </div>
             <h1 class="text-center text-3xl font-bold tracking-tight md:text-4xl">创建你的 FTC 账号</h1>
         </header>
@@ -34,7 +34,7 @@
                 placeholder="请输入用户名"
                 type="text"
               />
-              <p v-if="usernameError" class="text-xs text-danger mt-2 text-center">请输入用户名</p>
+              <p v-if="usernameError" class="text-xs text-danger mt-2">请输入用户名</p>
             </div>
 
             <div class="flex flex-col">
@@ -47,7 +47,7 @@
                 placeholder="请输入邮箱"
                 type="email"
               />
-              <p v-if="emailError" class="text-xs text-danger mt-2 text-center">请输入邮箱</p>
+              <p v-if="emailError" class="text-xs text-danger mt-2">请输入邮箱</p>
             </div>
 
             <div class="flex flex-col">
@@ -67,7 +67,7 @@
                   </span>
                 </div>
               </div>
-              <p class="text-xs mt-2 text-center" :class="passwordError ? 'text-danger' : 'text-emerald-300'">
+              <p class="text-xs mt-2" :class="passwordError ? 'text-danger' : 'text-emerald-300'">
                 8-64 位，需包含字母和数字
               </p>
             </div>
@@ -110,7 +110,7 @@
                   <span v-else class="truncate">{{ countdown }} 秒后可重发</span>
                 </button>
               </div>
-              <p class="text-xs text-center" :class="error ? 'text-danger' : 'text-emerald-300'">60 秒后可重发</p>
+              <p class="text-xs" :class="error ? 'text-danger' : 'text-emerald-300'">60 秒后可重发</p>
             </div>
 
             <div class="pt-4">
@@ -142,13 +142,16 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import api from '@/api/client'
-import { useAuthStore } from '@/stores/auth'
+  import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+  import { useRouter } from 'vue-router'
+  import api from '@/api/client'
+  import { useAuthStore } from '@/stores/auth'
+  import { useConfigStore } from '@/stores/config'
 
-const router = useRouter()
-const auth = useAuthStore()
+  const router = useRouter()
+  const auth = useAuthStore()
+  const configStore = useConfigStore()
+  const brandName = computed(() => configStore.brand || 'Find The Cat')
 
 const form = reactive({
   username: '',

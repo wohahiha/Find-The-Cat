@@ -8,17 +8,17 @@
 
       <div class="relative flex w-full max-w-xl flex-col items-center gap-8 rounded-xl bg-panel p-8 sm:p-12 border border-border-panel shadow-panel">
         <header class="flex flex-col items-center gap-4 text-center">
-          <div class="flex items-center gap-3">
-            <div class="size-6 text-primary">
-              <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 7.27094L4 42.4379Z"
-                  fill="currentColor"
-                />
-              </svg>
+            <div class="flex items-center gap-3">
+              <div class="size-6 text-primary">
+                <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 42.4379Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </div>
+              <h2 class="text-xl font-bold leading-tight tracking-[-0.015em]">{{ brandName }}</h2>
             </div>
-            <h2 class="text-xl font-bold leading-tight tracking-[-0.015em]">Find The Cat</h2>
-          </div>
           <h1 class="tracking-light text-[36px] font-bold leading-tight">访问你的终端</h1>
         </header>
 
@@ -35,7 +35,7 @@
                 type="text"
               />
             </div>
-            <p v-if="identifierError" class="text-xs text-danger mt-1 text-center">请检查用户名或邮箱</p>
+            <p v-if="identifierError" class="text-xs text-danger mt-1">请检查用户名或邮箱</p>
           </label>
 
           <label class="flex flex-col w-full">
@@ -58,7 +58,7 @@
                 <span class="material-symbols-outlined text-xl">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
               </button>
             </div>
-            <p v-if="passwordError" class="text-xs text-danger mt-1 text-center">请检查密码</p>
+            <p v-if="passwordError" class="text-xs text-danger mt-1">请检查密码</p>
           </label>
 
           <div class="flex flex-col gap-2">
@@ -89,7 +89,7 @@
                 <span class="material-symbols-outlined" :class="{ 'animate-spin': captcha.loading }">refresh</span>
               </button>
             </div>
-            <p v-if="captchaError" class="text-xs text-danger mt-1 text-center">验证码错误或已过期</p>
+            <p v-if="captchaError" class="text-xs text-danger mt-1">验证码错误或已过期</p>
           </div>
 
           <div class="flex flex-wrap items-center justify-between gap-2">
@@ -123,14 +123,17 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
+import { useConfigStore } from '@/stores/config'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const configStore = useConfigStore()
+const brandName = computed(() => configStore.brand || 'Find The Cat')
 
 const form = reactive({
   identifier: '',

@@ -95,6 +95,8 @@ class ContestAnnouncement(models.Model):
                                 on_delete=models.CASCADE)
     # 公告标题
     title = models.CharField("公告标题", max_length=200)
+    # 公告摘要（首页/列表使用，必填）
+    summary = models.CharField("公告摘要", max_length=500)
     # 公告正文
     content = models.TextField("公告内容")
     # 是否展示

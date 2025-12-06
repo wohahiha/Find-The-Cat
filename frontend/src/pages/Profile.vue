@@ -18,7 +18,7 @@
                 />
               </svg>
             </div>
-            <router-link to="/" class="text-base font-bold text-text hover:text-primary">Find The Cat</router-link>
+            <router-link to="/" class="text-base font-bold text-text hover:text-primary">{{ brandName }}</router-link>
           </div>
           <nav class="hidden md:flex items-center gap-8 text-sm text-text">
             <router-link class="hover:text-text" to="/">仪表盘</router-link>
@@ -215,13 +215,16 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, reactive, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import api from '@/api/client'
-import { useAuthStore } from '@/stores/auth'
+  import { onBeforeUnmount, onMounted, reactive, ref, computed } from 'vue'
+  import { useRouter } from 'vue-router'
+  import api from '@/api/client'
+  import { useAuthStore } from '@/stores/auth'
+  import { useConfigStore } from '@/stores/config'
 
-const router = useRouter()
-const auth = useAuthStore()
+  const router = useRouter()
+  const auth = useAuthStore()
+  const configStore = useConfigStore()
+  const brandName = computed(() => configStore.brand || 'Find The Cat')
 
 const profile = reactive({
   username: '',

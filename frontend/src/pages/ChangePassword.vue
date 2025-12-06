@@ -18,7 +18,7 @@
                 />
               </svg>
             </div>
-            <router-link to="/" class="text-base font-bold text-text hover:text-primary">Find The Cat</router-link>
+            <router-link to="/" class="text-base font-bold text-text hover:text-primary">{{ brandName }}</router-link>
           </div>
           <nav class="hidden md:flex items-center gap-8 text-sm text-text">
             <router-link class="hover:text-text" to="/">仪表盘</router-link>
@@ -30,7 +30,11 @@
             <button class="flex h-9 w-9 items-center justify-center rounded-lg bg-border-panel text-muted hover:text-text hover:bg-input-border">
               <span class="material-symbols-outlined text-lg">notifications</span>
             </button>
-            <router-link to="/profile" class="h-9 w-9 rounded-full bg-primary/40 border border-input-border block"></router-link>
+            <router-link
+              to="/profile"
+              class="h-9 w-9 rounded-full border border-input-border block bg-center bg-cover bg-no-repeat"
+              :style="{ backgroundImage: headerAvatar ? `url(${headerAvatar})` : 'linear-gradient(135deg,#2547f4,#1c2a5f)' }"
+            ></router-link>
           </div>
         </div>
       </header>
@@ -56,7 +60,7 @@
                   type="email"
                 />
               </div>
-              <p class="text-xs text-muted text-center">将通过邮箱验证码确认本次修改</p>
+          <p class="text-xs text-muted">将通过邮箱验证码确认本次修改</p>
             </div>
 
             <div class="lg:col-span-2 flex flex-col gap-2">
@@ -80,7 +84,7 @@
                   <span class="material-symbols-outlined text-xl">{{ showOld ? 'visibility_off' : 'visibility' }}</span>
                 </button>
               </div>
-              <p v-if="oldError" class="text-xs text-danger text-center">请检查当前密码</p>
+              <p v-if="oldError" class="text-xs text-danger">请检查当前密码</p>
             </div>
 
             <div class="flex flex-col gap-2">
@@ -104,7 +108,7 @@
                   <span class="material-symbols-outlined text-xl">{{ showNew ? 'visibility_off' : 'visibility' }}</span>
                 </button>
               </div>
-              <p class="text-xs text-center" :class="newError ? 'text-danger' : 'text-emerald-300'">8-64 位，需同时包含字母和数字</p>
+              <p class="text-xs" :class="newError ? 'text-danger' : 'text-emerald-300'">8-64 位，需同时包含字母和数字</p>
             </div>
 
             <div class="flex flex-col gap-2">
@@ -128,7 +132,7 @@
                   <span class="material-symbols-outlined text-xl">{{ showConfirm ? 'visibility_off' : 'visibility' }}</span>
                 </button>
               </div>
-              <p v-if="confirmError" class="text-xs text-danger text-center">两次输入的密码不一致</p>
+              <p v-if="confirmError" class="text-xs text-danger">两次输入的密码不一致</p>
             </div>
 
             <div class="lg:col-span-2 flex flex-col gap-2">
@@ -152,7 +156,7 @@
                   <span v-else class="truncate">{{ countdown }} 秒后可重发</span>
                 </button>
               </div>
-              <p v-if="codeError" class="text-xs text-danger text-center">请填写邮箱验证码</p>
+              <p v-if="codeError" class="text-xs text-danger">请填写邮箱验证码</p>
             </div>
 
             <div class="lg:col-span-2 flex flex-col gap-3 pt-2 text-center w-full">
@@ -177,13 +181,16 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
-import api from '@/api/client'
-import { useAuthStore } from '@/stores/auth'
+  import { computed, reactive, ref, onMounted, onBeforeUnmount } from 'vue'
+  import { useRouter } from 'vue-router'
+  import api from '@/api/client'
+  import { useAuthStore } from '@/stores/auth'
+  import { useConfigStore } from '@/stores/config'
 
-const router = useRouter()
-const auth = useAuthStore()
+  const router = useRouter()
+  const auth = useAuthStore()
+  const configStore = useConfigStore()
+  const brandName = computed(() => configStore.brand || 'Find The Cat')
 
 const form = reactive({
   old_password: '',
@@ -206,6 +213,19 @@ const success = ref('')
 const oldError = ref(false)
 const newError = ref(false)
 const confirmError = ref(false)
+const headerAvatar = ref('')
+
+const resolveUrl = (url) => {
+  if (!url) return ''
+  const normalized = url.replace(/\\/g, '/')
+  if (/^https?:\/\//i.test(normalized)) return normalized
+  const base = import.meta.env.VITE_BACKEND_URL || window.location.origin
+  try {
+    return new URL(normalized, base).toString()
+  } catch {
+    return normalized
+  }
+}
 
 const validatePassword = (pwd) => {
   if (!pwd || pwd.length < 8 || pwd.length > 64) return '密码长度需在 8-64 位之间'
@@ -245,7 +265,7 @@ const submit = async () => {
 
   submitting.value = true
   try {
-    const res = await api.post('/accounts/auth/password/change/', {
+    const res = await api.post('/accounts/password/change/', {
       old_password: form.old_password,
       new_password: form.new_password,
       confirm_password: form.confirm_password,
@@ -275,11 +295,18 @@ onMounted(() => {
     router.replace('/login')
     return
   }
+  const existingAvatar = auth.user?.avatar
+  if (existingAvatar) {
+    headerAvatar.value = resolveUrl(existingAvatar)
+  }
   api
     .get('/accounts/me/')
     .then((res) => {
       const data = res.data?.data?.user || res.data?.user || {}
       email.value = data.email || ''
+      if (data.avatar) {
+        headerAvatar.value = resolveUrl(data.avatar)
+      }
     })
     .catch(() => {})
 })

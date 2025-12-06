@@ -111,6 +111,7 @@ def serialize_announcement(announcement: ContestAnnouncement) -> dict:
         "id": getattr(announcement, "id", None),
         "contest": getattr(announcement.contest, "slug", None),
         "title": announcement.title,
+        "summary": announcement.summary,
         "content": announcement.content,
         "is_active": announcement.is_active,
         "created_at": announcement.created_at,

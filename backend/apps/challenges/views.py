@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
 from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers
 
@@ -222,10 +222,26 @@ class AttachmentUploadView(APIView):
 
     @extend_schema(
         summary="上传题目附件",
-        description="管理员上传附件文件，返回存储路径与访问 URL（仅保存元信息，不包含文件内容）",
-        request=OpenApiTypes.OBJECT,
-        responses=OpenApiTypes.OBJECT,
-        exclude=True,
+        description="管理员上传附件文件，返回存储路径与访问 URL（仅保存元信息，不包含文件内容，需 challenges.manage_contest_attachment 权限）",
+        request=inline_serializer(
+            name="AttachmentUploadRequest",
+            fields={
+                "file": serializers.FileField(help_text="附件文件（zip/tar/gz/7z/txt/pdf/md/json，10MB 内）"),
+                "challenge_slug": serializers.CharField(required=False, allow_blank=True, help_text="可选题目标识"),
+            },
+        ),
+        responses=api_response_schema(
+            "AttachmentUpload",
+            {
+                "attachment": inline_serializer(
+                    name="AttachmentInfo",
+                    fields={
+                        "path": serializers.CharField(help_text="存储相对路径"),
+                        "url": serializers.CharField(help_text="附件访问 URL"),
+                    },
+                )
+            },
+        ),
     )
     def post(self, request: Request, contest_slug: str) -> Response:
         uploaded_file = request.FILES.get("file")
@@ -355,10 +371,27 @@ class ContestAttachmentUploadView(AttachmentUploadView):
     @extend_schema(
         summary="上传题目附件",
         operation_id="contest_challenge_attachment_upload",
-        request=OpenApiTypes.BINARY,
-        responses=OpenApiTypes.OBJECT,
+        description="管理员上传题目附件（需 challenges.manage_contest_attachment 权限）",
+        request=inline_serializer(
+            name="ContestAttachmentUploadRequest",
+            fields={
+                "file": serializers.FileField(help_text="附件文件（zip/tar/gz/7z/txt/pdf/md/json，10MB 内）"),
+                "challenge_slug": serializers.CharField(required=False, allow_blank=True, help_text="可选题目标识"),
+            },
+        ),
+        responses=api_response_schema(
+            "ContestAttachmentUpload",
+            {
+                "attachment": inline_serializer(
+                    name="AttachmentInfo",
+                    fields={
+                        "path": serializers.CharField(help_text="存储相对路径"),
+                        "url": serializers.CharField(help_text="附件访问 URL"),
+                    },
+                )
+            },
+        ),
         tags=["challenges"],
-        exclude=True,
     )
     def post(self, request: Request, contest_slug: str) -> Response:
         return super().post(request, contest_slug)

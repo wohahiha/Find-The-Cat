@@ -3,14 +3,14 @@ from __future__ import annotations
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiParameter
 from rest_framework import serializers
 
 from apps.common import response
 from apps.common.permissions import IsAuthenticated, BizPermission
 from apps.common.throttles import MachineStartRateThrottle
 from apps.common.pagination import StandardPagination
-from apps.common.schema_utils import api_response_schema, list_response, machine_serializer
+from apps.common.schema_utils import api_response_schema, list_response, machine_serializer, pagination_parameters
 
 from .schemas import MachineStartSchema, MachineStopSchema
 from .services import MachineStartService, MachineStopService, serialize_machine
@@ -33,13 +33,15 @@ class MachineListCreateView(APIView):
         "post": "machines.start_machine",
     }
     throttle_classes = [MachineStartRateThrottle]
+    pagination_class = StandardPagination
     repo = MachineRepo()
     start_service = MachineStartService()
 
     @extend_schema(
         summary="我的靶机列表",
         request=None,
-        responses=list_response("MachineList", machine_serializer()),
+        responses=list_response("MachineList", machine_serializer(), paginated=True),
+        parameters=pagination_parameters(),
     )
     def get(self, request: Request) -> Response:
         # 查询当前登录用户的所有实例，按创建时间倒序

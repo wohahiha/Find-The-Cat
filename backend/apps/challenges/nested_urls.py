@@ -13,7 +13,6 @@ from .views import (
     ChallengeDetailView,
     ChallengeHintListView,
     ChallengeHintUnlockView,
-    AttachmentUploadView,
     ChallengeAttachmentDownloadView,
 )
 
@@ -28,7 +27,6 @@ urlpatterns = [
         ChallengeHintUnlockView.as_view(),
         name="hint-unlock",
     ),
-    path("attachments/upload/", AttachmentUploadView.as_view(), name="attachment-upload"),
     path(
         "<slug:challenge_slug>/attachments/<int:attachment_id>/download/",
         ChallengeAttachmentDownloadView.as_view(),

@@ -3,7 +3,7 @@ from __future__ import annotations
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 import base64
 from rest_framework import serializers
@@ -23,6 +23,7 @@ from apps.common.schema_utils import (
     list_response,
     problem_bank_serializer,
     bank_challenge_serializer,
+    pagination_parameters,
 )
 
 from .serializers import serialize_bank, serialize_challenge
@@ -58,14 +59,16 @@ class ProblemBankListView(APIView):
         "get": "problem_bank.view_bank",
         "post": "problem_bank.manage_bank",
     }
+    pagination_class = StandardPagination
     bank_repo = ProblemBankRepo()
 
     @extend_schema(
         summary="题库列表",
         operation_id="problem_bank_list",
         request=None,
-        responses=list_response("ProblemBankList", problem_bank_serializer()),
+        responses=list_response("ProblemBankList", problem_bank_serializer(), paginated=True),
         tags=["problem-bank"],
+        parameters=pagination_parameters(),
     )
     def get(self, request: Request) -> Response:
         qs = self.bank_repo.get_queryset()
@@ -141,8 +144,9 @@ class BankChallengeListView(APIView):
         summary="题库题目列表",
         operation_id="problem_bank_challenge_list",
         request=None,
-        responses=list_response("BankChallengeList", bank_challenge_serializer()),
+        responses=list_response("BankChallengeList", bank_challenge_serializer(), paginated=True),
         tags=["problem-bank"],
+        parameters=pagination_parameters(),
     )
     def get(self, request: Request, bank_slug: str) -> Response:
         bank = self.context_service.get_bank_for_user(request.user, bank_slug)

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from rest_framework.views import APIView
+from rest_framework import serializers
 from rest_framework.request import Request
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 
 from apps.common import response
 from apps.common.permissions import AllowAny
+from apps.common.schema_utils import api_response_schema
 
 
 class HealthCheckView(APIView):
@@ -17,8 +20,17 @@ class HealthCheckView(APIView):
 
     permission_classes = [AllowAny]
 
-    @staticmethod
-    def get(request: Request) -> Response:
+    class HealthSerializer(serializers.Serializer):
+        status = serializers.CharField()
+
+    @extend_schema(
+        summary="健康检查",
+        request=None,
+        responses=api_response_schema("HealthCheck", {"status": serializers.CharField()}),
+    )
+    def get(self, request: Request) -> Response:
         """返回简单 OK 状态"""
         _ = request
         return response.success({"status": "ok"})
+
+    serializer_class = HealthSerializer

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from rest_framework import serializers
-from drf_spectacular.utils import inline_serializer
+from drf_spectacular.utils import inline_serializer, OpenApiParameter
 
 
 _CACHE: dict[str, type[serializers.Serializer]] = {}
@@ -15,7 +15,12 @@ def _cached(name: str, builder):
     return _CACHE[name]
 
 
-def api_response_schema(name: str, data_fields: dict) -> serializers.Serializer:
+def api_response_schema(
+    name: str,
+    data_fields: dict,
+    *,
+    extra_serializer: serializers.Field | None = None,
+) -> serializers.Serializer:
     """
     构造统一响应 Schema：code/message/data/extra
     - name 用于生成唯一的响应/数据命名
@@ -34,18 +39,73 @@ def api_response_schema(name: str, data_fields: dict) -> serializers.Serializer:
             "code": serializers.IntegerField(help_text="业务状态码，0 表示成功"),
             "message": serializers.CharField(help_text="提示信息"),
             "data": data_serializer,
-            "extra": serializers.DictField(required=False, allow_null=True, help_text="附加信息"),
+            "extra": extra_serializer
+            if extra_serializer
+            else serializers.DictField(required=False, allow_null=True, help_text="附加信息"),
         },
     )
 
 
-def list_response(name: str, item_serializer: serializers.Serializer, extra_fields: dict | None = None):
-    """列表响应：data.items 为数组，可选附加字段"""
-    items_field = item_serializer(many=True) if isinstance(item_serializer, type) and issubclass(item_serializer, serializers.Serializer) else item_serializer
+def pagination_meta_serializer():
+    return _cached(
+        "PaginationMeta",
+        lambda: inline_serializer(
+            name="PaginationMeta",
+            fields={
+                "page": serializers.IntegerField(help_text="当前页码（从 1 开始）"),
+                "page_size": serializers.IntegerField(help_text="每页条数"),
+                "total": serializers.IntegerField(help_text="总条数"),
+                "total_pages": serializers.IntegerField(help_text="总页数", required=False, allow_null=True),
+                "has_next": serializers.BooleanField(help_text="是否有下一页"),
+                "has_previous": serializers.BooleanField(help_text="是否有上一页"),
+                "next_page": serializers.IntegerField(help_text="下一页页码", required=False, allow_null=True),
+                "previous_page": serializers.IntegerField(help_text="上一页页码", required=False, allow_null=True),
+            },
+        ),
+    )
+
+
+def pagination_parameters() -> list[OpenApiParameter]:
+    """通用分页查询参数"""
+    return [
+        OpenApiParameter(
+            name="page",
+            location=OpenApiParameter.QUERY,
+            description="页码（从 1 开始）",
+            required=False,
+            type=int,
+        ),
+        OpenApiParameter(
+            name="page_size",
+            location=OpenApiParameter.QUERY,
+            description="每页条数",
+            required=False,
+            type=int,
+        ),
+    ]
+
+
+def list_response(
+    name: str,
+    item_serializer: serializers.Serializer,
+    extra_fields: dict | None = None,
+    *,
+    paginated: bool = False,
+):
+    """列表响应：data.items 为数组，可选附加字段，支持分页元信息"""
+    items_field = (
+        item_serializer(many=True)
+        if isinstance(item_serializer, type) and issubclass(item_serializer, serializers.Serializer)
+        else item_serializer
+    )
     fields = {"items": items_field}
     if extra_fields:
         fields.update(extra_fields)
-    return api_response_schema(name, fields)
+    return api_response_schema(
+        name,
+        fields,
+        extra_serializer=pagination_meta_serializer() if paginated else None,
+    )
 
 
 # 常用数据结构
@@ -60,8 +120,10 @@ def contest_summary_serializer():
                 "description": serializers.CharField(help_text="描述", required=False, allow_blank=True),
                 "start_time": serializers.DateTimeField(help_text="开始时间"),
                 "end_time": serializers.DateTimeField(help_text="结束时间"),
+                "freeze_time": serializers.DateTimeField(help_text="封榜时间", required=False, allow_null=True),
                 "status": serializers.CharField(help_text="状态"),
                 "is_team_based": serializers.BooleanField(help_text="是否组队赛"),
+                "max_team_members": serializers.IntegerField(help_text="最大队员数", required=False, allow_null=True),
             },
         ),
     )
@@ -100,8 +162,8 @@ def hint_serializer():
     )
 
 
-def team_serializer():
-    return _cached(
+def team_serializer(**kwargs):
+    cls = _cached(
         "TeamSummary",
         lambda: inline_serializer(
             name="TeamSummary",
@@ -113,9 +175,12 @@ def team_serializer():
                 "captain_id": serializers.IntegerField(help_text="队长用户 ID"),
                 "member_count": serializers.IntegerField(help_text="队伍人数"),
                 "is_active": serializers.BooleanField(help_text="是否有效"),
+                "description": serializers.CharField(help_text="队伍简介", required=False, allow_blank=True),
+                "invite_token": serializers.CharField(help_text="队伍邀请码", required=False, allow_blank=True),
             },
         ),
     )
+    return cls(**kwargs) if kwargs else cls
 
 
 def submission_payload_serializer():
@@ -132,6 +197,54 @@ def submission_payload_serializer():
                 "blood_rank": serializers.IntegerField(required=False, allow_null=True),
                 "message": serializers.CharField(required=False, allow_blank=True),
                 "created_at": serializers.DateTimeField(required=False),
+            },
+        ),
+    )
+
+
+def scoreboard_entry_serializer():
+    """记分板条目：兼容团队赛与个人赛"""
+    return _cached(
+        "ScoreboardEntry",
+        lambda: inline_serializer(
+            name="ScoreboardEntry",
+            fields={
+                "type": serializers.ChoiceField(choices=["team", "user"], help_text="榜单类型：team/user"),
+                "rank": serializers.IntegerField(help_text="排名"),
+                "score": serializers.IntegerField(help_text="总分"),
+                "bonus_score": serializers.IntegerField(help_text="额外分数", required=False),
+                "solves": serializers.ListSerializer(
+                    child=inline_serializer(
+                        name="ScoreboardSolveEntry",
+                        fields={
+                            "challenge": serializers.CharField(help_text="题目标识"),
+                            "points": serializers.IntegerField(help_text="得分"),
+                            "bonus_points": serializers.IntegerField(help_text="额外得分", required=False),
+                            "base_points": serializers.IntegerField(help_text="基础得分", required=False),
+                            "solved_at": serializers.CharField(help_text="解题时间", required=False),
+                        },
+                    ),
+                    help_text="解题明细",
+                ),
+                "team": inline_serializer(
+                    name="ScoreboardTeam",
+                    fields={
+                        "id": serializers.IntegerField(),
+                        "name": serializers.CharField(),
+                        "slug": serializers.CharField(),
+                    },
+                    required=False,
+                    allow_null=True,
+                ),
+                "user": inline_serializer(
+                    name="ScoreboardUser",
+                    fields={
+                        "id": serializers.IntegerField(),
+                        "username": serializers.CharField(),
+                    },
+                    required=False,
+                    allow_null=True,
+                ),
             },
         ),
     )
@@ -178,7 +291,7 @@ def user_summary_serializer():
                 "username": serializers.CharField(),
                 "email": serializers.EmailField(),
                 "nickname": serializers.CharField(required=False, allow_blank=True),
-                "avatar": serializers.CharField(required=False, allow_blank=True),
+                "avatar": serializers.CharField(required=False, allow_blank=True, allow_null=True),
                 "is_email_verified": serializers.BooleanField(required=False),
                 "permissions": serializers.ListField(
                     child=serializers.CharField(),
@@ -199,6 +312,7 @@ def announcement_serializer():
                 "id": serializers.IntegerField(),
                 "contest": serializers.CharField(),
                 "title": serializers.CharField(),
+                "summary": serializers.CharField(),
                 "content": serializers.CharField(),
                 "is_active": serializers.BooleanField(),
                 "created_at": serializers.DateTimeField(required=False),

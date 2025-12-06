@@ -43,6 +43,9 @@ else:
 # 登录验证码开关：默认随 DEBUG，亦可通过环境变量单独关闭/开启
 ALLOW_LOGIN_WITHOUT_CAPTCHA = os.getenv("ALLOW_LOGIN_WITHOUT_CAPTCHA", "").lower() == "true" or DEBUG
 
+# 站点品牌名称（前台/后台可展示的品牌词），可在后台 SystemConfig 覆盖
+SITE_BRAND = os.getenv("SITE_BRAND", "Find The Cat")
+
 # JWT Cookie 模式开关：关闭后仅使用 Authorization 头，不再写入 JWT Cookie
 JWT_USE_COOKIE = False
 JWT_ACCESS_COOKIE_NAME = "jwt_token_in_cookie"
@@ -276,13 +279,18 @@ SPECTACULAR_SETTINGS = {
     "OPERATION_ID_CALLBACK": "apps.common.openapi.build_operation_id",
     # 预定义标签顺序与描述，便于前端分组展示
     "TAGS": [
-        {"name": "accounts", "description": "账号与认证接口"},
-        {"name": "contests", "description": "比赛管理接口"},
-        {"name": "challenges", "description": "题目管理与提示接口"},
-        {"name": "submissions", "description": "提交判题与记录接口"},
-        {"name": "machines", "description": "靶机管理接口"},
-        {"name": "problem-bank", "description": "题库管理与导入导出接口"},
-        {"name": "teams", "description": "队伍管理接口"},
+        {"name": "accounts-auth", "description": "角色与权限"},
+        {"name": "accounts-password", "description": "密码修改与重置"},
+        {"name": "accounts-email", "description": "账户邮箱管理"},
+        {"name": "accounts-profile", "description": "个人资料管理"},
+        {"name": "contests", "description": "比赛管理"},
+        {"name": "challenges", "description": "题目管理与提示"},
+        {"name": "submissions", "description": "提交判题与记录"},
+        {"name": "machines", "description": "靶机管理"},
+        {"name": "problem-bank", "description": "题库管理"},
+        {"name": "teams", "description": "队伍管理"},
+        {"name": "system", "description": "系统配置"},
+        {"name": "health", "description": "健康检查"},
     ],
 }
 

@@ -87,7 +87,8 @@ class ContestAnnouncementAdminForm(forms.ModelForm):
         fields = "__all__"
         help_texts = {
             "contest": "公告所属的比赛，保存后通常不修改",
-            "title": "公告标题，前台列表将展示",
+            "title": "公告标题，用于前台展示",
+            "summary": "公告摘要：用于前台展示",
             "content": "公告正文，支持富文本/换行",
             "is_active": "关闭后公告对前台不可见，可用于下架旧公告",
             "created_at": "公告创建时间，供审计使用（只读）",

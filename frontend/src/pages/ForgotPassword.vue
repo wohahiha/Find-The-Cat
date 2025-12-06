@@ -17,7 +17,7 @@
                 />
               </svg>
             </div>
-            <h2 class="text-xl font-bold leading-tight tracking-[-0.015em]">Find The Cat</h2>
+            <h2 class="text-xl font-bold leading-tight tracking-[-0.015em]">{{ brandName }}</h2>
           </div>
           <h1 class="tracking-light text-[28px] sm:text-[32px] font-bold leading-tight">找回密码</h1>
           <p class="text-sm text-muted">输入邮箱获取验证码并重置密码</p>
@@ -38,7 +38,7 @@
                   type="email"
                 />
               </div>
-              <p v-if="emailError" class="text-xs text-danger text-center">请输入正确的邮箱</p>
+              <p v-if="emailError" class="text-xs text-danger">请输入正确的邮箱</p>
             </div>
 
             <div class="flex flex-col gap-2">
@@ -62,7 +62,7 @@
                   <span v-else class="truncate">{{ countdown }} 秒后可重发</span>
                 </button>
               </div>
-              <p class="text-xs text-center" :class="error ? 'text-danger' : 'text-emerald-300'">我们会把重置验证码发送到你的邮箱</p>
+              <p class="text-xs" :class="error ? 'text-danger' : 'text-emerald-300'">我们会把重置验证码发送到你的邮箱</p>
             </div>
 
             <div class="flex flex-col gap-2">
@@ -86,7 +86,7 @@
                   <span class="material-symbols-outlined text-xl">{{ showNew ? 'visibility_off' : 'visibility' }}</span>
                 </button>
               </div>
-              <p class="text-xs text-center" :class="passwordError ? 'text-danger' : 'text-emerald-300'">8-64 位，需同时包含字母和数字</p>
+              <p class="text-xs" :class="passwordError ? 'text-danger' : 'text-emerald-300'">8-64 位，需同时包含字母和数字</p>
             </div>
 
             <div class="flex flex-col gap-2">
@@ -138,11 +138,14 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import api from '@/api/client'
+  import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+  import { useRouter } from 'vue-router'
+  import api from '@/api/client'
+  import { useConfigStore } from '@/stores/config'
 
-const router = useRouter()
+  const router = useRouter()
+  const configStore = useConfigStore()
+  const brandName = computed(() => configStore.brand || 'Find The Cat')
 
 const form = reactive({
   email: '',
@@ -186,7 +189,7 @@ const sendCode = async () => {
 
   sendingCode.value = true
   try {
-    const res = await api.post('/accounts/auth/password/reset/request/', { email: form.email })
+    const res = await api.post('/accounts/password/reset/request/', { email: form.email })
     success.value = res.data?.message || '验证码已发送，请检查邮箱'
     countdown.value = 60
     timer = setInterval(() => {
@@ -234,7 +237,7 @@ const submit = async () => {
 
   submitting.value = true
   try {
-    const res = await api.post('/accounts/auth/password/reset/', {
+    const res = await api.post('/accounts/password/reset/', {
       email: form.email,
       code: form.code,
       new_password: form.new_password,

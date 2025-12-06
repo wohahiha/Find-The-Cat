@@ -58,6 +58,12 @@ class ConfigService(BaseService[SystemConfig]):
             "detail": "限制可访问站点的域名或 IP，防止 Host 头攻击。填写 JSON 数组格式，如 [\"example.com\", \"127.0.0.1\"]。首次启动时默认为 [\"localhost\", ]（允许本地），生产环境必须在后台修改为实际域名/IP。修改后需重启服务生效。",
             "required": True,
         },
+        "SITE_BRAND": {
+            "type": SystemConfig.ValueType.STRING,
+            "desc": "站点品牌名称",
+            "detail": "平台前台展示的站点品牌名，默认为 'Find The Cat'",
+            "required": True,
+        },
         "ALLOW_LOGIN_WITHOUT_CAPTCHA": {
             "type": SystemConfig.ValueType.BOOL,
             "desc": "允许登录跳过图形验证码（仅测试用）",

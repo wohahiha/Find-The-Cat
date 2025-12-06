@@ -127,6 +127,8 @@ class AnnouncementCreateSchema(BaseSchema[None]):
     contest_slug: str
     # 公告标题
     title: str
+    # 公告摘要
+    summary: str
     # 公告正文
     content: str
     # 是否生效
@@ -138,6 +140,8 @@ class AnnouncementCreateSchema(BaseSchema[None]):
             raise ValidationError(message="缺少比赛标识")
         if not self.title:
             raise ValidationError(message="公告标题不能为空")
+        if not self.summary:
+            raise ValidationError(message="公告摘要不能为空")
         if not self.content:
             raise ValidationError(message="公告内容不能为空")
 

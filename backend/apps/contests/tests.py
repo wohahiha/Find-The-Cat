@@ -202,7 +202,7 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         # 创建公告
         resp = admin_client.post(
             f"/api/contests/{slug}/announcements/",
-            {"title": "欢迎", "content": "开赛公告"},
+            {"title": "欢迎", "summary": "平台升级公告摘要", "content": "开赛公告"},
             format="json",
         )
         self.assertEqual(resp.status_code, 201)

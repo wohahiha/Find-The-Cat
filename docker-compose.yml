@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     image: ftc-backend:latest
     command: ["uvicorn", "Config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--workers", "3"]
-    env_file: .env
+    env_file: .env.example
     ports:
       - "8000:8000"
     volumes:
@@ -34,7 +34,7 @@ services:
 
   worker:
     image: ftc-backend:latest
-    env_file: .env
+    env_file: .env.example
     command: ["celery", "-A", "Config", "worker", "-l", "info"]
     volumes:
       - ./data/db/db.sqlite3:/data/db/db.sqlite3
@@ -46,7 +46,7 @@ services:
 
   beat:
     image: ftc-backend:latest
-    env_file: .env
+    env_file: .env.example
     command: ["celery", "-A", "Config", "beat", "-l", "info"]
     volumes:
       - ./data/db/db.sqlite3:/data/db/db.sqlite3
