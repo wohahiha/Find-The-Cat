@@ -20,6 +20,8 @@ from apps.common.exceptions import ValidationError, ConflictError, NotFoundError
 from apps.accounts.models import User
 from apps.challenges.repo import ChallengeRepo
 from apps.contests.repo import ContestRepo
+from apps.notifications.services import fanout_notifications, build_dedup_key
+from apps.notifications.models import Notification
 
 from .models import ProblemBank, BankChallenge, BankSolve
 from .repo import (
@@ -45,6 +47,33 @@ from .serializers import serialize_bank
 from apps.common.infra.logger import get_logger, logger_extra
 
 logger = get_logger(__name__)
+
+
+def _notify_public_bank_challenge(bank: ProblemBank, challenge: BankChallenge, *, type: str) -> None:
+    """向所有活跃用户推送公共题库题目的变更"""
+    if not bank.is_public:
+        return
+    users = list(User.objects.filter(is_active=True, is_staff=False))
+    if not users:
+        return
+    bucket = getattr(challenge, "updated_at", timezone.now()).isoformat(timespec="minutes")
+    dedup = build_dedup_key(
+        type=type,
+        challenge=None,
+        bucket=bucket,
+        extra=f"bank-{getattr(bank, 'id', None)}-{getattr(challenge, 'id', None)}",
+    )
+    fanout_notifications(
+        users,
+        type=type,
+        title=f"题库更新：{challenge.title}",
+        body=bank.name,
+        payload={
+            "bank": bank.slug,
+            "challenge": challenge.slug,
+        },
+        dedup_key=dedup,
+    )
 
 
 class BankContextService:
@@ -168,6 +197,8 @@ class BankImportFromContestService(BaseService[list[BankChallenge]]):
             "比赛题目导入题库",
             extra=logger_extra({"bank": bank.name, "contest": contest.slug, "count": len(imported)}),
         )
+        for ch in imported:
+            _notify_public_bank_challenge(bank, ch, type=Notification.Type.CHALLENGE_NEW)
         return imported
 
     def _get_bank(self, bank_slug: str) -> ProblemBank:
@@ -381,4 +412,5 @@ class BankChallengeUpdateService(BaseService[BankChallenge]):
             "更新题库题目",
             extra=logger_extra({"bank": bank.slug, "challenge": challenge.slug}),
         )
+        _notify_public_bank_challenge(bank, challenge, type=Notification.Type.CHALLENGE_UPDATED)
         return challenge

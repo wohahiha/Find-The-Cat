@@ -126,8 +126,6 @@
         </main>
 
         <div class="mt-4 space-y-1 text-center">
-          <p v-if="error" class="text-sm text-danger font-semibold">{{ error }}</p>
-          <p v-if="success" class="text-sm text-emerald-400 font-semibold">{{ success }}</p>
         </div>
 
         <footer class="mt-6 text-center">
@@ -146,11 +144,16 @@
   import { useRouter } from 'vue-router'
   import api from '@/api/client'
   import { useAuthStore } from '@/stores/auth'
+  import { parseApiError } from '@/api/errors'
   import { useConfigStore } from '@/stores/config'
+  import { useToastStore } from '@/stores/toast'
+  import { validatePassword, isEmail, isUsername } from '@/utils/validation'
+  import { CAPTCHA_SCENES } from '@/constants/enums'
 
   const router = useRouter()
   const auth = useAuthStore()
   const configStore = useConfigStore()
+  const toast = useToastStore()
   const brandName = computed(() => configStore.brand || 'Find The Cat')
 
 const form = reactive({
@@ -173,14 +176,6 @@ const passwordError = ref(false)
 const usernameError = ref(false)
 const emailError = ref(false)
 
-const validatePassword = (pwd) => {
-  if (!pwd || pwd.length < 8 || pwd.length > 64) return '密码长度需在 8-64 位之间'
-  const hasLetter = /[A-Za-z]/.test(pwd)
-  const hasDigit = /\d/.test(pwd)
-  if (!(hasLetter && hasDigit)) return '密码需同时包含字母和数字'
-  return ''
-}
-
 const sendCode = async () => {
   // reset flags
   usernameError.value = false
@@ -194,9 +189,14 @@ const sendCode = async () => {
     error.value = '请输入用户名'
     return
   }
-  if (!form.email) {
+  if (!form.email || !isEmail(form.email)) {
     emailError.value = true
-    error.value = '请输入邮箱'
+    error.value = '请输入正确的邮箱'
+    return
+  }
+  if (!isUsername(form.username)) {
+    usernameError.value = true
+    error.value = '用户名需为 3-32 位字母、数字或下划线'
     return
   }
   const pwdValidation = validatePassword(form.password)
@@ -210,9 +210,10 @@ const sendCode = async () => {
   try {
     const res = await api.post('/accounts/email/verification/', {
       email: form.email,
-      scene: 'register',
+      scene: CAPTCHA_SCENES.REGISTER,
     })
     success.value = res.data?.message || '验证码已发送'
+    toast.success(success.value)
     countdown.value = 60
     timer = setInterval(() => {
       countdown.value -= 1
@@ -222,7 +223,8 @@ const sendCode = async () => {
       }
     }, 1000)
   } catch (e) {
-    error.value = e?.response?.data?.message || '发送验证码失败'
+    error.value = parseApiError(e, '发送验证码失败，请稍后再试')
+    toast.error(error.value)
   } finally {
     sendingCode.value = false
   }
@@ -239,6 +241,16 @@ const submit = async () => {
     if (!form.username) usernameError.value = true
     if (!form.email) emailError.value = true
     error.value = '请填写所有字段'
+    return
+  }
+  if (!isEmail(form.email)) {
+    emailError.value = true
+    error.value = '请输入正确的邮箱'
+    return
+  }
+  if (!isUsername(form.username)) {
+    usernameError.value = true
+    error.value = '用户名需为 3-32 位字母、数字或下划线'
     return
   }
   const pwdValidation = validatePassword(form.password)
@@ -261,11 +273,13 @@ const submit = async () => {
       email_code: form.email_code,
     })
     success.value = res?.message || '注册成功'
+    toast.success(success.value)
     setTimeout(() => {
       router.push('/login')
     }, 400)
   } catch (e) {
-    error.value = e?.response?.data?.message || '注册失败'
+    error.value = parseApiError(e, '注册失败，请稍后再试')
+    toast.error(error.value)
   } finally {
     submitting.value = false
   }

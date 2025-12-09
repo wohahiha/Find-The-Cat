@@ -41,3 +41,21 @@ class MachineStopSchema(BaseSchema[None]):
         """校验实例 ID 合法"""
         if self.machine_id <= 0:
             raise ValidationError(message="非法的实例 ID")
+
+
+@dataclass
+class MachineExtendSchema(BaseSchema[None]):
+    """
+    延长靶机时长入参：
+    - 通过实例 ID 指定
+    - 可选指定延长分钟数，未传使用默认值
+    """
+    auto_validate: ClassVar[bool] = True
+    machine_id: int
+    minutes: int | None = None
+
+    def validate(self) -> None:
+        if self.machine_id <= 0:
+            raise ValidationError(message="非法的实例 ID")
+        if self.minutes is not None and self.minutes <= 0:
+            raise ValidationError(message="延长时间必须大于 0")

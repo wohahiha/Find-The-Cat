@@ -4,6 +4,8 @@ import random
 from typing import Optional
 from contextlib import suppress
 
+from datetime import timedelta
+from django.conf import settings
 from django.utils import timezone
 
 from apps.common.base.base_service import BaseService
@@ -13,6 +15,7 @@ from apps.common.exceptions import (
     MachineAlreadyRunningError,
     MachinePortUnavailableError,
     MachineError,
+    ValidationError,
 )
 from apps.accounts.models import User
 from apps.contests.services import ContestContextService
@@ -21,7 +24,7 @@ from apps.challenges.repo import ChallengeRepo
 
 from .models import MachineInstance
 from .repo import MachineRepo
-from .schemas import MachineStartSchema, MachineStopSchema
+from .schemas import MachineStartSchema, MachineStopSchema, MachineExtendSchema
 
 # 服务层：靶机实例生命周期管理，使用 docker_manager/redis_client 占位调用
 from apps.common.infra import docker_manager
@@ -35,6 +38,23 @@ logger = get_logger(__name__)
 def serialize_machine(machine: MachineInstance) -> dict:
     """靶机实例序列化：返回状态、端口与关联实体"""
     machine_id = getattr(machine, "id", None)
+    config = getattr(machine, "challenge", None) and getattr(machine.challenge, "machine_config", None)
+    now = timezone.now()
+    expires_at = getattr(machine, "expires_at", None)
+    remaining_seconds = None
+    if expires_at:
+        remaining_seconds = max(int((expires_at - now).total_seconds()), 0)
+    max_times = getattr(config, "extend_max_times", None)
+    remaining_extend_times = None
+    if max_times is not None:
+        try:
+            max_times_int = int(max_times)
+            if max_times_int >= 0:
+                remaining_extend_times = max(max_times_int - getattr(machine, "extend_count", 0), 0)
+            else:
+                remaining_extend_times = -1
+        except Exception:
+            remaining_extend_times = None
     return {
         "id": machine_id,
         "contest": getattr(getattr(machine, "contest", None), "slug", None),
@@ -45,6 +65,13 @@ def serialize_machine(machine: MachineInstance) -> dict:
         "host": machine.host,
         "port": machine.port,
         "status": machine.status,
+        "extend_count": getattr(machine, "extend_count", 0),
+        "expires_at": expires_at,
+        "remaining_seconds": remaining_seconds,
+        "extend_max_times": getattr(config, "extend_max_times", None),
+        "extend_threshold_minutes": getattr(config, "extend_threshold_minutes", None),
+        "extend_minutes_default": getattr(config, "extend_minutes_default", None),
+        "remaining_extend_times": remaining_extend_times,
         "created_at": machine.created_at,
         "updated_at": machine.updated_at,
     }
@@ -78,6 +105,22 @@ def broadcast_machine_status(instance: MachineInstance, *, event: str = "machine
     if user_id:
         broadcast_notify(user_id, payload)
     broadcast_contest(getattr(instance.contest, "slug", ""), payload)
+
+
+def _release_port_lock(port: int | None) -> None:
+    """释放端口锁，并清理遗留缓存集合"""
+    if port is None:
+        return
+    redis_client.release_lock(f"{machine_ports_key()}:lock:{port}")
+    key = machine_ports_key()
+    try:
+        used = set(redis_client.get_json(key) or [])
+        if port in used:
+            used.discard(port)
+            redis_client.set_json(key, list(used), ex=300)
+    except Exception:
+        # 兼容 Redis 不可用的场景
+        pass
 
 
 class MachineStartService(BaseService[MachineInstance]):
@@ -116,6 +159,8 @@ class MachineStartService(BaseService[MachineInstance]):
 
         # 2) 获取队伍关系
         membership = self.member_repo.get_membership(contest=contest, user=user)
+        if contest.is_team_based and membership is None:
+            raise PermissionDeniedError(message="该比赛为团队赛，请先加入队伍后再启动靶机")
 
         # 3) 防止重复实例：同一用户/题目存在运行实例则拒绝
         if self.machine_repo.running_for_user(contest=contest, challenge=challenge, user=user):
@@ -129,7 +174,17 @@ class MachineStartService(BaseService[MachineInstance]):
         port = self._allocate_port(config)
 
         # 5) 启动容器（占位调用 docker_manager，如未实现则使用假 ID）
-        container_id = self._start_container(challenge=challenge, port=port)
+        try:
+            container_id = self._start_container(challenge=challenge, port=port)
+        except Exception:
+            _release_port_lock(port)
+            raise
+
+        runtime_minutes = int(
+            getattr(config, "max_runtime_minutes", None)
+            or getattr(settings, "MACHINE_MAX_RUNTIME_MINUTES", 30)
+        )
+        expires_at = timezone.now() + timedelta(minutes=runtime_minutes)
 
         # 6) 创建实例记录
         instance = self.machine_repo.create(
@@ -142,6 +197,8 @@ class MachineStartService(BaseService[MachineInstance]):
                 "host": "localhost",
                 "port": port,
                 "status": MachineInstance.Status.RUNNING,
+                "expires_at": expires_at,
+                "extend_count": 0,
             }
         )
         logger.info(
@@ -205,20 +262,25 @@ class MachineStartService(BaseService[MachineInstance]):
         - 先从 redis 集合读占用，如果未配置则回退数据库检查
         """
         used_db = self.machine_repo.running_ports()
-        key = machine_ports_key()
-        used_redis = set(redis_client.get_json(key) or [])
-        used = used_db.union(used_redis)
-        ttl = getattr(config, "port_cache_ttl", 300)
+        lock_prefix = f"{machine_ports_key()}:lock"
+        ttl = int(getattr(config, "port_cache_ttl", 300) or 300)
+        fallback_port = None
         for _ in range(200):
             port = random.randint(20000, 40000)
-            if port not in used:
-                # 写入 redis 记录占用，设置短期过期以防泄漏
-                redis_client.set_json(key, list(used | {port}), ex=ttl)
+            if port in used_db:
+                continue
+            lock_key = f"{lock_prefix}:{port}"
+            if redis_client.acquire_lock(lock_key, ex=ttl):
                 return port
+            # 记录一个可用端口以便 Redis 不可用时回退
+            if fallback_port is None:
+                fallback_port = port
         logger.warning(
             "端口分配失败",
-            extra=logger_extra({"used_count": len(used), "port_cache_ttl": ttl, "redis_key": key}),
+            extra=logger_extra({"used_count": len(used_db), "port_cache_ttl": ttl, "lock_prefix": lock_prefix}),
         )
+        if fallback_port is not None:
+            return fallback_port
         raise MachinePortUnavailableError()
 
     @staticmethod
@@ -294,6 +356,7 @@ class MachineStopService(BaseService[MachineInstance]):
         instance.status = MachineInstance.Status.STOPPED
         instance.container_id = instance.container_id or ""
         instance.save(update_fields=["status", "updated_at", "container_id"])
+        _release_port_lock(instance.port)
         logger.info(
             "靶机停止",
             extra=logger_extra(
@@ -359,3 +422,68 @@ class MachineStopService(BaseService[MachineInstance]):
         """调用 docker_manager 停止容器，异常时忽略以保证流程可继续"""
         with suppress(Exception):
             docker_manager.stop_container(container_id)
+
+
+class MachineExtendService(BaseService[MachineInstance]):
+    """
+    延长靶机时长：
+    - 仅运行中的实例可延长
+    - 支持全局默认延长分钟数/最大延长次数/可延长时间阈值
+    """
+
+    atomic_enabled = True
+
+    def __init__(self, machine_repo: MachineRepo | None = None, member_repo: TeamMemberRepo | None = None):
+        self.machine_repo = machine_repo or MachineRepo()
+        self.member_repo = member_repo or TeamMemberRepo()
+
+    def perform(self, user: User, schema: MachineExtendSchema) -> MachineInstance:
+        instance = self.machine_repo.get_by_id(schema.machine_id)
+        user_id = getattr(user, "id", None)
+        if not (user.is_staff or getattr(instance, "user_id", None) == user_id or self._user_in_team(user, getattr(instance, "team_id", None))):
+            raise PermissionDeniedError(message="无权操作该靶机")
+
+        if instance.status != MachineInstance.Status.RUNNING:
+            raise ConflictError(message="仅运行中的靶机可延时")
+
+        config = getattr(instance.challenge, "machine_config", None)
+        max_times = getattr(config, "extend_max_times", None)
+        if max_times is None:
+            max_times = getattr(settings, "MACHINE_EXTEND_MAX_TIMES", -1)
+        with suppress(Exception):
+            max_times = int(max_times)
+        if max_times >= 0 and getattr(instance, "extend_count", 0) >= max_times:
+            raise ConflictError(message="已达到最大延时次数")
+
+        minutes = schema.minutes or getattr(config, "extend_minutes_default", None) or getattr(settings, "MACHINE_EXTEND_MINUTES_DEFAULT", 30)
+        try:
+            minutes = int(minutes)
+        except Exception:
+            minutes = 30
+        if minutes <= 0:
+            raise ValidationError(message="延时时间配置无效")
+
+        expires_at = getattr(instance, "expires_at", None) or (instance.created_at + timedelta(minutes=getattr(settings, "MACHINE_MAX_RUNTIME_MINUTES", 30)))
+        now = timezone.now()
+        remaining_seconds = (expires_at - now).total_seconds()
+        threshold = getattr(config, "extend_threshold_minutes", None)
+        if threshold is None:
+            threshold = getattr(settings, "MACHINE_EXTEND_THRESHOLD_MINUTES", 15)
+        with suppress(Exception):
+            threshold = int(threshold)
+        if threshold > 0 and remaining_seconds > threshold * 60:
+            raise ConflictError(message="未到可延时窗口，稍后再试")
+
+        new_expires = expires_at + timedelta(minutes=minutes)
+        instance.expires_at = new_expires
+        instance.extend_count = getattr(instance, "extend_count", 0) + 1
+        instance.save(update_fields=["expires_at", "extend_count", "updated_at"])
+
+        broadcast_machine_status(instance, event="machine_extended")
+        return instance
+
+    def _user_in_team(self, user: User, team_id: Optional[int]) -> bool:
+        if team_id is None:
+            return False
+        membership = self.member_repo.filter(team_id=team_id, user=user, is_active=True).first()
+        return membership is not None

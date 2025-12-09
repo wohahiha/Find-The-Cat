@@ -19,6 +19,12 @@ IMAGE_PREFIX = os.getenv("DOCKER_IMAGE_PREFIX", "")  # 例：registry.local/ftc/
 IMAGE_TAG = os.getenv("DOCKER_IMAGE_TAG", "latest")
 CONTAINER_PORT = int(os.getenv("DOCKER_CONTAINER_PORT", "80"))  # 容器内服务端口，默认 80
 DOCKER_NETWORK = os.getenv("DOCKER_NETWORK", None)  # 可选：docker 网络名称
+# 安全开关：默认非特权用户 + 剥离能力，支持只读根和禁网（通过环境变量控制）
+RUN_AS_NON_ROOT = os.getenv("DOCKER_RUN_AS_NON_ROOT", "1") == "1"
+DEFAULT_RUN_USER = os.getenv("DOCKER_DEFAULT_USER", "65534:65534")  # nobody:nogroup
+DROP_ALL_CAPS = os.getenv("DOCKER_DROP_ALL_CAPS", "1") == "1"
+READ_ONLY_ROOT = os.getenv("DOCKER_READ_ONLY_ROOT", "0") == "1"
+DISABLE_NETWORK_WHEN_POSSIBLE = os.getenv("DOCKER_DISABLE_NETWORK", "0") == "1"
 
 try:
     import docker  # type: ignore
@@ -89,7 +95,17 @@ def start_container(
         "ports": ports or None,
         "environment": env or None,
     }
-    if network or DOCKER_NETWORK:
+    # 安全默认：非特权用户 + 剥离特权，可通过环境变量关闭
+    if RUN_AS_NON_ROOT and DEFAULT_RUN_USER:
+        run_kwargs["user"] = DEFAULT_RUN_USER
+    if DROP_ALL_CAPS:
+        run_kwargs["cap_drop"] = ["ALL"]
+    if READ_ONLY_ROOT:
+        run_kwargs["read_only"] = True
+    # 网络限制：若明确禁网且未暴露端口，则 network_mode=none；否则使用指定/默认网络
+    if DISABLE_NETWORK_WHEN_POSSIBLE and not port:
+        run_kwargs["network_mode"] = "none"
+    elif network or DOCKER_NETWORK:
         run_kwargs["network"] = network or DOCKER_NETWORK
     container = client.containers.run(
         image,

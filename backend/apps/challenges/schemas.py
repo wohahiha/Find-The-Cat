@@ -7,7 +7,7 @@ from typing import ClassVar, Optional, List, Dict
 
 from apps.common.base.base_schema import BaseSchema
 from apps.common.exceptions import ValidationError
-from apps.common.utils.validators import validate_slug
+from apps.common.utils.validators import validate_slug, forbid_dangerous_html
 
 
 # Schema 层：定义题目创建/更新/提交/提示/附件上传的入参结构与校验逻辑，确保视图/服务收到的参数符合业务规则
@@ -72,12 +72,16 @@ class ChallengeCreateSchema(BaseSchema[None]):
         """校验题目必填字段、分值、子任务与附件，确保创建请求符合业务约束"""
         if not self.title:
             raise ValidationError(message="题目标题不能为空")
+        forbid_dangerous_html(self.title, field_name="题目标题")
         if not self.slug:
             raise ValidationError(message="题目标识不能为空")
         else:
             validate_slug(self.slug)
         if not self.content:
             raise ValidationError(message="题目内容不能为空")
+        forbid_dangerous_html(self.content, field_name="题目内容")
+        if self.short_description:
+            forbid_dangerous_html(self.short_description, field_name="题目简介")
         if self.base_points <= 0:
             raise ValidationError(message="分值必须大于 0")
         if self.flag_type not in {"static", "dynamic"}:
@@ -99,12 +103,15 @@ class ChallengeCreateSchema(BaseSchema[None]):
         for attach in self.attachments:
             if not attach.get("name") or not attach.get("url"):
                 raise ValidationError(message="附件名称和链接均不能为空")
+            forbid_dangerous_html(str(attach.get("name", "")), field_name="附件名称")
         for hint in self.hints:
             if not hint.get("title"):
                 raise ValidationError(message="提示标题不能为空")
             cost_val = int(hint.get("cost", 0))
             if cost_val < 0:
                 raise ValidationError(message="提示扣分必须大于等于 0")
+            forbid_dangerous_html(str(hint.get("title", "")), field_name="提示标题")
+            forbid_dangerous_html(str(hint.get("content", "")), field_name="提示内容")
         if self.scoring_mode not in {"fixed", "dynamic"}:
             raise ValidationError(message="计分模式不正确")
         if self.decay_type not in {"percentage", "fixed_step"}:

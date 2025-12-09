@@ -34,8 +34,18 @@ def _get_client():
     port = int(getattr(settings, "REDIS_PORT", 6379))
     db = int(getattr(settings, "REDIS_DB_CACHE", 0))
     password = os.getenv("REDIS_PASSWORD", None)
+    connect_timeout = float(os.getenv("REDIS_CONNECT_TIMEOUT", 0.2))
+    socket_timeout = float(os.getenv("REDIS_SOCKET_TIMEOUT", 0.5))
     try:
-        return redis.Redis(host=host, port=port, db=db, password=password, decode_responses=True)
+        return redis.Redis(
+            host=host,
+            port=port,
+            db=db,
+            password=password,
+            decode_responses=True,
+            socket_connect_timeout=connect_timeout,
+            socket_timeout=socket_timeout,
+        )
     except Exception:
         _logger.warning("Redis 连接失败，已跳过缓存", extra={"host": host, "port": port, "db": db})
         return None
@@ -98,6 +108,31 @@ def delete(key: str) -> None:
         client.delete(key)
     except Exception:
         _logger.warning("Redis 删除键失败，已跳过", extra={"key": key})
+
+
+def acquire_lock(key: str, *, ex: Optional[int] = None) -> bool:
+    """
+    使用 SET NX 获取分布式锁，失败返回 False
+    """
+    client = _get_client()
+    if client is None:
+        return False
+    try:
+        return bool(client.set(key, "1", nx=True, ex=ex))
+    except Exception:
+        _logger.warning("Redis 加锁失败，已跳过", extra={"key": key}, exc_info=True)
+        return False
+
+
+def release_lock(key: str) -> None:
+    """释放分布式锁，失败时跳过"""
+    client = _get_client()
+    if client is None:
+        return
+    try:
+        client.delete(key)
+    except Exception:
+        _logger.warning("Redis 解锁失败，已跳过", extra={"key": key})
 
 
 def lpush(key: str, *values) -> int:

@@ -47,6 +47,7 @@ from .services import (
     ContestCategoryUpdateService,
     serialize_announcement,
     ContestUpdateService,
+    determine_contest_status,
 )
 from .schemas import (
     ContestCreateSchema,
@@ -83,8 +84,7 @@ _optional_team_serializer.allow_null = True
 
 class ContestListView(APIView):
     """比赛列表/创建接口：GET 公共访问，POST 仅管理员"""
-    permission_classes = [IsAuthenticated, BizPermission]
-    biz_permission = "contests.view_contest"
+    permission_classes = [AllowAny]
     pagination_class = StandardPagination
     context_service = ContestContextService()
 
@@ -122,6 +122,30 @@ class ContestListView(APIView):
         paginator = StandardPagination()
         page = paginator.paginate_queryset(queryset, request)
         data = [serialize_contest(c) for c in page]
+        # 附加当前用户的报名/队伍标记
+        if request.user.is_authenticated:
+            participants = {
+                p.contest_id: p
+                for p in self.context_service.participant_repo.filter(contest__in=page, user=request.user)
+            }
+            memberships = {
+                m.team.contest_id: m
+                for m in self.context_service.member_repo.filter(team__contest__in=page, user=request.user, is_active=True)
+            }
+            slug_map = {c.slug: c for c in page}
+            for item in data:
+                contest_obj = slug_map.get(item.get("slug"))
+                if not contest_obj:
+                    continue
+                cid = getattr(contest_obj, "id", None)
+                participant = participants.get(cid)
+                membership = memberships.get(cid)
+                user_fields = self.context_service.build_user_contest_fields(
+                    contest_obj,
+                    participant=participant,
+                    membership=membership,
+                )
+                item.update(user_fields)
         return paginator.get_paginated_response({"items": data})
 
     @extend_schema(
@@ -176,7 +200,7 @@ class ContestRegisterView(APIView):
 
 class ContestDetailView(APIView):
     """比赛详情接口：返回比赛、挑战、公告、记分板及我的队伍"""
-    permission_classes = [IsAuthenticated, BizPermission]
+    permission_classes = [AllowAny]
     biz_permission = "contests.view_contest"
     context_service = ContestContextService()
     challenge_repo = ChallengeRepo()
@@ -194,12 +218,10 @@ class ContestDetailView(APIView):
             {
                 "contest": contest_summary_serializer(),
                 "my_team": _optional_team_serializer,
-                "challenges": serializers.ListSerializer(child=challenge_summary_serializer()),
-                "announcements": serializers.ListSerializer(child=announcement_serializer()),
-                "scoreboard": serializers.ListSerializer(
-                    child=scoreboard_entry_serializer(),
-                    help_text="记分板数据（按分数与时间排序）",
-                ),
+                "challenges": challenge_summary_serializer(many=True),
+                "announcements": announcement_serializer(many=True),
+                "scoreboard": scoreboard_entry_serializer(many=True),
+                "my_scoreboard": scoreboard_entry_serializer(required=False, allow_null=True),
             },
         ),
     )
@@ -208,24 +230,29 @@ class ContestDetailView(APIView):
         # 获取比赛对象，填充基础信息
         # 获取比赛与基础信息
         contest = self.context_service.get_contest(contest_slug)
-        self.context_service.ensure_contest_visible(contest, request.user)
+        self.context_service.ensure_contest_visible(contest, request.user if request.user.is_authenticated else None)
         categories = self.context_service.list_categories(contest)
+        participant = None
+        membership = None
         if request.user.is_authenticated:
-            self.context_service.mark_participation(contest, request.user, allow_create=False)
+            participant = self.context_service.mark_participation(contest, request.user, allow_create=False)
+            membership = self.member_repo.get_membership(contest=contest, user=request.user)
         data = {
             "contest": serialize_contest(contest, categories=categories),
         }
         # 若已登录，附上用户所在队伍信息
-        if request.user.is_authenticated:
-            team = self.context_service.get_user_team(contest, request.user)
-            if team:
-                data["my_team"] = serialize_team(team)
+        if membership and getattr(membership, "team", None):
+            data["my_team"] = serialize_team(membership.team)
 
         # 读取比赛下的有效题目列表
         challenges = self.challenge_repo.list_active_with_related(contest=contest)
-        membership = None
         if request.user.is_authenticated:
-            membership = self.member_repo.get_membership(contest=contest, user=request.user)
+            user_fields = self.context_service.build_user_contest_fields(
+                contest,
+                participant=participant,
+                membership=membership,
+            )
+            data["contest"].update(user_fields)
         data["challenges"] = [
             serialize_challenge(
                 ch,
@@ -236,6 +263,7 @@ class ContestDetailView(APIView):
                     ch,
                     membership=membership,
                 ),
+                request=request,
             )
             for ch in challenges
         ]
@@ -243,7 +271,34 @@ class ContestDetailView(APIView):
         announcements = self.context_service.list_announcements(contest)
         data["announcements"] = [serialize_announcement(ann) for ann in announcements]
         # 计算记分板
-        data["scoreboard"] = self.scoreboard_service.execute(contest)
+        raw_scoreboard = self.scoreboard_service.execute(contest)
+        scoreboard_payload: list[dict] = []
+        my_row = None
+        current_team_id = getattr(membership, "team_id", None) if membership else None
+        current_user_id = getattr(request.user, "id", None) if request.user.is_authenticated else None
+        for entry in raw_scoreboard:
+            team_info = entry.get("team") or {}
+            user_info = entry.get("user") or {}
+            team_id = team_info.get("id")
+            user_id = user_info.get("id")
+            name = team_info.get("name") or user_info.get("username") or ""
+            is_me = False
+            if contest.is_team_based and current_team_id and team_id == current_team_id:
+                is_me = True
+            if not contest.is_team_based and current_user_id and user_id == current_user_id:
+                is_me = True
+            payload = {
+                **entry,
+                "team_id": team_id,
+                "user_id": user_id,
+                "name": name,
+                "is_me": is_me,
+            }
+            scoreboard_payload.append(payload)
+            if is_me and my_row is None:
+                my_row = payload
+        data["scoreboard"] = scoreboard_payload
+        data["my_scoreboard"] = my_row
         return response.success(data)
 
     @extend_schema(
@@ -336,7 +391,7 @@ class ContestSubmissionView(APIView):
         schema = SubmissionCreateSchema.from_dict(payload, auto_validate=True)
         submission = self.service.execute(request.user, schema)
         base_points = max(0, submission.awarded_points - getattr(submission, "bonus_points", 0))
-        challenge_payload = serialize_challenge(submission.challenge, current_points=base_points)
+        challenge_payload = serialize_challenge(submission.challenge, current_points=base_points, request=request)
         return response.created(
             {
                 "submission": serialize_submission(submission),
@@ -574,20 +629,19 @@ class TeamTransferView(APIView):
         return response.success({"team": serialize_team(team)}, message="队长已移交")
 
 
-class ContestCategoryView(APIView):
+class ChallengeCategoryView(APIView):
     """
     比赛题目分类管理：
-    - GET：公开查询比赛下的分类列表
-    - PATCH：管理员更新比赛分类
+    - GET：公开查询比赛下的题目分类列表
+    - PATCH：管理员更新题目分类
     """
 
-    permission_classes = [IsAuthenticated, BizPermission]
-    biz_permission = "contests.view_contest"
+    permission_classes = [AllowAny]
     context_service = ContestContextService()
     service = ContestCategoryUpdateService()
 
     @extend_schema(
-        summary="比赛分类列表",
+        summary="比赛题目分类列表",
         request=None,
         responses=list_response("ContestCategoryList", category_serializer()),
     )
@@ -598,7 +652,7 @@ class ContestCategoryView(APIView):
         return response.success({"items": [serialize_category(cat) for cat in categories]})
 
     @extend_schema(
-        summary="更新比赛分类",
+        summary="更新比赛题目分类",
         request=inline_serializer(
             name="ContestCategoryUpdate",
             fields={
@@ -623,7 +677,7 @@ class ContestCategoryView(APIView):
         )
 
     @extend_schema(
-        summary="更新比赛分类（兼容 PUT）",
+        summary="更新比赛题目分类（兼容 PUT）",
         request=OpenApiTypes.OBJECT,
         responses=OpenApiTypes.OBJECT,
         tags=["contests"],
@@ -635,6 +689,76 @@ class ContestCategoryView(APIView):
         return self.patch(request, contest_slug)
 
 
+class MyTeamsView(APIView):
+    """
+    我的战队列表（跨比赛）：返回我参与过或正在参与的队伍
+    """
+
+    permission_classes = [IsAuthenticated]
+    context_service = ContestContextService()
+
+    @extend_schema(
+        summary="我的战队列表",
+        request=None,
+        responses=api_response_schema(
+            "MyTeams",
+            {
+                "items": serializers.ListSerializer(
+                    child=inline_serializer(
+                        name="MyTeamItem",
+                        fields={
+                            "id": serializers.IntegerField(required=False, allow_null=True),
+                            "name": serializers.CharField(required=False, allow_null=True),
+                            "invite_token": serializers.CharField(required=False, allow_null=True),
+                            "role": serializers.CharField(required=False, allow_null=True),
+                            "is_active": serializers.BooleanField(required=False),
+                            "joined_at": serializers.DateTimeField(required=False, allow_null=True),
+                            "status": serializers.CharField(required=False, allow_null=True),
+                            "contest": inline_serializer(
+                                name="MyTeamContest",
+                                fields={
+                                    "id": serializers.IntegerField(required=False, allow_null=True),
+                                    "slug": serializers.CharField(required=False, allow_null=True),
+                                    "name": serializers.CharField(required=False, allow_null=True),
+                                    "start_time": serializers.DateTimeField(required=False, allow_null=True),
+                                    "end_time": serializers.DateTimeField(required=False, allow_null=True),
+                                },
+                            ),
+                        },
+                    )
+                )
+            },
+        ),
+        tags=["teams"],
+    )
+    def get(self, request: Request) -> Response:
+        user = request.user
+        member_repo = self.context_service.member_repo
+        memberships = (
+            member_repo.filter(user=user)
+            .select_related("team", "team__contest")
+            .order_by("-joined_at")
+        )
+
+        items = []
+        for m in memberships:
+            team = getattr(m, "team", None)
+            contest = getattr(team, "contest", None) if team else None
+            items.append(
+                {
+                    "id": getattr(team, "id", None),
+                    "name": getattr(team, "name", None),
+                    "invite_token": getattr(team, "invite_token", None),
+                    "role": getattr(m, "role", None),
+                    "is_active": getattr(m, "is_active", None),
+                    "joined_at": getattr(m, "joined_at", None),
+                    "contest": serialize_contest(contest) if contest else None,
+                    "status": determine_contest_status(contest) if contest else None,
+                }
+            )
+        return response.success({"items": items})
+
+
 class ContestAnnouncementView(APIView):
     """
     比赛公告接口：
@@ -642,8 +766,7 @@ class ContestAnnouncementView(APIView):
     - POST：管理员创建公告
     """
 
-    permission_classes = [IsAuthenticated, BizPermission]
-    biz_permission = "contests.view_contest"
+    permission_classes = [AllowAny]
     pagination_class = StandardPagination
     context_service = ContestContextService()
     service = ContestAnnouncementService()
@@ -696,7 +819,7 @@ class ContestAnnouncementView(APIView):
 
 class ContestAnnouncementDetailView(APIView):
     """
-    比赛公告详情：公开查看指定公告
+    比赛公告详情：需登录查看指定公告
     """
 
     permission_classes = [IsAuthenticated, BizPermission]
@@ -718,3 +841,39 @@ class ContestAnnouncementDetailView(APIView):
         if ann.contest_id != contest.id:  # type: ignore[attr-defined]
             raise NotFoundError(message="公告不存在")
         return response.success({"announcement": serialize_announcement(ann)})
+
+
+class AnnouncementListGlobalView(APIView):
+    """
+    全局公告列表：可选按比赛过滤，公开访问
+    """
+
+    permission_classes = [AllowAny]
+    pagination_class = StandardPagination
+    announcement_repo = ContestAnnouncementRepo()
+
+    @extend_schema(
+        summary="全局公告列表",
+        operation_id="announcement_list_global",
+        request=None,
+        responses=list_response("AnnouncementListGlobal", announcement_serializer(), paginated=True),
+        parameters=[
+            OpenApiParameter(
+                name="contest",
+                location=OpenApiParameter.QUERY,
+                description="可选比赛标识（slug），为空则返回所有公告",
+                required=False,
+                type=str,
+            ),
+            *pagination_parameters(),
+        ],
+    )
+    def get(self, request: Request) -> Response:
+        slug = request.query_params.get("contest")
+        queryset = self.announcement_repo.get_queryset().filter(is_active=True).select_related("contest").order_by("-created_at")
+        if slug:
+            queryset = queryset.filter(contest__slug=slug)
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        items = [serialize_announcement(ann) for ann in page]
+        return paginator.get_paginated_response({"items": items})

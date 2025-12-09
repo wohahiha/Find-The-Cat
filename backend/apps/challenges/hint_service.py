@@ -10,6 +10,8 @@ from apps.accounts.models import User
 from apps.contests.services import ContestContextService
 from apps.contests.repo import TeamMemberRepo
 from apps.common.ws_utils import broadcast_notify, broadcast_contest
+from apps.notifications.services import create_and_push_notification, build_dedup_key
+from apps.notifications.models import Notification
 
 from .repo import ChallengeRepo, ChallengeHintRepo, ChallengeHintUnlockRepo
 from .schemas import HintUnlockSchema
@@ -153,4 +155,33 @@ class ChallengeHintService(BaseService[dict]):
                 "hint": hint_brief,
             },
         )
+        # 队伍内广播通知（仅团队赛），避免全场知晓详情
+        if contest.is_team_based and membership and getattr(membership, "team", None):
+            team = membership.team
+            members = list(self.member_repo.active_members(team))
+            dedup = build_dedup_key(
+                type="hint_unlocked",
+                contest=contest,
+                team=team,
+                challenge=challenge,
+                extra=str(getattr(hint, "id", None)),
+            )
+            for m in members:
+                create_and_push_notification(
+                    getattr(m, "user", None),
+                    type=Notification.Type.HINT_UNLOCKED,
+                    title=f"队伍提示解锁：{challenge.title}",
+                    body=hint.title,
+                    payload={
+                        "contest": contest.slug,
+                        "challenge": challenge.slug,
+                        "hint_id": getattr(hint, "id", None),
+                        "team_id": getattr(team, "id", None),
+                        "by_user_id": getattr(user, "id", None),
+                    },
+                    contest=contest,
+                    team=team,
+                    challenge=challenge,
+                    dedup_key=dedup,
+                )
         return payload

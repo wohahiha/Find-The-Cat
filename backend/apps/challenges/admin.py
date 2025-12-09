@@ -9,12 +9,12 @@ from __future__ import annotations
 from django.contrib import admin, messages
 from django import forms
 from django.urls import reverse, path
-from django.utils.html import format_html_join
 from django.http import JsonResponse
+from django.utils import timezone
 from apps.common.infra.logger import get_logger, logger_extra
 from apps.contests.models import Contest
 from apps.machines.models import ChallengeMachineConfig
-from .models import ChallengeCategory, Challenge, ChallengeSolve
+from .models import ChallengeCategory, Challenge, ChallengeSolve, ChallengeAttachment
 from .services import AttachmentUploadService
 from .schemas import AttachmentUploadSchema
 from .repo import ChallengeAttachmentRepo
@@ -190,13 +190,17 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
     list_display = ("title", "contest", "category", "difficulty", "base_points", "flag_type", "is_active")
     # 过滤器：按比赛、分类、难度、上线状态
     class ContestFilter(admin.SimpleListFilter):
-        """按比赛过滤（包含未开始、进行中、已结束的比赛）"""
+        """按正在进行中的比赛过滤"""
 
-        title = "比赛"
+        title = "正在进行中的比赛"
         parameter_name = "contest_filter"
 
         def lookups(self, request, model_admin):
-            contests = Contest.objects.all().order_by("-start_time")
+            now = timezone.now()
+            contests = (
+                Contest.objects.filter(start_time__lte=now, end_time__gte=now)
+                .order_by("-start_time")
+            )
             return [(str(c.id), c.name) for c in contests]  # type: ignore[attr-defined]
 
         def queryset(self, request, queryset):
@@ -292,15 +296,14 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
             },
         ),
         (
-            "附件管理",
+            "附件上传",
             {
-                "fields": ("upload_file", "existing_attachments"),
-                "description": "选择文件后保存自动创建附件记录",
+                "fields": ("upload_file",),
+                "description": "选择文件后保存自动创建附件记录，下方内联表可编辑/排序已有附件",
             },
         ),
     )
-    # 只读字段：附件列表
-    readonly_fields = ("existing_attachments",)
+    readonly_fields = ()
     inlines = ()
     # 预取外键，避免列表页 N+1
     list_select_related = ("contest", "category", "author")
@@ -374,7 +377,7 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
 
     def save_formset(self, request, form, formset, change):
         """
-        保存内联对象时，确保靶机配置与题目绑定
+        保存内联对象时，确保靶机配置与题目绑定；附件自动补充排序
         """
         if getattr(formset, "model", None) is ChallengeMachineConfig:
             instances = formset.save(commit=False)
@@ -385,21 +388,26 @@ class ChallengeAdmin(AdminAuditMixin, admin.ModelAdmin):
                 deleted.delete()
             formset.save_m2m()
             return
+        if getattr(formset, "model", None) is ChallengeAttachment:
+            instances = formset.save(commit=False)
+            # 已有最大序号，便于新附件递增
+            existing_max = (
+                form.instance.attachments.order_by("-order", "-id").values_list("order", flat=True).first()
+                if getattr(form.instance, "pk", None)
+                else None
+            )
+            next_order = int(existing_max or 0)
+            for inline_obj in instances:
+                inline_obj.challenge = form.instance
+                if not inline_obj.pk or not getattr(inline_obj, "order", None):
+                    next_order += 1
+                    inline_obj.order = next_order
+                inline_obj.save()
+            for deleted in formset.deleted_objects:
+                deleted.delete()
+            formset.save_m2m()
+            return
         super().save_formset(request, form, formset, change)
-
-    @admin.display(description="已上传附件")
-    def existing_attachments(self, obj: Challenge):
-        """
-        展示已上传的附件列表
-        """
-        attachments = obj.attachments.all().order_by("order", "id")  # type: ignore[attr-defined]
-        if not attachments:
-            return "暂无附件"
-        return format_html_join(
-            "<br>",
-            '<a href="{0}" target="_blank">{1}</a> (序号 {2})',
-            [(att.url, att.name, att.order) for att in attachments],
-        )
 
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)
@@ -468,10 +476,13 @@ class MachineConfigInline(admin.StackedInline):
                     "container_port",
                     "max_instances_per_user",
                     "max_runtime_minutes",
+                    "extend_minutes_default",
+                    "extend_max_times",
+                    "extend_threshold_minutes",
                     "clean_interval_seconds",
                     "port_cache_ttl",
                 ),
-                "description": "启用靶机后需要配置镜像、端口与运行时策略（实例数量、运行分钟数、清理间隔、端口缓存）",
+                "description": "启用靶机后需要配置镜像、端口与运行时策略（实例数量、运行分钟数、延时策略、清理间隔、端口缓存）",
             },
         ),
         (
@@ -487,6 +498,22 @@ class MachineConfigInline(admin.StackedInline):
 
 # 仅在定义完成后追加内联，保持 ChallengeAdmin 结构清晰
 ChallengeAdmin.inlines = ChallengeAdmin.inlines + (MachineConfigInline,)  # type: ignore
+
+
+class ChallengeAttachmentInline(admin.TabularInline):
+    """附件内联：在题目页面直接查看/调整附件"""
+
+    model = ChallengeAttachment
+    fk_name = "challenge"
+    extra = 0
+    fields = ("name", "url")
+    ordering = ("order", "id")
+    verbose_name = "附件管理"
+    verbose_name_plural = "附件管理"
+
+
+# 将附件内联插入到现有 inline 列表前
+ChallengeAdmin.inlines = (ChallengeAttachmentInline,) + ChallengeAdmin.inlines  # type: ignore
 
 
 @admin.register(ChallengeSolve)

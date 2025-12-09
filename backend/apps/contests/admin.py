@@ -120,11 +120,17 @@ class ContestAdminForm(forms.ModelForm):
             self.fields["end_time"].help_text = "提示：比赛结束后不允许修改结束时间。"
         if "freeze_time" in self.fields:
             self.fields["freeze_time"].help_text = "提示：封榜一旦生效或比赛结束将无法再调整。"
+        if "registration_start_time" in self.fields:
+            self.fields["registration_start_time"].help_text = "报名开始时间：为空表示立即开放；比赛开始后不可调整。"
+        if "registration_end_time" in self.fields:
+            self.fields["registration_end_time"].help_text = "报名截止时间：为空表示比赛结束前一直开放。"
         self._original_is_team_based = getattr(self.instance, "is_team_based", True)
         self._original_max_members = getattr(self.instance, "max_team_members", 1)
         self._original_start_time = getattr(self.instance, "start_time", None)
         self._original_end_time = getattr(self.instance, "end_time", None)
         self._original_freeze_time = getattr(self.instance, "freeze_time", None)
+        self._original_reg_start = getattr(self.instance, "registration_start_time", None)
+        self._original_reg_end = getattr(self.instance, "registration_end_time", None)
 
     def clean(self):
         cleaned = super().clean()
@@ -147,6 +153,10 @@ class ContestAdminForm(forms.ModelForm):
                 cleaned["end_time"] = self._original_end_time
             if "freeze_time" not in cleaned:
                 cleaned["freeze_time"] = self._original_freeze_time
+            if "registration_start_time" not in cleaned:
+                cleaned["registration_start_time"] = self._original_reg_start
+            if "registration_end_time" not in cleaned:
+                cleaned["registration_end_time"] = self._original_reg_end
 
         if not is_team_based:
             cleaned["max_team_members"] = 1
@@ -164,6 +174,19 @@ class ContestAdminForm(forms.ModelForm):
                 raise forms.ValidationError("比赛已开始，队伍人数上限仅可增加不可减少")
             if cleaned.get("start_time") and cleaned.get("start_time") != self._original_start_time:
                 raise forms.ValidationError("比赛已开始，无法调整开始时间")
+            if cleaned.get("registration_start_time") != self._original_reg_start or cleaned.get("registration_end_time") != self._original_reg_end:
+                raise forms.ValidationError("比赛已开始，无法调整报名时间")
+
+        reg_start = cleaned.get("registration_start_time")
+        reg_end = cleaned.get("registration_end_time")
+        start_time = cleaned.get("start_time")
+        if reg_start and reg_end and reg_start > reg_end:
+            raise forms.ValidationError("报名开始时间需早于报名截止时间")
+        if start_time:
+            if reg_start and reg_start > start_time:
+                raise forms.ValidationError("报名开始时间不能晚于比赛开始时间")
+            if reg_end and reg_end > start_time:
+                raise forms.ValidationError("报名截止时间不能晚于比赛开始时间")
 
         if contest_finished:
             if cleaned.get("end_time") and cleaned.get("end_time") != self._original_end_time:
@@ -190,7 +213,6 @@ class ContestStatusFilter(admin.SimpleListFilter):
         return [
             ("not_started", "未开始"),
             ("running", "进行中"),
-            ("frozen", "进行中（已封榜）"),
             ("ended", "已结束"),
         ]
 
@@ -202,14 +224,67 @@ class ContestStatusFilter(admin.SimpleListFilter):
         if value == "not_started":
             return queryset.filter(start_time__gt=now)
         if value == "running":
-            return (
-                queryset.filter(start_time__lte=now, end_time__gt=now)
-                .filter(models.Q(freeze_time__isnull=True) | models.Q(freeze_time__gt=now))
-            )
-        if value == "frozen":
-            return queryset.filter(start_time__lte=now, end_time__gt=now, freeze_time__lte=now)
+            return queryset.filter(start_time__lte=now, end_time__gt=now)
         if value == "ended":
             return queryset.filter(end_time__lte=now)
+        return queryset
+
+
+class RegistrationOpenFilter(admin.SimpleListFilter):
+    """按是否开放报名筛选"""
+
+    title = "报名开放"
+    parameter_name = "registration_open"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("open", "报名开放"),
+            ("closed", "未开放/已截止"),
+        ]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if not value:
+            return queryset
+        now = timezone.now()
+        open_qs = queryset.filter(
+            models.Q(registration_start_time__isnull=True) | models.Q(registration_start_time__lte=now),
+        ).filter(
+            models.Q(registration_end_time__isnull=True, end_time__gte=now)
+            | models.Q(registration_end_time__gte=now)
+        )
+        if value == "open":
+            return open_qs
+        if value == "closed":
+            return queryset.exclude(id__in=open_qs.values_list("id", flat=True))
+        return queryset
+
+
+class FreezeStateFilter(admin.SimpleListFilter):
+    """按封榜状态筛选"""
+
+    title = "封榜状态"
+    parameter_name = "freeze_state"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("frozen", "已封榜"),
+            ("not_frozen", "未封榜"),
+        ]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if not value:
+            return queryset
+        now = timezone.now()
+        if value == "frozen":
+            return queryset.filter(freeze_time__isnull=False, freeze_time__lte=now, end_time__gt=now)
+        if value == "not_frozen":
+            return queryset.filter(
+                models.Q(freeze_time__isnull=True)
+                | models.Q(freeze_time__gt=now)
+                | models.Q(end_time__lte=now)
+            )
         return queryset
 
 
@@ -323,7 +398,7 @@ class ContestAdmin(AdminAuditMixin, admin.ModelAdmin):
     # 允许通过名称、slug 搜索
     search_fields = ("name", "slug")
     # 按可见性与赛制过滤
-    list_filter = ("visibility", "is_team_based", ContestStatusFilter)
+    list_filter = ("visibility", "is_team_based", ContestStatusFilter, RegistrationOpenFilter, FreezeStateFilter)
     # 根据 name 自动生成 slug（静态定义即可，fieldsets 会动态构建）
     prepopulated_fields = {"slug": ("name",)}
     # 只读字段：排行榜预览避免误编辑
@@ -354,6 +429,8 @@ class ContestAdmin(AdminAuditMixin, admin.ModelAdmin):
             "freeze_time": "可选封榜时间，封榜生效或比赛结束后不可再调整",
             "is_team_based": "开启为团队赛，否则为个人赛；比赛开始后不可修改",
             "max_team_members": "队伍最大人数限制，仅对组队赛生效；比赛开始后仅可增加不可减少",
+            "registration_start_time": "报名开始时间，可为空表示立即开放；比赛开始后不可修改",
+            "registration_end_time": "报名截止时间，可为空表示开赛前一直开放；比赛开始后不可修改",
         }
         for field_name, text in help_texts.items():
             if field_name in form.base_fields:
@@ -374,6 +451,9 @@ class ContestAdmin(AdminAuditMixin, admin.ModelAdmin):
             for field in ("start_time", "is_team_based"):
                 if field not in base:
                     base.append(field)
+            for field in ("registration_start_time", "registration_end_time"):
+                if field not in base:
+                    base.append(field)
         if getattr(obj, "has_ended", False):
             for field in ("end_time",):
                 if field not in base:
@@ -390,7 +470,17 @@ class ContestAdmin(AdminAuditMixin, admin.ModelAdmin):
             (None, {"fields": ("name", "slug", "description", "visibility")}),
             (
                 "时间与赛制",
-                {"fields": ("start_time", "end_time", "freeze_time", "is_team_based", "max_team_members")},
+                {
+                    "fields": (
+                        "start_time",
+                        "end_time",
+                        "freeze_time",
+                        "registration_start_time",
+                        "registration_end_time",
+                        "is_team_based",
+                        "max_team_members",
+                    )
+                },
             ),
         ]
         if obj:

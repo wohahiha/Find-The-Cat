@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 from pathlib import Path
 from typing import Tuple
 
@@ -50,10 +51,12 @@ class LocalFileStorage:
         - relative_path: 相对于 base_dir 的存储路径（字符串）
         - url: 若配置 MEDIA_URL，则返回可访问的 URL，否则为 None
         """
+        safe_name = _safe_filename(filename)
+        safe_subdir = _safe_subdir(subdir)
         try:
-            target_dir = self.base_dir / (subdir or "")
+            target_dir = self.base_dir / safe_subdir if safe_subdir else self.base_dir
             target_dir.mkdir(parents=True, exist_ok=True)
-            target_path = target_dir / filename
+            target_path = target_dir / safe_name
             target_path.write_bytes(content)
 
             relative_path = str(target_path.relative_to(self.base_dir))
@@ -61,7 +64,7 @@ class LocalFileStorage:
             url = f"{media_url.rstrip('/')}/{relative_path}" if media_url else None
             return relative_path, url
         except Exception as exc:
-            logger.exception("本地文件存储失败", extra={"filename": filename, "subdir": subdir})
+            logger.exception("本地文件存储失败", extra={"filename": safe_name, "subdir": safe_subdir})
             raise StorageUnavailableError() from exc
 
 
@@ -93,7 +96,9 @@ class OSSStorage:
         """
         上传文件到对象存储，返回 key 与可访问 URL（若 endpoint 支持）
         """
-        key_parts = [p for p in [self.prefix, subdir, filename] if p]
+        safe_name = _safe_filename(filename)
+        safe_subdir = _safe_subdir(subdir)
+        key_parts = [p for p in [self.prefix, safe_subdir, safe_name] if p]
         key = "/".join(key_parts)
         try:
             self.client.put_object(Bucket=self.bucket, Key=key, Body=content)
@@ -119,3 +124,30 @@ def get_storage():
 
 # 便于直接导入使用
 default_storage = get_storage()
+
+
+def _safe_filename(filename: str) -> str:
+    """
+    生成安全文件名：去除路径片段并添加随机前缀，避免穿越/覆写
+    """
+    name = Path(filename or "").name.replace("\\", "").replace("/", "")
+    if not name or name in {".", ".."}:
+        name = "file"
+    # 限制长度，避免文件系统报错
+    name = name[-120:]
+    prefix = secrets.token_hex(8)
+    return f"{prefix}_{name}"
+
+
+def _safe_subdir(subdir: str | None) -> str:
+    """
+    清洗子目录，剔除 .. / 空白，防止逃逸到媒体目录之外
+    """
+    if not subdir:
+        return ""
+    parts = []
+    for part in str(subdir).replace("\\", "/").split("/"):
+        if not part or part in {".", ".."}:
+            continue
+        parts.append(part)
+    return "/".join(parts)

@@ -14,12 +14,18 @@ from .views import (
     ChallengeHintListView,
     ChallengeHintUnlockView,
     ChallengeAttachmentDownloadView,
+    ContestAttachmentUploadView,
 )
 
 app_name = "contest_challenges"
 
 urlpatterns = [
     path("", ChallengeListView.as_view(), name="list"),
+    path(
+        "attachments/upload/",
+        ContestAttachmentUploadView.as_view(),
+        name="attachment-upload",
+    ),
     path("<slug:challenge_slug>/", ChallengeDetailView.as_view(), name="detail"),
     path("<slug:challenge_slug>/hints/", ChallengeHintListView.as_view(), name="hint-list"),
     path(

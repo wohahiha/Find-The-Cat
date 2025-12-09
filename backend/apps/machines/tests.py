@@ -12,6 +12,8 @@ from apps.accounts.models import User
 from apps.contests.models import Contest
 from apps.challenges.schemas import ChallengeCreateSchema
 from apps.challenges.services import ChallengeCreateService
+from apps.contests.schemas import TeamCreateSchema
+from apps.contests.services import ContestRegisterService, TeamCreateService
 from apps.machines.schemas import MachineStartSchema, MachineStopSchema
 from apps.machines.services import MachineStartService, MachineStopService
 from apps.machines.models import MachineInstance, ChallengeMachineConfig
@@ -41,6 +43,8 @@ class MachineServiceTests(TestCase):
             end_time=now + timezone.timedelta(hours=2),
         )
         self.user = User.objects.create_user(username="player", email="p@example.com", password="Pass1234")
+        ContestRegisterService().execute(self.user, "machine-ctf")
+        TeamCreateService().execute(self.user, TeamCreateSchema(contest_slug="machine-ctf", name="player-team"))
         ChallengeCreateService().execute(
             self.user,
             ChallengeCreateSchema(
@@ -148,6 +152,11 @@ class MachinesAPITestCase(AuthenticatedAPIMixin, APITestCase):
     def setUp(self):
         """每个测试前清理缓存，避免节流或遗留数据干扰"""
         cache.clear()
+        ContestRegisterService().execute(self.user, "api-machines")
+        try:
+            TeamCreateService().execute(self.user, TeamCreateSchema(contest_slug="api-machines", name="api-team"))
+        except Exception:
+            pass
 
     def test_machine_start_stop_api(self):
         client = self._auth_client("alice", "Passw0rd123")

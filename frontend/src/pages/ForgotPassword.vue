@@ -123,11 +123,6 @@
             </div>
           </form>
 
-          <div class="mt-4 space-y-1 text-center">
-            <p v-if="error" class="text-sm text-danger font-semibold">{{ error }}</p>
-            <p v-if="success" class="text-sm text-emerald-400 font-semibold">{{ success }}</p>
-          </div>
-
           <div class="mt-4 text-center">
             <router-link class="text-sm font-bold text-primary hover:underline" to="/login">返回登录</router-link>
           </div>
@@ -142,9 +137,14 @@
   import { useRouter } from 'vue-router'
   import api from '@/api/client'
   import { useConfigStore } from '@/stores/config'
+  import { parseApiError } from '@/api/errors'
+  import { useToastStore } from '@/stores/toast'
+  import { validatePassword, isEmail } from '@/utils/validation'
+  import { CAPTCHA_SCENES } from '@/constants/enums'
 
   const router = useRouter()
   const configStore = useConfigStore()
+  const toast = useToastStore()
   const brandName = computed(() => configStore.brand || 'Find The Cat')
 
 const form = reactive({
@@ -167,30 +167,23 @@ const codeError = ref(false)
 const passwordError = ref(false)
 const confirmError = ref(false)
 
-const validatePassword = (pwd) => {
-  if (!pwd || pwd.length < 8 || pwd.length > 64) return '密码长度需在 8-64 位之间'
-  const hasLetter = /[A-Za-z]/.test(pwd)
-  const hasDigit = /\d/.test(pwd)
-  if (!(hasLetter && hasDigit)) return '密码需同时包含字母和数字'
-  return ''
-}
-
 const sendCode = async () => {
   emailError.value = false
   error.value = ''
   success.value = ''
   codeError.value = false
 
-  if (!form.email) {
+  if (!form.email || !isEmail(form.email)) {
     emailError.value = true
-    error.value = '请先填写邮箱'
+    error.value = '请先填写正确的邮箱'
     return
   }
 
   sendingCode.value = true
   try {
-    const res = await api.post('/accounts/password/reset/request/', { email: form.email })
+    const res = await api.post('/accounts/password/reset/request/', { email: form.email, scene: CAPTCHA_SCENES.RESET_PASSWORD })
     success.value = res.data?.message || '验证码已发送，请检查邮箱'
+    toast.success(success.value)
     countdown.value = 60
     timer = setInterval(() => {
       countdown.value -= 1
@@ -200,7 +193,9 @@ const sendCode = async () => {
       }
     }, 1000)
   } catch (e) {
-    error.value = e?.response?.data?.message || '发送验证码失败'
+    error.value = parseApiError(e, '发送验证码失败，请稍后再试')
+    countdown.value = 0
+    toast.error(error.value)
   } finally {
     sendingCode.value = false
   }
@@ -220,6 +215,11 @@ const submit = async () => {
     if (!form.new_password) passwordError.value = true
     if (!form.confirm_password) confirmError.value = true
     error.value = '请完整填写所有字段'
+    return
+  }
+  if (!isEmail(form.email)) {
+    emailError.value = true
+    error.value = '请输入正确的邮箱'
     return
   }
 
@@ -244,11 +244,13 @@ const submit = async () => {
       confirm_password: form.confirm_password,
     })
     success.value = res.data?.message || '密码重置成功，请使用新密码登录'
+    toast.success(success.value)
     setTimeout(() => {
       router.push('/login')
     }, 500)
   } catch (e) {
-    error.value = e?.response?.data?.message || '重置失败，请稍后再试'
+    error.value = parseApiError(e, '重置失败，请稍后再试')
+    toast.error(error.value)
     const code = e?.response?.data?.code
     if (code === 40002) {
       emailError.value = true

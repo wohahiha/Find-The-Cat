@@ -74,6 +74,25 @@ class LoginRateThrottle(SimpleRateThrottle):
         raise_rate_limit(exc)
 
 
+class RegisterRateThrottle(SimpleRateThrottle):
+    """
+    注册接口限速（防撞库）
+
+    默认 scope = register
+    key = throttle_register_<ip>
+    """
+
+    scope = "register"
+
+    def get_cache_key(self, request, view) -> Optional[str]:
+        ip = self.get_ident(request)
+        return f"throttle_register_{ip}"
+
+    def throttle_failure(self):
+        exc = Throttled(detail="注册请求过于频繁，请稍后再试")
+        raise_rate_limit(exc)
+
+
 # ======================
 # Flag 提交限速
 # ======================

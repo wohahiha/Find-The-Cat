@@ -36,7 +36,7 @@ class SubmissionCreateView(APIView):
         schema = SubmissionCreateSchema.from_dict(request.data, auto_validate=True)
         submission = self.service.execute(request.user, schema)
         base_points = max(0, submission.awarded_points - getattr(submission, "bonus_points", 0))
-        challenge_payload = serialize_challenge(submission.challenge, current_points=base_points)
+        challenge_payload = serialize_challenge(submission.challenge, current_points=base_points, request=request)
         return response.created(
             {
                 "submission": serialize_submission(submission),

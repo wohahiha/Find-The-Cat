@@ -21,7 +21,7 @@ from django.core.cache import cache
 
 from apps.common import response
 from apps.common.permissions import IsAuthenticated, AllowAny
-from apps.common.throttles import LoginRateThrottle, UserPostRateThrottle, EmailCodeSendRateThrottle
+from apps.common.throttles import LoginRateThrottle, RegisterRateThrottle, UserPostRateThrottle, EmailCodeSendRateThrottle
 from apps.common.security import log_security_event
 from apps.common.exceptions import BizError, TokenError, ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -106,7 +106,7 @@ def _set_jwt_cookie(resp: Response, access_token: str) -> None:
     - 业务场景：登录成功后可选择把 access token 写入 HttpOnly Cookie，便于前端少操作
     - 参数 resp: DRF Response 对象；access_token: JWT 访问令牌
     """
-    # 默认开启 Cookie 模式，可通过设置关闭
+    # 默认关闭 Cookie 模式；仅在明确需要时开启（例如兼容旧前端）
     if getattr(settings, "JWT_USE_COOKIE", False):
         # Cookie 名称可配置，默认 jwt_token_in_cookie
         cookie_name = getattr(settings, "JWT_ACCESS_COOKIE_NAME", "jwt_token_in_cookie")
@@ -197,7 +197,7 @@ class RegisterView(APIView):
     # 公开接口，无需登录
     permission_classes = [AllowAny]
     # 限流：用户 POST 类场景
-    throttle_classes = [EmailCodeSendRateThrottle, UserPostRateThrottle]
+    throttle_classes = [RegisterRateThrottle, EmailCodeSendRateThrottle, UserPostRateThrottle]
 
     @extend_schema(
         tags=["accounts-auth"],

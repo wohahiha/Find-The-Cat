@@ -156,7 +156,7 @@ class BankChallengeListView(APIView):
         )
         paginator = StandardPagination()
         page = paginator.paginate_queryset(challenges, request)
-        data = [serialize_challenge(ch, solved=ch.id in solved_ids) for ch in page]
+        data = [serialize_challenge(ch, solved=ch.id in solved_ids, request=request) for ch in page]
         return paginator.get_paginated_response({"items": data})
 
 
@@ -187,7 +187,7 @@ class BankChallengeDetailView(APIView):
         bank = self.context_service.get_bank_for_user(request.user, bank_slug)
         challenge = self.challenge_repo.get_by_slug(bank=bank, slug=challenge_slug)
         solved = self.solve_repo.has_solved(challenge=challenge, user=request.user)
-        return response.success({"challenge": serialize_challenge(challenge, solved=solved)})
+        return response.success({"challenge": serialize_challenge(challenge, solved=solved, request=request)})
 
     @extend_schema(
         summary="更新题库题目",
@@ -202,7 +202,7 @@ class BankChallengeDetailView(APIView):
         payload.update({"bank_slug": bank_slug, "challenge_slug": challenge_slug})
         schema = BankChallengeUpdateSchema.from_dict(payload, auto_validate=True)
         challenge = self.update_service.execute(schema)
-        return response.success({"challenge": serialize_challenge(challenge)}, message="题目已更新")
+        return response.success({"challenge": serialize_challenge(challenge, request=request)}, message="题目已更新")
 
 
 class BankChallengeSubmitView(APIView):

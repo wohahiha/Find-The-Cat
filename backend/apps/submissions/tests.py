@@ -16,6 +16,9 @@ from apps.challenges.services import ChallengeCreateService
 from apps.challenges.repo import ChallengeRepo
 from apps.submissions.models import Submission
 from apps.common.tests_utils import AuthenticatedAPIMixin
+from apps.common.exceptions import ValidationError
+from apps.contests.repo import TeamRepo, TeamMemberRepo
+from apps.contests.models import TeamMember
 
 from .schemas import SubmissionCreateSchema
 from .services import SubmissionService
@@ -55,6 +58,11 @@ class SubmissionServiceTests(TestCase):
                 dynamic_prefix="flag",
             ),
         )
+        # 组队赛：确保存在队伍与成员关系以通过提交校验
+        self.team_repo = TeamRepo()
+        self.member_repo = TeamMemberRepo()
+        self.team = self.team_repo.create_team(contest=self.contest, captain=self.user, name="solo-team")
+        self.member_repo.create_member(team=self.team, user=self.user, role=TeamMember.Role.CAPTAIN)
         # 清理血次序缓存，避免跨用例污染
         warmup = ChallengeRepo().get_by_slug(contest=self.contest, slug="warmup")
         redis_client.delete(blood_rank_key(getattr(warmup, "id", None)))
@@ -112,6 +120,31 @@ class SubmissionServiceTests(TestCase):
         self.assertEqual(submission.flag_submitted, expected_flag)
         self.assertEqual(submission.blood_rank, 1)
 
+    def test_team_based_submission_without_membership_is_rejected(self):
+        """团队赛未入队的选手提交应被拒绝"""
+        now = timezone.now()
+        contest = Contest.objects.create(
+            name="Team Only",
+            slug="team-only",
+            start_time=now - timedelta(minutes=30),
+            end_time=now + timedelta(hours=2),
+            is_team_based=True,
+        )
+        ChallengeCreateService().execute(
+            self.user,
+            ChallengeCreateSchema(
+                contest_slug=contest.slug,
+                title="Team Warmup",
+                slug="team-warmup",
+                content="Find flag",
+                flag="demo",
+                dynamic_prefix="flag",
+            ),
+        )
+        schema = SubmissionCreateSchema(contest_slug=contest.slug, challenge_slug="team-warmup", flag="flag{demo}")
+        with self.assertRaises(ValidationError):
+            SubmissionService().execute(self.user, schema)
+
     @staticmethod
     def _build_dynamic_flag(contest, challenge_slug: str, user):
         challenge = ChallengeRepo().get_by_slug(contest=contest, slug=challenge_slug)
@@ -151,8 +184,8 @@ class SubmissionsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         cls.contest = Contest.objects.create(
             name="API Submit",
             slug="api-submit",
-            start_time=now - timedelta(hours=1),
-            end_time=now + timedelta(hours=1),
+            start_time=now + timedelta(hours=1),
+            end_time=now + timedelta(hours=3),
         )
         ChallengeCreateService().execute(
             cls.admin,
@@ -167,6 +200,10 @@ class SubmissionsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         )
         ContestRegisterService().execute(cls.user, "api-submit")
         TeamCreateService().execute(cls.user, TeamCreateSchema(contest_slug="api-submit", name="Solo"))
+        # 组队与报名在开赛前完成，随后调整为进行中便于接口测试
+        cls.contest.start_time = now - timedelta(minutes=30)
+        cls.contest.end_time = now + timedelta(hours=2)
+        cls.contest.save(update_fields=["start_time", "end_time"])
 
     def setUp(self):
         """每个测试前清理缓存，避免节流或残留数据影响"""

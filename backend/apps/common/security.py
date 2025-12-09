@@ -1,16 +1,45 @@
 """
-安全事件日志工具
+安全事件与敏感密钥工具
 - 统一记录登录/验证码等敏感操作的安全日志，便于审计
+- 提供动态 Flag HMAC 密钥的统一读取与加固提醒
 """
 
 from __future__ import annotations
 
 from typing import Any, Optional
+
+from django.conf import settings
 from django.http import HttpRequest
 
 from apps.common.infra.logger import get_logger, logger_extra
+from apps.system.services import ConfigService
 
 security_logger = get_logger("apps.security")
+_flag_secret_warned = False
+
+
+def get_flag_secret() -> str:
+    """
+    获取动态 Flag 使用的 HMAC 密钥
+    - 优先后台 SystemConfig.FLAG_SECRET，其次 settings.FLAG_SECRET
+    - 若长度不足 16 会记录一次警告，提示管理员更换高熵密钥
+    """
+    global _flag_secret_warned
+
+    cfg_service = ConfigService()
+    resolved = cfg_service.get("FLAG_SECRET", getattr(settings, "FLAG_SECRET", None))
+    resolved = resolved or getattr(settings, "FLAG_SECRET", None)
+    if not resolved:
+        raise RuntimeError("FLAG_SECRET 未配置，无法生成动态 Flag，请在后台或环境变量中设置")
+
+    resolved_str = str(resolved)
+    if len(resolved_str) < 16 and not _flag_secret_warned:
+        security_logger.warning(
+            "FLAG_SECRET 长度不足 16，建议更新为高熵随机值（32+ 字符）以防止动态 Flag 被伪造"
+        )
+        _flag_secret_warned = True
+
+    return resolved_str
 
 
 def _get_client_ip(request: HttpRequest) -> str:

@@ -10,6 +10,24 @@ const loadToken = (key) => {
   return (session?.getItem(key) || storage?.getItem(key) || '')
 }
 
+const resolveUrl = (url) => {
+  if (!url) return ''
+  const normalized = url.replace(/\\/g, '/')
+  if (/^https?:\/\//i.test(normalized)) return normalized
+  const backendBase = import.meta.env.VITE_BACKEND_URL || ''
+  const apiPrefix = '/api'
+  if (normalized.startsWith('/')) {
+    const base = backendBase || apiPrefix
+    return `${base.replace(/\/$/, '')}${normalized}`
+  }
+  try {
+    const base = backendBase || (hasWindow ? window.location.origin : '')
+    return new URL(normalized, base || undefined).toString()
+  } catch {
+    return normalized
+  }
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
@@ -22,6 +40,18 @@ export const useAuthStore = defineStore('auth', {
     async fetchMe() {
       const res = await api.get('/accounts/me/')
       this.user = res.data?.data?.user || res.data?.user || null
+      if (hasWindow) {
+        try {
+          const avatar = resolveUrl(this.user?.avatar || '')
+          if (avatar) {
+            localStorage.setItem('ftc_avatar', avatar)
+          } else {
+            localStorage.removeItem('ftc_avatar')
+          }
+        } catch (e) {
+          // ignore storage errors
+        }
+      }
       return this.user
     },
     async login(payload) {
@@ -57,13 +87,16 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.accessToken = ''
       this.refreshToken = ''
+      delete api.defaults.headers.common.Authorization
       if (storage) {
         storage.removeItem('ftc_access')
         storage.removeItem('ftc_refresh')
+        storage.removeItem('ftc_avatar')
       }
       if (session) {
         session.removeItem('ftc_access')
         session.removeItem('ftc_refresh')
+        session.removeItem('ftc_avatar')
       }
     },
   },

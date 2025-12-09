@@ -1,12 +1,12 @@
 """
-日志封装：提供统一的日志记录器，符合FTC日志标准
+日志封装：提供统一的日志记录器，符合 FTC 日志规范
 
 - 通过日志路径配置文件输出
-- 支持JSON和PLAIN两种格式
+- 支持 JSON 和 PLAIN 两种格式
 - 自动轮转日志文件（按日期）
-- 自动注入请求上下文（request_id、user_id、account_id、username、ip等）
+- 自动注入请求上下文（request_id、user_id、account_id、username、ip 等）
 
-符合标准：docs/日志标准.md
+参考文档：docs/日志规范.md
 """
 
 from __future__ import annotations

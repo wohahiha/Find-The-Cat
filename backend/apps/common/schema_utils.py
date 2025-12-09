@@ -109,8 +109,8 @@ def list_response(
 
 
 # 常用数据结构
-def contest_summary_serializer():
-    return _cached(
+def contest_summary_serializer(**kwargs):
+    cls = _cached(
         "ContestSummary",
         lambda: inline_serializer(
             name="ContestSummary",
@@ -121,16 +121,24 @@ def contest_summary_serializer():
                 "start_time": serializers.DateTimeField(help_text="开始时间"),
                 "end_time": serializers.DateTimeField(help_text="结束时间"),
                 "freeze_time": serializers.DateTimeField(help_text="封榜时间", required=False, allow_null=True),
+                "registration_start_time": serializers.DateTimeField(help_text="报名开始时间", required=False, allow_null=True),
+                "registration_end_time": serializers.DateTimeField(help_text="报名截止时间", required=False, allow_null=True),
                 "status": serializers.CharField(help_text="状态"),
                 "is_team_based": serializers.BooleanField(help_text="是否组队赛"),
                 "max_team_members": serializers.IntegerField(help_text="最大队员数", required=False, allow_null=True),
+                "registration_status": serializers.BooleanField(help_text="当前用户是否已报名（需登录时返回）", required=False, allow_null=True),
+                "registration_valid": serializers.BooleanField(help_text="报名是否有效（团队赛未组队则为 False）", required=False, allow_null=True),
+                "my_team_id": serializers.IntegerField(help_text="当前用户在该比赛的队伍ID（组队赛且已加入时返回）", required=False, allow_null=True),
+                "my_team_name": serializers.CharField(help_text="当前用户在该比赛的队伍名称", required=False, allow_null=True, allow_blank=True),
+                "user_badge": serializers.CharField(help_text="用户侧副状态（registration_closed/registration_invalid/team_missing/frozen/finished/registered）", required=False, allow_blank=True, allow_null=True),
             },
         ),
     )
+    return cls(**kwargs) if kwargs else cls
 
 
-def challenge_summary_serializer():
-    return _cached(
+def challenge_summary_serializer(**kwargs):
+    cls = _cached(
         "ChallengeSummary",
         lambda: inline_serializer(
             name="ChallengeSummary",
@@ -145,6 +153,10 @@ def challenge_summary_serializer():
             },
         ),
     )
+    # 兼容缓存中已是实例的情况
+    if isinstance(cls, serializers.Serializer):
+        return cls if not kwargs else cls.__class__(**kwargs)
+    return cls(**kwargs) if kwargs else cls
 
 
 def hint_serializer():
@@ -183,8 +195,8 @@ def team_serializer(**kwargs):
     return cls(**kwargs) if kwargs else cls
 
 
-def submission_payload_serializer():
-    return _cached(
+def submission_payload_serializer(**kwargs):
+    cls = _cached(
         "SubmissionPayload",
         lambda: inline_serializer(
             name="SubmissionPayload",
@@ -200,11 +212,14 @@ def submission_payload_serializer():
             },
         ),
     )
+    if isinstance(cls, serializers.Serializer):
+        return cls if not kwargs else cls.__class__(**kwargs)
+    return cls(**kwargs) if kwargs else cls
 
 
-def scoreboard_entry_serializer():
+def scoreboard_entry_serializer(**kwargs):
     """记分板条目：兼容团队赛与个人赛"""
-    return _cached(
+    cls = _cached(
         "ScoreboardEntry",
         lambda: inline_serializer(
             name="ScoreboardEntry",
@@ -213,6 +228,10 @@ def scoreboard_entry_serializer():
                 "rank": serializers.IntegerField(help_text="排名"),
                 "score": serializers.IntegerField(help_text="总分"),
                 "bonus_score": serializers.IntegerField(help_text="额外分数", required=False),
+                "is_me": serializers.BooleanField(help_text="是否为当前用户/队伍", required=False, allow_null=True),
+                "name": serializers.CharField(help_text="队伍或选手名称", required=False, allow_blank=True),
+                "team_id": serializers.IntegerField(help_text="队伍 ID", required=False, allow_null=True),
+                "user_id": serializers.IntegerField(help_text="用户 ID", required=False, allow_null=True),
                 "solves": serializers.ListSerializer(
                     child=inline_serializer(
                         name="ScoreboardSolveEntry",
@@ -248,6 +267,9 @@ def scoreboard_entry_serializer():
             },
         ),
     )
+    if isinstance(cls, serializers.Serializer):
+        return cls if not kwargs else cls.__class__(**kwargs)
+    return cls(**kwargs) if kwargs else cls
 
 
 def problem_bank_serializer():
@@ -303,8 +325,8 @@ def user_summary_serializer():
     )
 
 
-def announcement_serializer():
-    return _cached(
+def announcement_serializer(**kwargs):
+    cls = _cached(
         "Announcement",
         lambda: inline_serializer(
             name="Announcement",
@@ -320,6 +342,9 @@ def announcement_serializer():
             },
         ),
     )
+    if isinstance(cls, serializers.Serializer):
+        return cls if not kwargs else cls.__class__(**kwargs)
+    return cls(**kwargs) if kwargs else cls
 
 
 def category_serializer():
@@ -353,6 +378,9 @@ def machine_serializer():
                 "host": serializers.CharField(),
                 "port": serializers.IntegerField(),
                 "status": serializers.CharField(),
+                "extend_count": serializers.IntegerField(required=False),
+                "expires_at": serializers.DateTimeField(required=False, allow_null=True),
+                "remaining_seconds": serializers.IntegerField(required=False, allow_null=True),
                 "created_at": serializers.DateTimeField(),
                 "updated_at": serializers.DateTimeField(),
             },

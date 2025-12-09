@@ -36,6 +36,15 @@ class Contest(models.Model):
     end_time = models.DateTimeField("结束时间")
     # 封榜时间，可为空
     freeze_time = models.DateTimeField("封榜时间", null=True, blank=True)
+    # 报名开始时间，可为空表示立即开放
+    registration_start_time = models.DateTimeField(
+        "报名开始时间",
+        null=True,
+        blank=True,
+        help_text="设置后不可再调整，如需变更请联系管理员重置比赛",
+    )
+    # 报名截止时间，可为空表示一直开放至开赛
+    registration_end_time = models.DateTimeField("报名截止时间", null=True, blank=True)
     # 团队赛 / 个人赛
     is_team_based = models.BooleanField("团队赛", default=True)
     # 队伍人数上限

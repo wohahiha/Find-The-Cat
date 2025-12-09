@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.db import models
 from django.db.models import QuerySet
 
 from apps.common.base.base_repo import BaseRepo
@@ -51,8 +52,12 @@ class MachineRepo(BaseRepo[MachineInstance]):
         )
 
     def running_before(self, cutoff_time):
-        """获取超过指定时间仍在运行的实例 QuerySet"""
-        return self.filter(status=MachineInstance.Status.RUNNING, created_at__lt=cutoff_time)
+        """获取超过指定时间仍在运行的实例 QuerySet（优先使用 expires_at）"""
+        qs = self.filter(status=MachineInstance.Status.RUNNING)
+        # 优先 expires_at，兼容历史数据回退 created_at
+        return qs.filter(
+            models.Q(expires_at__lt=cutoff_time) | models.Q(expires_at__isnull=True, created_at__lt=cutoff_time)
+        )
 
     @staticmethod
     def mark_stopped(instance: MachineInstance, *, clear_port: bool = True) -> MachineInstance:

@@ -49,6 +49,28 @@ def forbid_html(value: str, *, field_name: str = "字段") -> None:
         raise ValidationError(message=f"{field_name} 不允许包含 HTML 标签")
 
 
+def forbid_dangerous_html(value: str, *, field_name: str = "字段") -> None:
+    """
+    拒绝常见危险 HTML 片段（如 <script>/<iframe>/javascript: 等），降低 XSS 风险
+    允许普通文本和 Markdown，但若检测到可执行片段则阻断
+    """
+    if not value:
+        return
+    lower = value.lower()
+    dangerous_markers = [
+        "<script",
+        "javascript:",
+        "onerror=",
+        "onload=",
+        "<iframe",
+        "<object",
+        "<embed",
+        "svg/onload",
+    ]
+    if any(marker in lower for marker in dangerous_markers):
+        raise ValidationError(message=f"{field_name} 含有潜在危险的 HTML/脚本片段")
+
+
 def validate_url_optional(url: str, *, allow_blank: bool = True) -> None:
     """可选 URL 校验，空值可放过"""
     if allow_blank and not url:

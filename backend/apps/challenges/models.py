@@ -4,8 +4,10 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 import hashlib
+import hmac
 
 # 模型文件：定义题目、分类、解题记录及子任务/附件/提示的数据结构，不承载业务流程
+from apps.common.security import get_flag_secret
 
 User = settings.AUTH_USER_MODEL
 
@@ -221,9 +223,9 @@ class Challenge(models.Model):
         if owner_id is None:
             return self._assemble_flag(self.dynamic_prefix, self.flag)
 
-        seed = secret or getattr(settings, "SECRET_KEY", "ftc-dynamic-flag")
-        raw = f"{seed}:{getattr(self, 'contest_id', '')}:{getattr(self, 'id', '')}:{owner_id}:{self.flag}"
-        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+        flag_secret = secret or get_flag_secret()
+        raw = f"{getattr(self, 'contest_id', '')}:{getattr(self, 'id', '')}:{owner_id}:{self.flag}"
+        digest = hmac.new(flag_secret.encode("utf-8"), msg=raw.encode("utf-8"), digestmod=hashlib.sha256).hexdigest()[:32]
         return self._assemble_flag(self.dynamic_prefix, digest)
 
     def check_flag(self, submitted: str, *, user=None, membership=None, secret: str | None = None) -> bool:

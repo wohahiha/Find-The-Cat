@@ -6,7 +6,23 @@
 
 from __future__ import annotations
 
+from django.http import HttpRequest
+
 from .models import Challenge, ChallengeHint, ChallengeCategory
+
+
+def _full_url(url: str | None, request: HttpRequest | None) -> str | None:
+    """将相对 URL 转为绝对 URL（若有 request），否则按原样返回"""
+    if not url:
+        return url
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    if request:
+        try:
+            return request.build_absolute_uri(url)
+        except Exception:
+            return url
+    return url
 
 
 def serialize_hint(hint: ChallengeHint, *, unlocked: bool) -> dict:
@@ -33,7 +49,12 @@ def serialize_category(category: ChallengeCategory) -> dict:
     }
 
 
-def serialize_challenge(challenge: Challenge, *, current_points: int | None = None) -> dict:
+def serialize_challenge(
+    challenge: Challenge,
+    *,
+    current_points: int | None = None,
+    request: HttpRequest | None = None,
+) -> dict:
     """
     题目序列化：包含基础信息、子任务、附件与提示概览（未解锁内容为空）
     - current_points：当前选手可获得的分值（含动态衰减与提示扣分），若为空则回退基础分
@@ -49,6 +70,7 @@ def serialize_challenge(challenge: Challenge, *, current_points: int | None = No
         "short_description": challenge.short_description,
         "content": challenge.content,
         "category": challenge.category.name if challenge.category else None,
+        "category_slug": challenge.category.slug if challenge.category else None,
         "difficulty": challenge.difficulty,
         "base_points": challenge.base_points,
         "current_points": visible_points,
@@ -76,7 +98,8 @@ def serialize_challenge(challenge: Challenge, *, current_points: int | None = No
             {
                 "id": getattr(att, "id", None),
                 "name": att.name,
-                "url": att.url,
+                "url": _full_url(att.url, request),
+                "download_url": _full_url(att.url, request),
                 "order": att.order,
             }
             for att in getattr(challenge, "attachments", []).all().order_by("order", "id")  # type: ignore[attr-defined]

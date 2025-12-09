@@ -13,8 +13,7 @@ const publicPaths = [
   '/accounts/password/reset/request/',
   '/accounts/email/verification/',
   '/accounts/auth/refresh/',
-  '/token/refresh/',
-  '/api/token/refresh/',
+  '/system/public/brand/',
 ]
 
 const hasWindow = typeof window !== 'undefined'
@@ -84,7 +83,7 @@ const processQueue = (error, token = null) => {
 const attemptRefresh = async () => {
   const refresh = getRefresh()
   if (!refresh) {
-    throw new Error('No refresh token')
+    throw new Error('缺少刷新令牌')
   }
   // use a raw axios call to avoid interceptor recursion
   const res = await axios.post('/api/accounts/auth/refresh/', { refresh })
@@ -113,8 +112,14 @@ api.interceptors.response.use(
 
     // Token invalid/expired -> try refresh
     if (status === 401 || code === 40102) {
-      if (isPublic) {
+      // 明确的用户不存在/认证失败，直接清理令牌并拒绝
+      if (code === 40100) {
         clearTokens()
+        window.location.href = '/login'
+        return Promise.reject(error)
+      }
+      if (isPublic) {
+        // 公开接口不刷新、不清理，直接透出
         return Promise.reject(error)
       }
       if (isRefreshing) {
@@ -154,6 +159,17 @@ api.interceptors.response.use(
           isRefreshing = false
         }
       })
+    }
+
+    // 403 且明确定义为未登录/登录失效：仅在没有任何 token 时才跳转登录
+    if (status === 403 && (code === 40300 || code === 40301)) {
+      const access = getAccess()
+      const refresh = getRefresh()
+      if (!access && !refresh) {
+        clearTokens()
+        window.location.href = '/login'
+      }
+      return Promise.reject(error)
     }
 
     return Promise.reject(error)

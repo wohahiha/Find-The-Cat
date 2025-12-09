@@ -4,6 +4,9 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 import hashlib
+import hmac
+
+from apps.common.security import get_flag_secret
 
 # 模型层：题库、题库分类、题库题目与附件/提示/解题记录
 
@@ -129,9 +132,9 @@ class BankChallenge(models.Model):
         owner_id = getattr(user, "id", None)
         if owner_id is None:
             return self._assemble_flag(self.dynamic_prefix, self.flag)
-        seed = secret or getattr(settings, "SECRET_KEY", "ftc-bank-flag")
-        raw = f"{seed}:{self.bank_id}:{self.id}:{owner_id}:{self.flag}"
-        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+        flag_secret = secret or get_flag_secret()
+        raw = f"{self.bank_id}:{self.id}:{owner_id}:{self.flag}"
+        digest = hmac.new(flag_secret.encode("utf-8"), msg=raw.encode("utf-8"), digestmod=hashlib.sha256).hexdigest()[:32]
         return self._assemble_flag(self.dynamic_prefix, digest)
 
     def check_flag(self, submitted: str, *, user=None, secret: str | None = None) -> bool:

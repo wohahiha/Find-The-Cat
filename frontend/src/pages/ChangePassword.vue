@@ -24,6 +24,7 @@
             <router-link class="hover:text-text" to="/">仪表盘</router-link>
             <router-link class="hover:text-text" to="/contests">比赛</router-link>
             <router-link class="hover:text-text" to="/problems">题库</router-link>
+            <router-link class="hover:text-text" to="/announcements">公告</router-link>
             <router-link class="hover:text-text" to="/profile">个人资料</router-link>
           </nav>
           <div class="flex items-center gap-3">
@@ -40,6 +41,16 @@
       </header>
 
       <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col items-center gap-6">
+        <div v-if="loadingUser" class="py-10">
+          <LoadingSpinner>加载账户信息…</LoadingSpinner>
+        </div>
+        <ErrorState
+          v-else-if="loadError"
+          :message="loadError"
+          retry-label="重试"
+          @retry="loadUser"
+        />
+        <template v-else>
         <div class="text-center space-y-2">
           <h1 class="text-3xl sm:text-4xl font-bold leading-tight text-text">修改密码</h1>
           <p class="text-sm text-muted">为了您的账户安全，请不要将您的密码分享给其他人</p>
@@ -167,14 +178,13 @@
               >
                 <span class="truncate">{{ submitting ? '保存中…' : '更新密码' }}</span>
               </button>
-              <p v-if="error" class="text-sm text-danger font-semibold">{{ error }}</p>
-              <p v-if="success" class="text-sm text-emerald-400 font-semibold">{{ success }}</p>
               <p class="text-sm text-muted">
                 <router-link class="font-bold text-primary hover:underline" to="/forgot-password">忘记当前密码？</router-link>
               </p>
             </div>
           </form>
         </div>
+        </template>
       </div>
     </div>
   </div>
@@ -186,11 +196,17 @@
   import api from '@/api/client'
   import { useAuthStore } from '@/stores/auth'
   import { useConfigStore } from '@/stores/config'
+  import { parseApiError } from '@/api/errors'
+  import { useToastStore } from '@/stores/toast'
+  import { validatePassword } from '@/utils/validation'
+  import { CAPTCHA_SCENES } from '@/constants/enums'
+  import { LoadingSpinner, ErrorState } from '@/components/ui'
 
   const router = useRouter()
   const auth = useAuthStore()
   const configStore = useConfigStore()
-  const brandName = computed(() => configStore.brand || 'Find The Cat')
+const toast = useToastStore()
+const brandName = computed(() => configStore.brand || 'Find The Cat')
 
 const form = reactive({
   old_password: '',
@@ -210,6 +226,8 @@ const showConfirm = ref(false)
 const submitting = ref(false)
 const error = ref('')
 const success = ref('')
+const loadError = ref('')
+const loadingUser = ref(false)
 const oldError = ref(false)
 const newError = ref(false)
 const confirmError = ref(false)
@@ -225,14 +243,6 @@ const resolveUrl = (url) => {
   } catch {
     return normalized
   }
-}
-
-const validatePassword = (pwd) => {
-  if (!pwd || pwd.length < 8 || pwd.length > 64) return '密码长度需在 8-64 位之间'
-  const hasLetter = /[A-Za-z]/.test(pwd)
-  const hasDigit = /\d/.test(pwd)
-  if (!(hasLetter && hasDigit)) return '密码需同时包含字母和数字'
-  return ''
 }
 
 const submit = async () => {
@@ -272,13 +282,15 @@ const submit = async () => {
       email_code: emailCode.value,
     })
     success.value = res.data?.message || '密码更新成功，请使用新密码登录'
+    toast.success(success.value)
     // 可选：更新后要求重新登录
     auth.logout()
     setTimeout(() => {
       router.push('/login')
     }, 400)
   } catch (e) {
-    error.value = e?.response?.data?.message || '修改失败，请稍后重试'
+    error.value = parseApiError(e, '修改失败，请稍后重试')
+    toast.error(error.value)
     const code = e?.response?.data?.code
     if (code === 40101 || code === 40002) {
       oldError.value = true
@@ -290,25 +302,42 @@ const submit = async () => {
   }
 }
 
-onMounted(() => {
+const loadUser = async () => {
   if (!auth.accessToken && !sessionStorage.getItem('ftc_access') && !localStorage.getItem('ftc_access')) {
     router.replace('/login')
     return
+  }
+  loadingUser.value = true
+  loadError.value = ''
+  if (auth.user?.email) {
+    email.value = auth.user.email
   }
   const existingAvatar = auth.user?.avatar
   if (existingAvatar) {
     headerAvatar.value = resolveUrl(existingAvatar)
   }
-  api
-    .get('/accounts/me/')
-    .then((res) => {
-      const data = res.data?.data?.user || res.data?.user || {}
-      email.value = data.email || ''
-      if (data.avatar) {
-        headerAvatar.value = resolveUrl(data.avatar)
-      }
-    })
-    .catch(() => {})
+  try {
+    const res = await api.get('/accounts/me/')
+    const data = res.data?.data?.user || res.data?.user || {}
+    email.value = data.email || ''
+    if (data.avatar) {
+      headerAvatar.value = resolveUrl(data.avatar)
+    }
+  } catch (err) {
+    const status = err?.response?.status
+    if (status === 401) {
+      auth.logout()
+      router.replace({ path: '/login', query: { redirect: '/change-password' } })
+      return
+    }
+    loadError.value = parseApiError(err, '获取账户信息失败')
+  } finally {
+    loadingUser.value = false
+  }
+}
+
+onMounted(() => {
+  loadUser()
 })
 
 const sendCode = async () => {
@@ -317,16 +346,18 @@ const sendCode = async () => {
   codeError.value = false
   if (!email.value) {
     codeError.value = true
-    error.value = '请先绑定邮箱'
+    error.value = '请先绑定邮箱后再发送验证码'
+    router.replace('/profile')
     return
   }
   sendingCode.value = true
   try {
     const res = await api.post('/accounts/email/verification/', {
       email: email.value,
-      scene: 'change_password',
+      scene: CAPTCHA_SCENES.CHANGE_PASSWORD,
     })
     success.value = res.data?.message || '验证码已发送'
+    toast.success(success.value)
     countdown.value = 60
     timer = setInterval(() => {
       countdown.value -= 1
@@ -336,7 +367,13 @@ const sendCode = async () => {
       }
     }, 1000)
   } catch (e) {
-    error.value = e?.response?.data?.message || '发送验证码失败'
+    error.value = parseApiError(e, '发送验证码失败，请稍后重试')
+    countdown.value = 0
+    if (timer) {
+      clearInterval(timer)
+      timer = null
+    }
+    toast.error(error.value)
   } finally {
     sendingCode.value = false
   }

@@ -23,9 +23,11 @@ class AttachmentUploadService(BaseService[dict]):
         max_size = 10 * 1024 * 1024  # 10MB
         if len(content) > max_size:
             raise ValidationError(message="附件过大，单个文件请控制在 10MB 内")
-        allowed_suffix = {".zip", ".tar", ".gz", ".tgz", ".bz2", ".7z", ".txt", ".pdf", ".md", ".json"}
+        allowed_suffix = {".zip", ".rar", ".tar", ".tar.gz", ".gz", ".tgz", ".bz2", ".7z", ".txt", ".pdf", ".md", ".json"}
         lower_name = schema.filename.lower()
-        if "." in lower_name:
+        if lower_name.endswith(".tar.gz"):
+            suffix = ".tar.gz"
+        elif "." in lower_name:
             suffix = "." + lower_name.split(".")[-1]
         else:
             suffix = ""

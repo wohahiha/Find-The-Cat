@@ -24,6 +24,9 @@
             <router-link class="hover:text-text" to="/">仪表盘</router-link>
             <router-link class="hover:text-text" to="/contests">比赛</router-link>
             <router-link class="hover:text-text" to="/problems">题库</router-link>
+            <router-link class="hover:text-text" to="/announcements">公告</router-link>
+            <router-link class="hover:text-text" to="/teams">战队</router-link>
+            <router-link class="hover:text-text" to="/machines">靶机</router-link>
             <router-link class="hover:text-text" to="/profile">个人资料</router-link>
           </nav>
           <div class="flex items-center gap-3">
@@ -40,6 +43,16 @@
       </header>
 
       <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div v-if="loading" class="flex justify-center py-12">
+          <LoadingSpinner>加载资料中…</LoadingSpinner>
+        </div>
+        <ErrorState
+          v-else-if="error"
+          :message="error"
+          retry-label="重试"
+          @retry="loadProfile"
+        />
+        <template v-else>
         <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>
             <h1 class="text-3xl sm:text-4xl font-bold leading-tight tracking-tight text-text">个人资料</h1>
@@ -169,8 +182,6 @@
               >
                 <span class="truncate">{{ saving ? '保存中…' : '保存修改' }}</span>
               </button>
-              <p v-if="error" class="text-sm text-danger">{{ error }}</p>
-              <p v-if="success" class="text-sm text-primary">{{ success }}</p>
             </div>
           </section>
 
@@ -209,6 +220,7 @@
             </div>
           </aside>
         </div>
+        </template>
       </div>
     </div>
   </div>
@@ -220,15 +232,19 @@
   import api from '@/api/client'
   import { useAuthStore } from '@/stores/auth'
   import { useConfigStore } from '@/stores/config'
+  import { parseApiError } from '@/api/errors'
+  import { useToastStore } from '@/stores/toast'
+  import { LoadingSpinner, ErrorState } from '@/components/ui'
 
   const router = useRouter()
   const auth = useAuthStore()
   const configStore = useConfigStore()
+  const toast = useToastStore()
   const brandName = computed(() => configStore.brand || 'Find The Cat')
 
-const profile = reactive({
-  username: '',
-  email: '',
+  const profile = reactive({
+    username: '',
+    email: '',
   nickname: '',
   organization: '',
   country: '',
@@ -278,7 +294,8 @@ const loadProfile = async () => {
     initialProfile.value = { ...profile }
     auth.user = data
   } catch (e) {
-    error.value = e?.response?.data?.message || '获取资料失败，请稍后重试'
+    error.value = parseApiError(e, '获取资料失败，请稍后重试')
+    toast.error(error.value)
     if (e?.response?.status === 401) {
       router.replace('/login')
     }
@@ -313,8 +330,10 @@ const saveProfile = async () => {
     const res = await api.patch('/accounts/me/', payload)
     success.value = res.data?.message || '已保存'
     initialProfile.value = { ...initialProfile.value, ...payload }
+    toast.success(success.value)
   } catch (e) {
-    error.value = e?.response?.data?.message || '保存失败，请稍后再试'
+    error.value = parseApiError(e, '保存失败，请稍后再试')
+    toast.error(error.value)
   } finally {
     saving.value = false
   }
@@ -334,6 +353,7 @@ const sendVerifyEmail = async () => {
       scene: 'bind_email',
     })
     success.value = res.data?.message || '验证邮件已发送'
+    toast.success(success.value)
     countdown.value = 60
     timer = setInterval(() => {
       countdown.value -= 1
@@ -343,7 +363,13 @@ const sendVerifyEmail = async () => {
       }
     }, 1000)
   } catch (e) {
-    error.value = e?.response?.data?.message || '发送失败，请稍后重试'
+    error.value = parseApiError(e, '发送失败，请稍后重试')
+    countdown.value = 0
+    if (timer) {
+      clearInterval(timer)
+      timer = null
+    }
+    toast.error(error.value)
   } finally {
     sendingEmail.value = false
   }
@@ -390,11 +416,14 @@ const onAvatarChange = async (e) => {
       profile.avatar = resolved
       if (auth.user) auth.user.avatar = resolved
       success.value = res.data?.message || '头像已更新'
+      toast.success(success.value)
     } else {
       success.value = res.data?.message || '上传成功'
+      toast.success(success.value)
     }
   } catch (err) {
-    error.value = err?.response?.data?.message || '头像上传失败'
+    error.value = parseApiError(err, '头像上传失败')
+    toast.error(error.value)
   } finally {
     uploadingAvatar.value = false
   }

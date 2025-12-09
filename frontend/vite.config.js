@@ -26,6 +26,17 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // serve media/static files during local dev
+      '/media': {
+        target: backendTarget,
+        changeOrigin: true,
+        secure: false,
+      },
+      '/static': {
+        target: backendTarget,
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 })

@@ -9,6 +9,7 @@ from apps.common.exceptions import (
     WrongFlagError,
     ChallengeAlreadySolvedError,
     ChallengeNotAvailableError,
+    ValidationError,
 )
 from apps.accounts.models import User
 from apps.challenges.models import ChallengeSolve
@@ -20,6 +21,7 @@ from apps.common.utils.redis_keys import blood_rank_key, scoreboard_key
 from apps.common.infra.logger import get_logger, logger_extra
 from apps.common.ws_utils import broadcast_notify, broadcast_contest, allow_broadcast
 from apps.system.services import ConfigService
+from apps.common.security import get_flag_secret
 
 from .models import Submission
 from .repo import SubmissionRepo
@@ -93,6 +95,8 @@ class SubmissionService(BaseService[Submission]):
 
         # 2) 获取队伍关系与是否已解出
         membership = self.member_repo.get_membership(contest=contest, user=user)
+        if contest.is_team_based and membership is None:
+            raise ValidationError(message="该比赛为团队赛，请先加入队伍再提交")
         existing_solve = self.solve_repo.get_user_solve_with_related(challenge=challenge, user=user)
 
         # 3) 若已解出，再次提交记为重复并抛出业务错误
@@ -127,7 +131,7 @@ class SubmissionService(BaseService[Submission]):
             raise ChallengeAlreadySolvedError(message="你已经解出该题目")
 
         # 4) 判题：统一使用 Challenge.check_flag
-        secret = getattr(settings, "SECRET_KEY", "ftc-dynamic-flag")
+        secret = get_flag_secret()
         is_correct = challenge.check_flag(
             schema.flag,
             user=user,

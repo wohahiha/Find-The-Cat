@@ -74,6 +74,7 @@ class ChallengeListView(APIView):
                 current_points=self.submit_service.visible_points_for_user(
                     request.user, contest, ch, membership=membership
                 ),
+                request=request,
             )
             for ch in challenges
         ]
@@ -92,7 +93,7 @@ class ChallengeListView(APIView):
         payload["contest_slug"] = contest_slug
         schema = ChallengeCreateSchema.from_dict(payload, auto_validate=True)
         challenge = ChallengeCreateService().execute(request.user, schema)
-        return response.created({"challenge": serialize_challenge(challenge)}, message="题目已创建")
+        return response.created({"challenge": serialize_challenge(challenge, request=request)}, message="题目已创建")
 
 
 @extend_schema_view(
@@ -135,6 +136,7 @@ class ChallengeDetailView(APIView):
                     current_points=self.submit_service.visible_points_for_user(
                         request.user, contest, challenge, membership=membership
                     ),
+                    request=request,
                 )
             }
         )
@@ -152,7 +154,7 @@ class ChallengeDetailView(APIView):
         payload.update({"contest_slug": contest_slug, "slug": challenge_slug})
         schema = ChallengeUpdateSchema.from_dict(payload, auto_validate=True)
         challenge = ChallengeUpdateService().execute(schema)
-        return response.success({"challenge": serialize_challenge(challenge)}, message="题目已更新")
+        return response.success({"challenge": serialize_challenge(challenge, request=request)}, message="题目已更新")
 
 
 # 嵌套在 contests 下的接口（用于生成唯一 operation_id 与摘要）

@@ -9,10 +9,8 @@ from django.utils import timezone
 
 from apps.common.infra import docker_manager, redis_client
 from apps.common.infra.logger import get_logger, logger_extra
-from apps.common.utils.redis_keys import machine_ports_key
-
 from .repo import MachineRepo
-from .services import broadcast_machine_status
+from .services import broadcast_machine_status, _release_port_lock
 
 logger = get_logger(__name__)
 
@@ -21,12 +19,7 @@ def _release_port_from_cache(port: int | None) -> None:
     """从 Redis 端口占用列表中移除指定端口"""
     if port is None:
         return
-    key = machine_ports_key()
-    used_ports = set(redis_client.get_json(key) or [])
-    if port in used_ports:
-        used_ports.discard(port)
-        # 重新写回，设置短期过期避免脏数据长驻
-        redis_client.set_json(key, list(used_ports), ex=300)
+    _release_port_lock(port)
 
 
 def _stop_container(container_id: str) -> None:
@@ -54,9 +47,8 @@ def cleanup_expired_machines() -> int:
         extra=logger_extra({"default_max_minutes": max_minutes_global}),
     )
 
-    cutoff = timezone.now() - timedelta(minutes=max_minutes_global)
     repo = MachineRepo()
-    expired_qs = repo.running_before(cutoff).select_related("contest", "challenge", "user")
+    expired_qs = repo.filter(status=repo.model.Status.RUNNING).select_related("contest", "challenge", "user")
 
     cleaned = 0
     for instance in expired_qs:
@@ -64,8 +56,8 @@ def cleanup_expired_machines() -> int:
         port = instance.port
         per_challenge_runtime = getattr(instance.challenge, "machine_config", None)
         max_minutes = getattr(per_challenge_runtime, "max_runtime_minutes", max_minutes_global)
-        cutoff_time = timezone.now() - timedelta(minutes=max_minutes)
-        if instance.created_at >= cutoff_time:
+        expected_expires = getattr(instance, "expires_at", None) or (instance.created_at + timedelta(minutes=max_minutes))
+        if expected_expires >= timezone.now():
             continue
         # noinspection PyBroadException
         try:

@@ -12,8 +12,8 @@ from apps.common.throttles import MachineStartRateThrottle
 from apps.common.pagination import StandardPagination
 from apps.common.schema_utils import api_response_schema, list_response, machine_serializer, pagination_parameters
 
-from .schemas import MachineStartSchema, MachineStopSchema
-from .services import MachineStartService, MachineStopService, serialize_machine
+from .schemas import MachineStartSchema, MachineStopSchema, MachineExtendSchema
+from .services import MachineStartService, MachineStopService, MachineExtendService, serialize_machine
 from .repo import MachineRepo
 
 
@@ -93,3 +93,36 @@ class MachineStopView(APIView):
         schema = MachineStopSchema.from_dict({"machine_id": machine_id}, auto_validate=True)
         instance = self.stop_service.execute(request.user, schema)
         return response.success({"machine": serialize_machine(instance)}, message="靶机已停止")
+
+
+class MachineExtendView(APIView):
+    """
+    延长靶机运行时间：
+    - 仅运行中的实例可延长
+    """
+
+    permission_classes = [IsAuthenticated, BizPermission]
+    # 使用 stop_machine 权限即可（与停止行为同级）
+    biz_permission = "machines.stop_machine"
+    extend_service = MachineExtendService()
+
+    @extend_schema(
+        summary="延长靶机运行时间",
+        request=inline_serializer(
+            name="MachineExtendRequest",
+            fields={
+                "minutes": serializers.IntegerField(required=False, allow_null=True, help_text="可选：本次延长的分钟数，不填使用默认值"),
+            },
+        ),
+        responses=api_response_schema("MachineExtend", {"machine": machine_serializer()}),
+    )
+    def post(self, request: Request, machine_id: int) -> Response:
+        schema = MachineExtendSchema.from_dict(
+            {
+                "machine_id": machine_id,
+                "minutes": request.data.get("minutes"),
+            },
+            auto_validate=True,
+        )
+        instance = self.extend_service.execute(request.user, schema)
+        return response.success({"machine": serialize_machine(instance)}, message="靶机已延长")

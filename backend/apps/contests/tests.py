@@ -215,7 +215,8 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         self.assertEqual(listing["status"], "进行中")
 
         # 详情包含公告与挑战列表字段
-        resp = self.client.get(f"/api/contests/{slug}/")
+        user_client = self._auth_client("alice", "Passw0rd123")
+        resp = user_client.get(f"/api/contests/{slug}/")
         self.assertEqual(resp.status_code, 200, resp.content)
         self.assertIn("announcements", resp.data["data"])
         self.assertEqual(resp.data["data"]["contest"]["status"], "进行中")
@@ -294,7 +295,8 @@ class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         admin_client = self._auth_client("admin_test_user", "StrongPass123!")
         slug = self._create_contest(admin_client, "category-contest", categories=["Web", "Pwn"])
 
-        detail_resp = self.client.get(f"/api/contests/{slug}/")
+        user_client = self._auth_client("alice", "Passw0rd123")
+        detail_resp = user_client.get(f"/api/contests/{slug}/")
         self.assertEqual(detail_resp.status_code, 200)
         contest_payload = detail_resp.data["data"]["contest"]
         self.assertIn("categories", contest_payload)

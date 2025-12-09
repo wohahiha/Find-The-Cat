@@ -6,51 +6,7 @@
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(42,50,113,0.35),_transparent_45%)]"></div>
       </div>
 
-      <header class="relative z-20 border-b border-border-panel bg-background-dark/80 backdrop-blur-sm">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="size-6 text-primary">
-              <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 42.4379Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </div>
-            <router-link to="/" class="text-base font-bold text-text hover:text-primary">{{ brandName }}</router-link>
-          </div>
-          <nav class="hidden md:flex items-center gap-8 text-sm text-text">
-            <router-link class="hover:text-text" to="/contests">比赛</router-link>
-            <router-link class="hover:text-text" to="/problems">题库</router-link>
-            <router-link class="hover:text-text" to="/profile">个人资料</router-link>
-          </nav>
-          <div class="flex items-center gap-3">
-            <button class="flex h-9 w-9 items-center justify-center rounded-lg bg-border-panel text-muted hover:text-text hover:bg-input-border">
-              <span class="material-symbols-outlined text-lg">notifications</span>
-            </button>
-            <router-link
-              v-if="isAuthed"
-              to="/profile"
-              class="h-9 w-9 rounded-full border border-input-border block bg-center bg-cover bg-no-repeat"
-              :style="{ backgroundImage: headerAvatar ? `url(${headerAvatar})` : 'linear-gradient(135deg,#2547f4,#1c2a5f)' }"
-            ></router-link>
-            <div v-else class="flex items-center gap-2">
-              <router-link
-                class="flex h-9 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-border-panel px-4 text-sm font-bold text-text hover:bg-input-border"
-                to="/login"
-              >
-                登录
-              </router-link>
-              <router-link
-                class="hidden sm:flex h-9 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:bg-primary/90"
-                to="/register"
-              >
-                注册
-              </router-link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PublicNav />
 
       <main class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-14">
         <!-- Hero -->
@@ -84,14 +40,22 @@
         <!-- Announcements without images -->
         <section class="space-y-6">
           <div class="flex items-center justify-between">
-            <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">平台公告</h2>
-            <router-link class="text-sm text-primary hover:underline" to="/announcements">更多</router-link>
+            <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">公告</h2>
+            <router-link class="text-sm text-primary hover:underline" to="/announcements">
+              更多
+            </router-link>
           </div>
-          <div class="grid grid-cols-1 gap-4 sm:gap-6">
-            <article
+          <div v-if="announcementsLoading" class="space-y-3">
+            <SkeletonBlock :count="3" height="16px" />
+          </div>
+          <ErrorState v-else-if="announcementError" :message="announcementError" retry-label="重试" @retry="fetchAnnouncements(activeContestSlug)" />
+          <EmptyState v-else-if="!announcements.length" title="暂无公告" />
+          <div v-else class="grid grid-cols-1 gap-4 sm:gap-6">
+            <router-link
               v-for="(item, idx) in announcements"
               :key="idx"
-              class="rounded-xl border border-border-panel bg-panel/80 p-4 sm:p-5 shadow-panel"
+              class="rounded-xl border border-border-panel bg-panel/80 p-4 sm:p-5 shadow-panel block hover:border-primary/40 hover:-translate-y-0.5 transition-transform"
+              :to="item.to || '/announcements'"
             >
               <div class="flex items-start gap-3">
                 <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -105,14 +69,21 @@
                   <p class="text-sm text-muted leading-relaxed">{{ item.summary }}</p>
                 </div>
               </div>
-            </article>
+            </router-link>
           </div>
         </section>
 
         <!-- Competitions -->
         <section class="space-y-6">
-          <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">进行中 / 即将开始的比赛</h2>
-          <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">比赛</h2>
+          <div v-if="contestsLoading" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div v-for="i in 3" :key="i" class="flex flex-col rounded-xl border border-border-panel bg-panel/70 p-5 shadow-panel space-y-3">
+              <SkeletonBlock :count="4" height="16px" />
+            </div>
+          </div>
+          <ErrorState v-else-if="contestError" :message="contestError" retry-label="重试" @retry="refetchContests" />
+          <EmptyState v-else-if="!contests.length" title="暂无可展示的比赛" />
+          <div v-else class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <div
               v-for="(contest, idx) in contests"
               :key="idx"
@@ -126,16 +97,31 @@
                 >
                   {{ contest.statusLabel }}
                 </span>
+                <span
+                  v-if="contest.badge"
+                  class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                  :class="badgeClass(contest.badge)"
+                >
+                  {{ contest.badge }}
+                </span>
               </div>
-              <p class="mb-4 text-sm text-muted leading-relaxed">{{ contest.description }}</p>
+              <p class="mb-4 text-sm text-muted leading-relaxed line-clamp-3">{{ contest.description }}</p>
               <div class="mb-4 text-xs text-muted space-y-1">
                 <p><strong>开始:</strong> {{ contest.start }}</p>
                 <p><strong>结束:</strong> {{ contest.end }}</p>
               </div>
               <div class="mt-auto">
-                <button
+                <router-link
+                  v-if="contest.slug"
                   class="flex h-10 w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg"
                   :class="contest.primary ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-border-panel text-text hover:bg-input-border'"
+                  :to="`/contests/${contest.slug}`"
+                >
+                  {{ contest.action }}
+                </router-link>
+                <button
+                  v-else
+                  class="flex h-10 w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-border-panel text-text"
                   type="button"
                 >
                   {{ contest.action }}
@@ -162,86 +148,153 @@
 
 <script setup>
 import { computed, ref, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 import api from '@/api/client'
 import { useConfigStore } from '@/stores/config'
+import { formatDateTime } from '@/utils/format'
+import { EmptyState, ErrorState, SkeletonBlock } from '@/components/ui'
+import PublicNav from '@/components/PublicNav.vue'
 
-const auth = useAuthStore()
-const headerAvatar = ref('')
 const configStore = useConfigStore()
 const brandName = computed(() => configStore.brand || 'Find The Cat')
 
-const isAuthed = computed(() => !!(auth.accessToken || sessionStorage.getItem('ftc_access') || localStorage.getItem('ftc_access')))
-
-const announcements = [
-  { title: '平台升级维护', summary: '本周末将进行基础设施升级，预计 2 小时内完成。请提前提交关键任务。', time: '3 小时前' },
-  { title: '新增题库挑战', summary: '上线 5 道最新 Web & Pwn 挑战，欢迎尝试并提交你的 flag。', time: '1 天前' },
-]
-
-const contests = [
-  {
-    name: '冬季攻防赛',
-    status: 'live',
-    statusLabel: '进行中',
-    description: '综合考察 Web/Reverse/Pwn/Forensics，多人协作，实时计分。',
-    start: '2025-12-10 10:00 UTC',
-    end: '2025-12-12 10:00 UTC',
-    primary: true,
-    action: '进入比赛',
-  },
-  {
-    name: '新手入门赛',
-    status: 'upcoming',
-    statusLabel: '即将开始',
-    description: '适合新手的入门赛，覆盖基础安全知识与简单漏洞利用。',
-    start: '2025-12-20 09:00 UTC',
-    end: '2025-12-21 09:00 UTC',
-    primary: false,
-    action: '查看详情',
-  },
-  {
-    name: '秋季月赛',
-    status: 'ended',
-    statusLabel: '已结束',
-    description: '本月月赛已结束，可查看榜单与题解，复盘提升。',
-    start: '2025-11-15 08:00 UTC',
-    end: '2025-11-17 08:00 UTC',
-    primary: false,
-    action: '查看榜单',
-  },
-]
-
-const resolveUrl = (url) => {
-  if (!url) return ''
-  const normalized = url.replace(/\\/g, '/')
-  if (/^https?:\/\//i.test(normalized)) return normalized
-  const base = import.meta.env.VITE_BACKEND_URL || window.location.origin
-  try {
-    return new URL(normalized, base).toString()
-  } catch {
-    return normalized
-  }
-}
+const announcements = ref([])
+const announcementsLoading = ref(false)
+const announcementError = ref('')
+const contests = ref([])
+const contestsLoading = ref(false)
+const contestError = ref('')
+const activeContestSlug = ref('')
 
 const statusClass = (status) => {
-  if (status === 'live') return 'bg-green-500/20 text-green-300'
-  if (status === 'upcoming') return 'bg-blue-500/20 text-blue-300'
+  const normalized = normalizeStatus(status)
+  if (normalized === 'running') return 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40'
+  if (normalized === 'upcoming') return 'bg-border-panel text-text border border-input-border'
+  if (normalized === 'ended') return 'bg-danger/15 text-danger border border-danger/40'
   return 'bg-border-panel text-muted'
 }
 
-onMounted(() => {
-  const existingAvatar = auth.user?.avatar
-  if (existingAvatar) {
-    headerAvatar.value = resolveUrl(existingAvatar)
+const badgeClass = (text) => {
+  if (text.startsWith('已')) return 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40'
+  if (text.startsWith('未') || text.includes('无效') || text.includes('截止')) return 'bg-danger/15 text-danger border border-danger/40'
+  return 'bg-border-panel text-muted border border-input-border/60'
+}
+
+const statusLabel = (status) => {
+  const normalized = normalizeStatus(status)
+  if (normalized === 'running') return '进行中'
+  if (normalized === 'upcoming') return '未开始'
+  if (normalized === 'ended') return '已结束'
+  return '未知状态'
+}
+
+const normalizeStatus = (value) => {
+  const raw = (value || '').toString().toLowerCase()
+  if (!raw) return 'unknown'
+  if (raw.includes('run') || raw.includes('进行')) return 'running'
+  if (raw.includes('upcoming') || raw.includes('未') || raw.includes('not')) return 'upcoming'
+  if (
+    raw.includes('end') ||
+    raw.includes('finish') ||
+    raw.includes('closed') ||
+    raw.includes('done') ||
+    raw.includes('完') ||
+    raw.includes('终') ||
+    raw.includes('结束')
+  )
+    return 'ended'
+  return raw
+}
+
+const mapContest = (item) => {
+  const normalized = normalizeStatus(item?.status)
+  const badge = badgeLabelFromCode(item?.user_badge)
+  return {
+    slug: item?.slug || '',
+    name: item?.name || '未命名比赛',
+    description: item?.description || '暂无描述',
+    start: formatDateTime(item?.start_time) || '待定',
+    end: formatDateTime(item?.end_time) || '待定',
+    status: normalized,
+    statusLabel: statusLabel(normalized),
+    badge,
+    primary: normalized === 'running',
+    action: normalized === 'running' ? '进入比赛' : normalized === 'upcoming' ? '查看详情' : '查看榜单',
   }
-  api
-    .get('/accounts/me/')
-    .then((res) => {
-      const data = res.data?.data?.user || res.data?.user || {}
-      if (data.avatar) {
-        headerAvatar.value = resolveUrl(data.avatar)
-      }
-    })
-    .catch(() => {})
+}
+
+const badgeLabelFromCode = (code) => {
+  switch (code) {
+    case 'registration_closed':
+      return '报名截止'
+    case 'registration_invalid':
+      return '报名无效'
+    case 'team_missing':
+      return '未组队'
+    case 'frozen':
+      return '已封榜'
+    case 'finished':
+      return '已完赛'
+    case 'registered':
+      return '已报名'
+    default:
+      return ''
+  }
+}
+
+
+const mapAnnouncement = (item) => {
+  const time = item?.created_at || item?.updated_at
+  const summary = item?.summary || item?.content || ''
+  const contest = item?.contest || contests.value?.[0]?.slug || ''
+  return {
+    id: item?.id || `announcement-${Date.now()}`,
+    title: item?.title || '未命名公告',
+    summary: summary.length > 120 ? `${summary.slice(0, 120)}...` : summary,
+    time: formatDateTime(time) || '刚刚',
+    to: contest && item?.id ? `/contests/${contest}/announcements/${item.id}` : '/announcements',
+  }
+}
+
+const fetchContests = async () => {
+  contestsLoading.value = true
+  contestError.value = ''
+  try {
+    const res = await api.get('/contests/', { params: { page_size: 6 } })
+    const items = res.data?.data?.items || res.data?.items || []
+    contests.value = items.map(mapContest)
+    activeContestSlug.value = contests.value[0]?.slug || ''
+  } catch (e) {
+    contestError.value = e?.response?.data?.message || '加载比赛列表失败'
+    contests.value = []
+  } finally {
+    contestsLoading.value = false
+  }
+  return contests.value[0]?.slug || ''
+}
+
+const fetchAnnouncements = async (contestSlug = '') => {
+  announcementsLoading.value = true
+  announcementError.value = ''
+  announcements.value = []
+  if (!contestSlug) {
+    announcementsLoading.value = false
+    return
+  }
+  try {
+    const res = await api.get(`/contests/${contestSlug}/announcements/`, { params: { page_size: 5 } })
+    const items = res.data?.data?.items || res.data?.items || []
+    announcements.value = items.map(mapAnnouncement)
+  } catch (e) {
+    announcementError.value = e?.response?.data?.message || '加载公告失败'
+  } finally {
+    announcementsLoading.value = false
+  }
+}
+
+const refetchContests = () => fetchContests().then((slug) => fetchAnnouncements(slug))
+
+onMounted(() => {
+  // 拉取比赛与公告
+  refetchContests()
 })
 </script>

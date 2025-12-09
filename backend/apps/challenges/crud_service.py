@@ -8,6 +8,9 @@ from apps.common.base.base_service import BaseService
 from apps.common.exceptions import ValidationError
 from apps.accounts.models import User
 from apps.contests.repo import ContestRepo
+from apps.notifications.services import fanout_notifications, build_dedup_key
+from apps.notifications.models import Notification
+from apps.contests.repo import ContestParticipantRepo
 
 from .models import Challenge
 from .repo import (
@@ -73,6 +76,7 @@ class ChallengeCreateService(BaseService[Challenge]):
             task_repo: ChallengeTaskRepo | None = None,
             attachment_repo: ChallengeAttachmentRepo | None = None,
             hint_repo: ChallengeHintRepo | None = None,
+            participant_repo: ContestParticipantRepo | None = None,
     ):
         self.contest_repo = contest_repo or ContestRepo()
         self.challenge_repo = challenge_repo or ChallengeRepo()
@@ -80,6 +84,7 @@ class ChallengeCreateService(BaseService[Challenge]):
         self.task_repo = task_repo or ChallengeTaskRepo()
         self.attachment_repo = attachment_repo or ChallengeAttachmentRepo()
         self.hint_repo = hint_repo or ChallengeHintRepo()
+        self.participant_repo = participant_repo or ContestParticipantRepo()
 
     def perform(self, user: User, schema: ChallengeCreateSchema) -> Challenge:
         # 1) 获取比赛与分类（可选创建）
@@ -130,6 +135,27 @@ class ChallengeCreateService(BaseService[Challenge]):
                 "data": serialize_challenge_brief(challenge),
             },
         )
+        # 系统通知：比赛内新题
+        participants = list(self.participant_repo.filter(contest=contest, is_valid=True).select_related("user"))
+        if participants:
+            dedup = build_dedup_key(
+                type=Notification.Type.CHALLENGE_NEW,
+                contest=contest,
+                challenge=challenge,
+            )
+            fanout_notifications(
+                [p.user for p in participants if getattr(p, "user", None)],
+                type=Notification.Type.CHALLENGE_NEW,
+                title=f"新题上线：{challenge.title}",
+                body=contest.name,
+                payload={
+                    "contest": contest.slug,
+                    "challenge": challenge.slug,
+                },
+                contest=contest,
+                challenge=challenge,
+                dedup_key=dedup,
+            )
         return challenge
 
     def _sync_tasks(self, challenge: Challenge, tasks_data: list) -> None:
@@ -183,6 +209,7 @@ class ChallengeUpdateService(BaseService[Challenge]):
             task_repo: ChallengeTaskRepo | None = None,
             attachment_repo: ChallengeAttachmentRepo | None = None,
             hint_repo: ChallengeHintRepo | None = None,
+            participant_repo: ContestParticipantRepo | None = None,
     ):
         self.contest_repo = contest_repo or ContestRepo()
         self.challenge_repo = challenge_repo or ChallengeRepo()
@@ -190,6 +217,7 @@ class ChallengeUpdateService(BaseService[Challenge]):
         self.task_repo = task_repo or ChallengeTaskRepo()
         self.attachment_repo = attachment_repo or ChallengeAttachmentRepo()
         self.hint_repo = hint_repo or ChallengeHintRepo()
+        self.participant_repo = participant_repo or ContestParticipantRepo()
 
     def perform(self, schema: ChallengeUpdateSchema) -> Challenge:
         # 1) 获取比赛与题目
@@ -253,4 +281,25 @@ class ChallengeUpdateService(BaseService[Challenge]):
                 "operator_id": getattr(schema, "operator_id", None),
             },
         )
+        participants = list(self.participant_repo.filter(contest=contest, is_valid=True).select_related("user"))
+        if participants:
+            dedup = build_dedup_key(
+                type=Notification.Type.CHALLENGE_UPDATED,
+                contest=contest,
+                challenge=challenge,
+                bucket=challenge.updated_at.isoformat(timespec="minutes"),
+            )
+            fanout_notifications(
+                [p.user for p in participants if getattr(p, "user", None)],
+                type=Notification.Type.CHALLENGE_UPDATED,
+                title=f"题目更新：{challenge.title}",
+                body=contest.name,
+                payload={
+                    "contest": contest.slug,
+                    "challenge": challenge.slug,
+                },
+                contest=contest,
+                challenge=challenge,
+                dedup_key=dedup,
+            )
         return challenge

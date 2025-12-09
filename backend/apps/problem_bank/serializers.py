@@ -1,6 +1,21 @@
 from __future__ import annotations
 
+from django.http import HttpRequest
+
 from .models import ProblemBank, BankChallenge, BankHint
+
+
+def _full_url(url: str | None, request: HttpRequest | None) -> str | None:
+    if not url:
+        return url
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    if request:
+        try:
+            return request.build_absolute_uri(url)
+        except Exception:
+            return url
+    return url
 
 
 def serialize_bank(bank: ProblemBank) -> dict:
@@ -25,7 +40,12 @@ def serialize_hint(hint: BankHint) -> dict:
     }
 
 
-def serialize_challenge(challenge: BankChallenge, *, solved: bool = False) -> dict:
+def serialize_challenge(
+    challenge: BankChallenge,
+    *,
+    solved: bool = False,
+    request: HttpRequest | None = None,
+) -> dict:
     """题库题目序列化：用于列表与详情"""
     return {
         "id": challenge.id,
@@ -38,7 +58,13 @@ def serialize_challenge(challenge: BankChallenge, *, solved: bool = False) -> di
         "difficulty": challenge.difficulty,
         "is_active": challenge.is_active,
         "attachments": [
-            {"id": att.id, "name": att.name, "url": att.url, "order": att.order}
+            {
+                "id": att.id,
+                "name": att.name,
+                "url": _full_url(att.url, request),
+                "download_url": _full_url(att.url, request),
+                "order": att.order,
+            }
             for att in challenge.attachments.all().order_by("order", "id")
         ],
         "hints": [

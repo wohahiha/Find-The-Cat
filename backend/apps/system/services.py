@@ -46,6 +46,13 @@ class ConfigService(BaseService[SystemConfig]):
             "sensitive": True,
             "required": True,
         },
+        "FLAG_SECRET": {
+            "type": SystemConfig.ValueType.SECRET,
+            "desc": "动态 Flag HMAC 密钥",
+            "detail": "用于为动态 Flag 生成 HMAC，必须为高熵随机字符串，避免复用 SECRET_KEY。泄露将导致所有动态 Flag 可被伪造，生产环境务必设置为 32+ 字符并保密。修改后需重启服务生效。",
+            "sensitive": True,
+            "required": True,
+        },
         "DEBUG": {
             "type": SystemConfig.ValueType.BOOL,
             "desc": "DEBUG 开关（生产应为 False）",

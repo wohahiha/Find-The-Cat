@@ -30,6 +30,10 @@ urlpatterns = [
     path("auth/captcha/", CaptchaView.as_view(), name="captcha"),
     # 刷新访问令牌：使用 refresh 获取新的 access
     path("auth/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
+    # 兼容 /auth/ 前缀的密码/验证码路由（旧前端调用）
+    path("auth/password/reset/request/", PasswordResetRequestView.as_view(), name="password-reset-request-alias"),
+    path("auth/password/reset/", PasswordResetView.as_view(), name="password-reset-alias"),
+    path("auth/password/change/", ChangePasswordView.as_view(), name="password-change-alias"),
     # 申请重置密码：发送邮箱验证码（节流/场景校验）
     path("password/reset/request/", PasswordResetRequestView.as_view(), name="password-reset-request"),
     # 重置密码：消费验证码后设置新密码

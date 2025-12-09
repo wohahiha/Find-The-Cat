@@ -15,6 +15,7 @@ from apps.common.tests_utils import AuthenticatedAPIMixin
 from apps.contests.models import Contest
 from apps.contests.schemas import TeamCreateSchema
 from apps.contests.services import TeamCreateService, ContestRegisterService
+from apps.contests.repo import TeamMemberRepo
 from apps.common.exceptions import ChallengeAlreadySolvedError
 from apps.common.exceptions import ValidationError
 from apps.challenges.hint_service import ChallengeHintService
@@ -148,6 +149,11 @@ class ChallengeServiceTests(TestCase):
                 dynamic_prefix="flag",
             ),
         )
+        ContestRegisterService().execute(self.player, "autumn-ctf")
+        TeamCreateService().execute(
+            self.player,
+            TeamCreateSchema(contest_slug="autumn-ctf", name="SoloTeam"),
+        )
         expected_flag = self._build_expected_flag(challenge, self.player)
         # 正确 flag 提交通过
         submission = SubmissionService().execute(
@@ -203,7 +209,8 @@ class ChallengeServiceTests(TestCase):
     @staticmethod
     def _build_expected_flag(challenge, user):
         """按照服务端逻辑构造动态 Flag，供断言使用"""
-        return challenge.build_expected_flag(user=user, secret=settings.SECRET_KEY)
+        membership = TeamMemberRepo().get_membership(contest=challenge.contest, user=user)
+        return challenge.build_expected_flag(user=user, membership=membership, secret=settings.SECRET_KEY)
 
     @staticmethod
     def _ensure_category(contest: Contest, name: str):
@@ -256,6 +263,16 @@ class ChallengesAPITestCase(AuthenticatedAPIMixin, APITestCase):
 
     def setUp(self):
         cache.clear()
+        # 确保选手已报名并创建队伍，满足团队赛提交校验
+        ContestRegisterService().execute(self.player, self.contest.slug)
+        try:
+            TeamCreateService().execute(
+                self.player,
+                TeamCreateSchema(contest_slug=self.contest.slug, name="player-team"),
+            )
+        except Exception:
+            # 队伍已存在等非致命异常忽略
+            pass
 
     def test_challenge_crud_and_submit(self):
         """接口链路冒烟：创建题目、列表/详情查看、提交 Flag 与重复提交校验"""
@@ -431,4 +448,5 @@ class ChallengesAPITestCase(AuthenticatedAPIMixin, APITestCase):
     @staticmethod
     def _build_dynamic_flag(challenge, user):
         """复用服务端规则构造动态 Flag，便于接口断言"""
-        return challenge.build_expected_flag(user=user, secret=settings.SECRET_KEY)
+        membership = TeamMemberRepo().get_membership(contest=challenge.contest, user=user)
+        return challenge.build_expected_flag(user=user, membership=membership, secret=settings.SECRET_KEY)

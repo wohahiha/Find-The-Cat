@@ -63,24 +63,23 @@
 
           <div class="flex flex-col gap-2">
             <p class="text-base font-medium leading-normal">验证码</p>
-            <div class="flex items-center gap-3 sm:gap-5">
+            <div class="flex items-center gap-3">
               <input
                 v-model="form.captchaCode"
-                class="form-input w-40 min-w-0 flex-shrink resize-none overflow-hidden rounded-lg text-text focus:outline-0 focus:ring-2 border h-14 placeholder:text-muted px-4 text-base font-normal leading-normal"
+                class="form-input flex-1 min-w-[9rem] resize-none overflow-hidden rounded-lg text-text focus:outline-0 focus:ring-2 border h-14 placeholder:text-muted px-4 text-base font-normal leading-normal"
                 :class="captchaError ? 'border-danger focus:border-danger focus:ring-danger/40 bg-input' : 'border-input-border bg-input focus:ring-primary/50 focus:border-primary'"
                 placeholder="请输入验证码"
                 type="text"
               />
-              <div class="flex-1">
+              <div class="flex h-14 w-40 flex-shrink-0 items-center justify-center rounded-lg border" :class="captchaError ? 'border-danger' : 'border-input-border'">
                 <img
-                  alt="Captcha"
-                  class="h-14 w-full rounded-lg border object-cover bg-input"
-                  :class="captchaError ? 'border-danger' : 'border-input-border'"
+                  alt="验证码"
+                  class="h-full w-full rounded-md object-cover object-center bg-input"
                   :src="captcha.image || placeholderCaptcha"
                 />
               </div>
               <button
-                aria-label="Refresh captcha"
+                aria-label="刷新验证码"
                 class="flex h-14 w-14 flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-border-panel text-text hover:bg-input-border"
                 type="button"
                 :disabled="captcha.loading"
@@ -110,8 +109,6 @@
           >
             <span class="truncate">{{ submitting ? '登录中…' : '登录' }}</span>
           </button>
-          <p v-if="error" class="text-center text-sm text-danger font-semibold">{{ error }}</p>
-          <p v-if="success" class="text-center text-sm text-emerald-400 font-semibold">{{ success }}</p>
           <p class="text-center text-sm text-muted">
             还没有账号？
             <router-link class="font-bold text-text hover:underline" to="/register">前往注册</router-link>
@@ -128,11 +125,14 @@ import { useRouter, useRoute } from 'vue-router'
 import api from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useConfigStore } from '@/stores/config'
+import { parseApiError } from '@/api/errors'
+import { useToastStore } from '@/stores/toast'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const configStore = useConfigStore()
+const toast = useToastStore()
 const brandName = computed(() => configStore.brand || 'Find The Cat')
 
 const form = reactive({
@@ -155,7 +155,7 @@ const passwordError = ref(false)
 const captchaError = ref(false)
 
 const placeholderCaptcha =
-  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='56'><rect width='100%' height='100%' fill='%23181834'/><text x='50%' y='50%' dy='.3em' text-anchor='middle' fill='%23ffffff' font-size='18' font-family='Arial'>CAPTCHA</text></svg>"
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='56'><rect width='100%' height='100%' fill='%23181834'/><text x='50%' y='50%' dy='.3em' text-anchor='middle' fill='%23ffffff' font-size='18' font-family='Arial'>验证码</text></svg>"
 
 const resolveUrl = (url) => {
   if (!url) return ''
@@ -185,7 +185,11 @@ const loadCaptcha = async (keepError = false) => {
     const resolved = resolveUrl(parsed.image)
     captcha.image = resolved ? `${resolved}?t=${Date.now()}` : placeholderCaptcha
   } catch (e) {
-    error.value = e?.response?.data?.message || 'Failed to load captcha'
+    error.value = parseApiError(e, '验证码加载失败，请重试')
+    // 失败时清理旧验证码，避免提交错 key
+    captcha.key = ''
+    captcha.image = placeholderCaptcha
+    toast.error(error.value)
   } finally {
     captcha.loading = false
   }
@@ -216,17 +220,19 @@ const submit = async () => {
     const res = await auth.login(payload)
     success.value = res?.message || '登录成功'
     const redirect = route.query.redirect || '/'
+    toast.success(success.value)
     setTimeout(() => {
       router.push(redirect)
     }, 300)
   } catch (e) {
     const resp = e?.response?.data || {}
     const code = resp.code
-    const msg = resp.message || '登录失败'
+    const msg = resp.message || parseApiError(e, '登录失败，请重试')
     error.value = msg
+    toast.error(error.value)
     if (code === 40104) {
       captchaError.value = true
-      error.value = msg || 'Captcha incorrect or expired'
+      error.value = msg || '验证码错误或已过期'
       loadCaptcha(true)
     } else if (code === 40101) {
       identifierError.value = true

@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from apps.common.base.base_schema import BaseSchema
 from apps.common.exceptions import ValidationError
+from apps.common.utils.validators import forbid_dangerous_html
 
 
 # Schema 层：负责请求入参的结构化与校验，禁止写业务逻辑
@@ -37,6 +38,9 @@ class ContestCreateSchema(BaseSchema[None]):
     end_time: datetime = None  # type: ignore[assignment]
     # 封榜时间
     freeze_time: Optional[datetime] = None
+    # 报名开始/截止时间
+    registration_start_time: Optional[datetime] = None
+    registration_end_time: Optional[datetime] = None
     # 团队赛（True） / 个人赛（False）
     is_team_based: bool = True
     # 队伍人数上限
@@ -61,12 +65,25 @@ class ContestCreateSchema(BaseSchema[None]):
 
         if not self.name:
             raise ValidationError(message="比赛名称不能为空")
+        forbid_dangerous_html(self.name, field_name="比赛名称")
         if not self.slug:
             raise ValidationError(message="比赛标识不能为空")
+        if self.description:
+            forbid_dangerous_html(self.description, field_name="比赛描述")
         self.start_time = ensure_dt(self.start_time)
         self.end_time = ensure_dt(self.end_time)
         if self.end_time <= self.start_time:
             raise ValidationError(message="结束时间必须晚于开始时间")
+        if self.registration_start_time:
+            self.registration_start_time = ensure_dt(self.registration_start_time)
+        if self.registration_end_time:
+            self.registration_end_time = ensure_dt(self.registration_end_time)
+        if self.registration_start_time and self.registration_end_time and self.registration_start_time > self.registration_end_time:
+            raise ValidationError(message="报名开始时间需早于报名截止时间")
+        if self.registration_start_time and self.registration_start_time > self.start_time:
+            raise ValidationError(message="报名开始时间不能晚于比赛开始时间")
+        if self.registration_end_time and self.registration_end_time > self.start_time:
+            raise ValidationError(message="报名截止时间不能晚于比赛开始时间")
         if self.freeze_time:
             self.freeze_time = ensure_dt(self.freeze_time)
             if not (self.start_time <= self.freeze_time <= self.end_time):
@@ -104,6 +121,9 @@ class ContestUpdateSchema(BaseSchema[None]):
     end_time: Optional[datetime] = None
     # 封榜时间
     freeze_time: Optional[datetime] = None
+    # 报名开始/截止时间
+    registration_start_time: Optional[datetime] = None
+    registration_end_time: Optional[datetime] = None
     # 团队赛（True） / 个人赛（False）
     is_team_based: Optional[bool] = None
     # 队伍人数上限
@@ -113,6 +133,10 @@ class ContestUpdateSchema(BaseSchema[None]):
         """基础校验：确保存在比赛标识，队伍人数合法"""
         if not self.contest_slug:
             raise ValidationError(message="缺少比赛标识")
+        if self.name:
+            forbid_dangerous_html(self.name, field_name="比赛名称")
+        if self.description:
+            forbid_dangerous_html(self.description, field_name="比赛描述")
         if self.max_team_members is not None and self.max_team_members < 1:
             raise ValidationError(message="队伍人数下限为 1")
 
@@ -140,10 +164,13 @@ class AnnouncementCreateSchema(BaseSchema[None]):
             raise ValidationError(message="缺少比赛标识")
         if not self.title:
             raise ValidationError(message="公告标题不能为空")
+        forbid_dangerous_html(self.title, field_name="公告标题")
         if not self.summary:
             raise ValidationError(message="公告摘要不能为空")
+        forbid_dangerous_html(self.summary, field_name="公告摘要")
         if not self.content:
             raise ValidationError(message="公告内容不能为空")
+        forbid_dangerous_html(self.content, field_name="公告内容")
 
 
 @dataclass
@@ -161,6 +188,9 @@ class TeamCreateSchema(BaseSchema[None]):
         """校验队伍名称必填"""
         if not self.name:
             raise ValidationError(message="队伍名称不能为空")
+        forbid_dangerous_html(self.name, field_name="队伍名称")
+        if self.description:
+            forbid_dangerous_html(self.description, field_name="队伍简介")
 
 
 @dataclass

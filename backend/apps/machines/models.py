@@ -41,6 +41,21 @@ class ChallengeMachineConfig(models.Model):
         default=DEFAULT_RUNTIME_MINUTES,
         help_text="单个实例允许的最长运行时间，超过后将自动清理",
     )
+    extend_minutes_default = models.PositiveIntegerField(
+        "单次延时分钟数",
+        default=30,
+        help_text="用户点击延时追加的时间（分钟）",
+    )
+    extend_max_times = models.IntegerField(
+        "最大延时次数",
+        default=-1,
+        help_text="每一实例允许用户延时的次数，-1 表示不限制，0 表示禁止延时。",
+    )
+    extend_threshold_minutes = models.IntegerField(
+        "允许延时阈值（分钟）",
+        default=15,
+        help_text="仅当实例剩余时间小于等于该值时允许延时，0 或负数表示随时都可以延时",
+    )
     clean_interval_seconds = models.PositiveIntegerField(
         "清理扫描间隔（秒）",
         default=300,
@@ -100,6 +115,10 @@ class MachineInstance(models.Model):
     port = models.PositiveIntegerField("端口", null=True, blank=True)
     # 实例状态
     status = models.CharField("状态", max_length=20, choices=Status.choices, default=Status.RUNNING)
+    # 延时次数
+    extend_count = models.PositiveIntegerField("延时次数", default=0)
+    # 过期时间（用于清理/倒计时）
+    expires_at = models.DateTimeField("过期时间", null=True, blank=True)
     # 启动时间
     created_at = models.DateTimeField("创建时间", auto_now_add=True)
     # 更新时间

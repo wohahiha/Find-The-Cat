@@ -30,6 +30,9 @@ from apps.common.infra import redis_client
 from apps.common.utils.redis_keys import scoreboard_key
 from apps.common.ws_utils import broadcast_contest, broadcast_notify
 from apps.common.infra.logger import get_logger, logger_extra
+from apps.notifications.services import fanout_notifications, build_dedup_key
+from apps.notifications.models import Notification
+from apps.accounts.models import User
 
 from .models import Contest, Team, TeamMember, ContestAnnouncement, ContestParticipant
 from .repo import (
@@ -66,16 +69,13 @@ def determine_contest_status(contest: Contest, *, now: datetime | None = None) -
     """
     计算比赛当前状态：
     - 未开始：当前时间早于开始时间
-    - 进行中：已开赛且未封榜/未结束
-    - 进行中（已封榜）：已开赛未结束且封榜时间已到
+    - 进行中：已开赛且未结束
     - 已结束：当前时间晚于结束时间
     """
     reference = now or timezone.now()
-    if not contest.has_started:
+    if reference < contest.start_time:
         return "未开始"
-    if not contest.has_ended:
-        if contest.freeze_time and reference >= contest.freeze_time:
-            return "进行中（已封榜）"
+    if reference <= contest.end_time:
         return "进行中"
     return "已结束"
 
@@ -95,6 +95,8 @@ def serialize_contest(
         "start_time": contest.start_time,
         "end_time": contest.end_time,
         "freeze_time": contest.freeze_time,
+        "registration_start_time": contest.registration_start_time,
+        "registration_end_time": contest.registration_end_time,
         "is_team_based": contest.is_team_based,
         "max_team_members": contest.max_team_members,
         "is_active": contest.is_active,
@@ -124,7 +126,7 @@ def serialize_team(team: Team) -> dict:
     member_count = getattr(team, "active_member_count", None)
     if member_count is None:
         member_count = team.member_count
-    return {
+    payload = {
         "id": getattr(team, "id", None),
         "contest": getattr(team.contest, "slug", None),
         "name": team.name,
@@ -135,6 +137,24 @@ def serialize_team(team: Team) -> dict:
         "member_count": member_count,
         "is_active": team.is_active,
     }
+    members = getattr(team, "members_cache", None) or getattr(team, "members_prefetched", None)
+    if members is None:
+        # 避免大量查询，只有在极少数（如我的队伍）场景下读取成员
+        try:
+            members = list(team.members.filter(is_active=True).select_related("user"))
+        except Exception:
+            members = []
+    if members:
+        payload["members"] = [
+            {
+                "id": getattr(m, "user_id", None),
+                "username": getattr(getattr(m, "user", None), "username", None),
+                "joined_at": getattr(m, "joined_at", None),
+                "role": getattr(m, "role", None),
+            }
+            for m in members
+        ]
+    return payload
 
 
 class ContestContextService(BaseService[Contest]):
@@ -239,10 +259,73 @@ class ContestContextService(BaseService[Contest]):
             raise PermissionDeniedError(message="管理员不能报名参赛")
         if contest.has_ended:
             raise ConflictError(message="比赛已结束，无法报名")
+        now = timezone.now()
+        reg_start = getattr(contest, "registration_start_time", None)
+        reg_end = getattr(contest, "registration_end_time", None) or contest.end_time
+        if reg_start and now < reg_start:
+            raise ConflictError(message="报名尚未开始")
+        if reg_end and now > reg_end:
+            raise ConflictError(message="报名已截止")
         status = ContestParticipant.Status.RUNNING if contest.has_started else ContestParticipant.Status.REGISTERED
         membership = self.member_repo.get_membership(contest=contest, user=user)
         is_valid = bool(membership) or not contest.is_team_based
         return self.participant_repo.ensure_status(contest, user, status, is_valid=is_valid)
+
+    @staticmethod
+    def _compute_user_badge(
+            contest: Contest,
+            *,
+            participant: ContestParticipant | None = None,
+            membership: TeamMember | None = None,
+    ) -> str:
+        """根据比赛与当前用户的报名/组队情况生成副状态标识"""
+        now = timezone.now()
+        registered = participant is not None
+        reg_end = contest.registration_end_time or contest.start_time
+        start = contest.start_time
+        end = contest.end_time
+        freeze = contest.freeze_time
+        team_missing = contest.is_team_based and membership is None
+
+        if not registered:
+            # 未报名场景：区分报名是否已截止
+            if reg_end and start and now > reg_end and now < start:
+                return "registration_closed"
+            return "unregistered"
+
+        if reg_end and start and now > reg_end and now < start and not registered:
+            return "registration_closed"
+        if registered and team_missing and reg_end and now > reg_end:
+            return "registration_invalid"
+        if registered and team_missing and start and now < start:
+            return "team_missing"
+        if registered and freeze and now >= freeze and (end is None or now <= end):
+            return "frozen"
+        if registered and end and now > end:
+            return "finished"
+        if registered:
+            return "registered"
+        return ""
+
+    def build_user_contest_fields(
+            self,
+            contest: Contest,
+            *,
+            participant: ContestParticipant | None = None,
+            membership: TeamMember | None = None,
+    ) -> dict:
+        """统一构造与用户相关的比赛附加字段，便于列表与详情复用"""
+        registered = participant is not None
+        registration_valid = bool(participant.is_valid) if participant is not None else False
+        team = membership.team if membership else None
+        badge = self._compute_user_badge(contest, participant=participant, membership=membership)
+        return {
+            "registration_status": registered,
+            "registration_valid": registration_valid,
+            "my_team_id": getattr(team, "id", None),
+            "my_team_name": getattr(team, "name", None),
+            "user_badge": badge,
+        }
 
     def perform(self, *args, **kwargs) -> Contest:
         """ContextService 不提供通用执行入口，防止误用 execute"""
@@ -299,6 +382,19 @@ class CreateContestService(BaseService[Contest]):
         if categories:
             self.category_repo.sync_for_contest(contest=contest, categories=categories)
         logger.info("创建比赛", extra=logger_extra({"contest": contest.slug}))
+        # 系统通知：新比赛发布
+        users = list(User.objects.filter(is_active=True, is_staff=False))
+        if users:
+            dedup = build_dedup_key(type=Notification.Type.CONTEST_NEW, contest=contest)
+            fanout_notifications(
+                users,
+                type=Notification.Type.CONTEST_NEW,
+                title=f"新比赛发布：{contest.name}",
+                body=f"开赛时间：{contest.start_time}",
+                payload={"contest": contest.slug},
+                contest=contest,
+                dedup_key=dedup,
+            )
         return contest
 
 
@@ -313,6 +409,7 @@ class ContestUpdateService(BaseService[Contest]):
         contest = self.repo.get_by_slug(schema.contest_slug)
         if contest.has_ended:
             raise ConflictError(message="比赛已结束，无法修改")
+        now = timezone.now()
 
         def ensure_dt(value: datetime | str | None) -> datetime:
             # 将字符串或 naive datetime 统一转换为时区感知的 datetime
@@ -334,10 +431,45 @@ class ContestUpdateService(BaseService[Contest]):
             if schema.freeze_time is not None
             else contest.freeze_time
         )
+        reg_start_time = (
+            ensure_dt(schema.registration_start_time)
+            if schema.registration_start_time is not None
+            else contest.registration_start_time
+        )
+        reg_end_time = (
+            ensure_dt(schema.registration_end_time)
+            if schema.registration_end_time is not None
+            else contest.registration_end_time
+        )
         if end_time <= start_time:
             raise ValidationError(message="结束时间必须晚于开始时间")
         if freeze_time and not (start_time <= freeze_time <= end_time):
             raise ValidationError(message="封榜时间必须介于比赛时间范围内")
+        if reg_start_time and reg_end_time and reg_start_time > reg_end_time:
+            raise ValidationError(message="报名开始时间需早于报名截止时间")
+        if reg_start_time and reg_start_time > end_time:
+            raise ValidationError(message="报名开始时间不能晚于比赛结束时间")
+        if reg_end_time and reg_end_time > end_time:
+            raise ValidationError(message="报名截止时间不能晚于比赛结束时间")
+
+        # 报名开始时间：一经设置不可修改（允许从空 -> 设置一次）
+        if schema.registration_start_time is not None:
+            desired_reg_start = reg_start_time
+            if contest.registration_start_time and desired_reg_start != contest.registration_start_time:
+                raise ConflictError(message="报名开始时间设置后不可修改，如需调整请联系管理员重置比赛")
+
+        # 报名时间调整仅允许在报名未截止前进行
+        if (
+                (schema.registration_start_time is not None or schema.registration_end_time is not None)
+                and contest.registration_end_time
+                and now > contest.registration_end_time
+        ):
+            raise ConflictError(message="报名已截止，无法调整报名时间")
+
+        # 不允许把报名截止时间设置到当前时间之前（如需立即截止应使用专门操作）
+        if schema.registration_end_time is not None and reg_end_time and reg_end_time < now:
+            raise ConflictError(message="报名截止时间不能早于当前时间，如需提前截止请设置为当前时间或更晚")
+
         update_payload = schema.to_dict(exclude_none=True)
         update_payload.pop("contest_slug", None)
         # 时间字段使用上方规范化结果，避免字符串直接落库
@@ -347,6 +479,10 @@ class ContestUpdateService(BaseService[Contest]):
             update_payload["end_time"] = end_time
         if schema.freeze_time is not None:
             update_payload["freeze_time"] = freeze_time
+        if schema.registration_start_time is not None:
+            update_payload["registration_start_time"] = reg_start_time
+        if schema.registration_end_time is not None:
+            update_payload["registration_end_time"] = reg_end_time
         contest = self.repo.update(contest, update_payload)
         logger.info(
             "更新比赛",
@@ -364,12 +500,14 @@ class ContestAnnouncementService(BaseService[ContestAnnouncement]):
             self,
             contest_repo: ContestRepo | None = None,
             announcement_repo: ContestAnnouncementRepo | None = None,
+            participant_repo: ContestParticipantRepo | None = None,
     ):
         """注入比赛与公告仓储，便于单元测试替换"""
         # 比赛仓储：根据 slug 拉取比赛
         self.contest_repo = contest_repo or ContestRepo()
         # 公告仓储：持久化公告内容
         self.announcement_repo = announcement_repo or ContestAnnouncementRepo()
+        self.participant_repo = participant_repo or ContestParticipantRepo()
 
     def perform(self, schema: AnnouncementCreateSchema) -> ContestAnnouncement:
         """根据比赛标识创建公告，保持公告与比赛的关联关系"""
@@ -392,6 +530,27 @@ class ContestAnnouncementService(BaseService[ContestAnnouncement]):
                 "title": announcement.title,
             },
         )
+        # 系统通知：推送给报名有效的参赛选手
+        participants = list(self.participant_repo.filter(contest=contest, is_valid=True).select_related("user"))
+        if participants:
+            dedup = build_dedup_key(
+                type=Notification.Type.CONTEST_ANNOUNCEMENT_NEW,
+                contest=contest,
+                extra=str(getattr(announcement, "id", None)),
+            )
+            users = [p.user for p in participants if getattr(p, "user", None)]
+            fanout_notifications(
+                users,
+                type=Notification.Type.CONTEST_ANNOUNCEMENT_NEW,
+                title=f"比赛公告：{announcement.title}",
+                body=announcement.summary or announcement.title,
+                payload={
+                    "contest": contest.slug,
+                    "announcement_id": getattr(announcement, "id", None),
+                },
+                contest=contest,
+                dedup_key=dedup,
+            )
         return announcement
 
 
@@ -526,6 +685,8 @@ class TeamJoinService(BaseService[TeamMember]):
         contest = self.contest_repo.get_by_slug(schema.contest_slug)
         if user.is_staff:
             raise ValidationError(message="管理员账号无法加入队伍")
+        if contest.has_ended:
+            raise ConflictError(message="比赛已结束，无法加入队伍")
         # 报名校验：需先显式报名
         if not self.participant_repo.filter(contest=contest, user=user).exists():
             raise ValidationError(message="请先报名参赛后再加入队伍")
@@ -594,6 +755,30 @@ class TeamJoinService(BaseService[TeamMember]):
                 **snapshot,
             },
         )
+        # 系统通知：队员加入队伍
+        members = list(self.member_repo.active_members(team))
+        if members:
+            dedup = build_dedup_key(
+                type=Notification.Type.TEAM_MEMBER_JOINED,
+                contest=contest,
+                team=team,
+                extra=str(user_id),
+            )
+            fanout_notifications(
+                [m.user for m in members if getattr(m, "user", None)],
+                type=Notification.Type.TEAM_MEMBER_JOINED,
+                title=f"{getattr(user, 'username', '成员')} 加入队伍",
+                body=team.name,
+                payload={
+                    "contest": contest.slug,
+                    "team": team.slug,
+                    "team_id": team_id,
+                    "user_id": user_id,
+                },
+                contest=contest,
+                team=team,
+                dedup_key=dedup,
+            )
         return member
 
 
@@ -674,6 +859,29 @@ class TeamLeaveService(BaseService[None]):
                 **snapshot,
             },
         )
+        members = list(self.member_repo.active_members(membership.team))
+        if members:
+            dedup = build_dedup_key(
+                type=Notification.Type.TEAM_MEMBER_LEFT,
+                contest=contest,
+                team=membership.team,
+                extra=str(user_id),
+            )
+            fanout_notifications(
+                [m.user for m in members if getattr(m, "user", None)],
+                type=Notification.Type.TEAM_MEMBER_LEFT,
+                title=f"{getattr(user, 'username', '成员')} 退出队伍",
+                body=membership.team.name,
+                payload={
+                    "contest": contest.slug,
+                    "team": membership.team.slug,
+                    "team_id": team_id,
+                    "user_id": user_id,
+                },
+                contest=contest,
+                team=membership.team,
+                dedup_key=dedup,
+            )
 
 
 class TeamDisbandService(BaseService[Team]):
@@ -700,7 +908,8 @@ class TeamDisbandService(BaseService[Team]):
         user_id = getattr(user, "id", None)
         if not (user.is_staff or getattr(team, "captain_id", None) == user_id):
             raise PermissionDeniedError(message="只有队长或管理员可以解散队伍")
-        members_before = [serialize_team_member(m) for m in self.member_repo.active_members(team)]
+        member_objs = list(self.member_repo.active_members(team))
+        members_before = [serialize_team_member(m) for m in member_objs]
         # 2) 标记所有成员失效
         for member in self.member_repo.active_members(team):
             member.is_active = False
@@ -726,16 +935,38 @@ class TeamDisbandService(BaseService[Team]):
                 "member_count": len(members_before),
             },
         )
+        if member_objs:
+            dedup = build_dedup_key(
+                type=Notification.Type.TEAM_DISBANDED,
+                contest=getattr(team, "contest", None),
+                team=team,
+                extra=str(team_id),
+            )
+            fanout_notifications(
+                [m.user for m in member_objs if getattr(m, "user", None)],
+                type=Notification.Type.TEAM_DISBANDED,
+                title="队伍已解散",
+                body=team.name,
+                payload={
+                    "contest": getattr(team.contest, "slug", None),
+                    "team": team.slug,
+                    "team_id": team_id,
+                },
+                contest=getattr(team, "contest", None),
+                team=team,
+                dedup_key=dedup,
+            )
         return team
 
 
 class TeamInviteResetService(BaseService[Team]):
     """重置队伍邀请码：仅队长或管理员可操作"""
 
-    def __init__(self, team_repo: TeamRepo | None = None):
+    def __init__(self, team_repo: TeamRepo | None = None, member_repo: TeamMemberRepo | None = None):
         """允许注入自定义队伍仓储以便测试或替换实现"""
         # 队伍仓储：用于重置邀请码时读取与更新队伍
         self.team_repo = team_repo or TeamRepo()
+        self.member_repo = member_repo or TeamMemberRepo()
 
     def perform(self, user: User, schema: TeamInviteResetSchema) -> Team:
         """校验队伍有效性与操作者权限后重置邀请码"""
@@ -765,6 +996,30 @@ class TeamInviteResetService(BaseService[Team]):
                 "member_count": team.member_count,
             },
         )
+        # 通知队伍成员邀请码重置
+        members = list(self.member_repo.active_members(team))
+        if members:
+            dedup = build_dedup_key(
+                type=Notification.Type.TEAM_INVITE_RESET,
+                contest=getattr(team, "contest", None),
+                team=team,
+                extra=str(team.invite_token),
+            )
+            fanout_notifications(
+                [m.user for m in members if getattr(m, "user", None)],
+                type=Notification.Type.TEAM_INVITE_RESET,
+                title="队伍邀请码已重置",
+                body=f"{team.name} 的新邀请码：{team.invite_token}",
+                payload={
+                    "contest": getattr(team.contest, "slug", None),
+                    "team": team.slug,
+                    "team_id": team_id,
+                    "invite_token": team.invite_token,
+                },
+                contest=getattr(team, "contest", None),
+                team=team,
+                dedup_key=dedup,
+            )
         return result
 
 
@@ -848,6 +1103,31 @@ class TeamTransferService(BaseService[Team]):
                 **snapshot,
             },
         )
+        # 通知全队队长变更
+        members = list(self.member_repo.active_members(team))
+        if members:
+            dedup = build_dedup_key(
+                type=Notification.Type.TEAM_CAPTAIN_TRANSFERRED,
+                contest=getattr(team, "contest", None),
+                team=team,
+                extra=f"{old_captain_id}->{target_user_id}",
+            )
+            fanout_notifications(
+                [m.user for m in members if getattr(m, "user", None)],
+                type=Notification.Type.TEAM_CAPTAIN_TRANSFERRED,
+                title="队长已变更",
+                body=f"新队长：{getattr(target_user, 'username', target_user_id)}",
+                payload={
+                    "contest": getattr(team.contest, "slug", None),
+                    "team": team.slug,
+                    "team_id": team_id,
+                    "old_captain": old_captain_id,
+                    "new_captain": target_user_id,
+                },
+                contest=getattr(team, "contest", None),
+                team=team,
+                dedup_key=dedup,
+            )
         return team
 
 
@@ -893,6 +1173,19 @@ class ScoreboardService(BaseService[list[dict]]):
         )
         board: dict[str, dict] = {}
         for solve in solve_rows:
+            # 组队赛必须绑定队伍，防止脏数据混入榜单
+            if contest.is_team_based and not solve["team_id"]:
+                logger.warning(
+                    "跳过未绑定队伍的解题记录",
+                    extra=logger_extra(
+                        {
+                            "contest": getattr(contest, "slug", None),
+                            "challenge": solve.get("challenge__slug"),
+                            "user_id": solve.get("user_id"),
+                        }
+                    ),
+                )
+                continue
             key: str
             entry: dict
             if contest.is_team_based and solve["team_id"]:

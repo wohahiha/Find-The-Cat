@@ -31,6 +31,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --------------------------------------------------------------------------------------
 # True 仅限用于开发环境；如需调试可在后台 SystemConfig 中修改并重启
 SECRET_KEY = os.getenv("SECRET_KEY", 'django-insecure-DEFAULT-KEY-CHANGE-IN-PRODUCTION-VIA-ADMIN')
+# 专用于 Flag 派生的高熵密钥，避免复用 SECRET_KEY；可在后台 SystemConfig 覆盖
+FLAG_SECRET = os.getenv("FLAG_SECRET") or SECRET_KEY
+# 默认开启 DEBUG 便于本地开发；生产需显式设置 DEBUG=false
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
 # 支持通过环境变量/后台配置收敛域名
@@ -40,8 +43,8 @@ if _env_allowed_hosts:
 else:
     ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 
-# 登录验证码开关：默认随 DEBUG，亦可通过环境变量单独关闭/开启
-ALLOW_LOGIN_WITHOUT_CAPTCHA = os.getenv("ALLOW_LOGIN_WITHOUT_CAPTCHA", "").lower() == "true" or DEBUG
+# 登录验证码开关：默认关闭，需在环境变量/后台显式开启
+ALLOW_LOGIN_WITHOUT_CAPTCHA = os.getenv("ALLOW_LOGIN_WITHOUT_CAPTCHA", "False").lower() == "true"
 
 # 站点品牌名称（前台/后台可展示的品牌词），可在后台 SystemConfig 覆盖
 SITE_BRAND = os.getenv("SITE_BRAND", "Find The Cat")
@@ -55,6 +58,26 @@ WS_MAX_CONNECTIONS_PER_USER = int(os.getenv("WS_MAX_CONNECTIONS_PER_USER", "5"))
 WS_MAX_CONNECTIONS_PER_IP = int(os.getenv("WS_MAX_CONNECTIONS_PER_IP", "20"))
 SCOREBOARD_PUSH_INTERVAL_SECONDS = int(os.getenv("SCOREBOARD_PUSH_INTERVAL_SECONDS", "3"))
 SCOREBOARD_PUSH_TOP = int(os.getenv("SCOREBOARD_PUSH_TOP", "10"))
+# 通知提前量（秒）
+NOTIFY_CONTEST_START_SOON_SECONDS = int(os.getenv("NOTIFY_CONTEST_START_SOON_SECONDS", "3600"))
+NOTIFY_CONTEST_FREEZE_SOON_SECONDS = int(os.getenv("NOTIFY_CONTEST_FREEZE_SOON_SECONDS", "900"))
+NOTIFY_CONTEST_REG_DEADLINE_SOON_SECONDS = int(os.getenv("NOTIFY_CONTEST_REG_DEADLINE_SOON_SECONDS", "3600"))
+NOTIFY_CONTEST_ENDING_SOON_SECONDS = int(os.getenv("NOTIFY_CONTEST_ENDING_SOON_SECONDS", "1800"))
+NOTIFY_TEAM_MIN_MEMBERS = int(os.getenv("NOTIFY_TEAM_MIN_MEMBERS", "2"))
+
+# --------------------------------------------------------------------------------------
+# HTTPS / Cookie 安全（生产环境强制）
+# --------------------------------------------------------------------------------------
+# 透过代理传入 HTTPS 头时信任 X-Forwarded-Proto
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# 非调试环境强制跳转到 HTTPS
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 # --------------------------------------------------------------------------------------
 # 应用模块（Django 内置 + 第三方 + 业务）
@@ -85,6 +108,7 @@ INSTALLED_APPS = [
     'apps.machines',
     'apps.problem_bank',
     'apps.system',
+    'apps.notifications',
     # ...后续再扩充
 ]
 
@@ -238,12 +262,13 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'apps.common.exception_handler.custom_exception_handler',  # apps/common/exception_handler.py
 
     'DEFAULT_THROTTLE_RATES': {
-        'login': '5/min',
-        'flag_submit': '10/min',
-        'machine_start': '3/min',
-        'user_post': '30/min',
-        'attachment_upload': '10/min',
-        'email_code_send': '5/min',
+        'login': '5/min',   # 登录限流
+        'register': '5/min',  # 注册限流
+        'flag_submit': '10/min',    # Flag 提交限流
+        'machine_start': '10/min',   # 靶机启动限流
+        'user_post': '30/min',      # 普通用户写操作限流
+        'attachment_upload': '10/min',  # 附件上传限流
+        'email_code_send': '5/min', # 邮箱验证码发送限流
     },
 
     'DEFAULT_SCHEMA_CLASS': 'apps.common.openapi.ShortDescriptionAutoSchema',
@@ -307,6 +332,10 @@ CACHES = {
         "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CACHE}",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            # 防止 Redis 未启用时阻塞：降低连接/读写超时并忽略异常（降级为无缓存）
+            "SOCKET_CONNECT_TIMEOUT": float(os.getenv("REDIS_CONNECT_TIMEOUT", "0.2")),
+            "SOCKET_TIMEOUT": float(os.getenv("REDIS_SOCKET_TIMEOUT", "0.5")),
+            "IGNORE_EXCEPTIONS": True,
         },
     }
 }
@@ -351,6 +380,14 @@ DOCKER_NETWORK = None  # 可选 Docker 网络名称
 MACHINE_MAX_RUNTIME_MINUTES = 30  # 默认单个靶机实例最长运行时间（分钟）
 MACHINE_CLEAN_INTERVAL_SECONDS = 300  # Celery 清理任务默认执行间隔（秒）
 MACHINE_PORT_CACHE_TTL = 300  # 端口占用 Redis 缓存默认 TTL（秒）
+# 靶机延时策略（管理员可在后台/环境变量中覆盖）
+MACHINE_EXTEND_MINUTES_DEFAULT = int(os.getenv("MACHINE_EXTEND_MINUTES_DEFAULT", "30"))  # 单次延时分钟数
+MACHINE_EXTEND_MAX_TIMES = os.getenv("MACHINE_EXTEND_MAX_TIMES", "-1")  # 每实例最大延时次数，-1 表示不限制
+try:
+    MACHINE_EXTEND_MAX_TIMES = int(MACHINE_EXTEND_MAX_TIMES)
+except Exception:
+    MACHINE_EXTEND_MAX_TIMES = -1
+MACHINE_EXTEND_THRESHOLD_MINUTES = int(os.getenv("MACHINE_EXTEND_THRESHOLD_MINUTES", "15"))  # 剩余 <= 此阈值时可延时
 
 # --------------------------------------------------------------------------------------
 # 邮件配置
@@ -407,5 +444,9 @@ CELERY_BEAT_SCHEDULE = {
     "cleanup-expired-machines": {
         "task": "apps.machines.tasks.cleanup_expired_machines",
         "schedule": timedelta(seconds=MACHINE_CLEAN_INTERVAL_SECONDS),
-    }
+    },
+    "notifications-scan-contests": {
+        "task": "apps.notifications.tasks.scan_contests_for_notifications",
+        "schedule": timedelta(seconds=300),
+    },
 }
