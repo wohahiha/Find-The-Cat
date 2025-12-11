@@ -5,7 +5,7 @@
         <div class="space-y-1">
           <p class="text-xs uppercase tracking-[0.08em] text-primary">靶机管理</p>
           <h1 class="text-3xl font-bold leading-tight tracking-tight">我的靶机</h1>
-          <p class="text-sm text-muted">查看靶机状态，支持停止释放。</p>
+          <p class="text-sm text-muted">查看靶机状态，支持重启、延时与停止。</p>
         </div>
         <button
           class="inline-flex h-10 items-center justify-center rounded-lg border border-input-border px-4 text-sm font-semibold text-text hover:border-primary hover:text-primary"
@@ -40,15 +40,41 @@
             <p v-if="machine.expire_at">到期：{{ formatDateTime(machine.expire_at) }}</p>
             <p v-if="machine.created_at">创建：{{ formatDateTime(machine.created_at) }}</p>
             <p v-if="machine.challenge">关联题目：{{ machine.challenge }}</p>
+            <p v-if="countdowns[machine.id] !== null && countdowns[machine.id] !== undefined">
+              剩余：{{ displayCountdown(countdowns[machine.id]) }}
+            </p>
+            <p v-if="machine.remaining_extend_times !== undefined && machine.remaining_extend_times !== null">
+              可延时次数：{{ machine.remaining_extend_times === -1 ? '不限' : machine.remaining_extend_times }}
+            </p>
           </div>
-          <button
-            class="h-10 rounded-lg border border-input-border text-sm font-semibold text-text hover:border-primary hover:text-primary disabled:opacity-60"
-            type="button"
-            :disabled="stopping[machine.id]"
-            @click="stopMachine(machine.id)"
-          >
-            停止
-          </button>
+          <div class="grid grid-cols-1 gap-2">
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                class="h-10 rounded-lg border border-input-border text-sm font-semibold text-text hover:border-primary hover:text-primary disabled:opacity-60"
+                type="button"
+                :disabled="stopping[machine.id]"
+                @click="restartMachine(machine)"
+              >
+                重启
+              </button>
+              <button
+                class="h-10 rounded-lg border border-input-border text-sm font-semibold text-text hover:border-primary hover:text-primary disabled:opacity-60"
+                type="button"
+                :disabled="stopping[machine.id]"
+                @click="extendMachine(machine)"
+              >
+                延时
+              </button>
+              <button
+                class="h-10 rounded-lg border border-input-border text-sm font-semibold text-text hover:border-primary hover:text-primary disabled:opacity-60"
+                type="button"
+                :disabled="stopping[machine.id]"
+                @click="stopMachine(machine.id)"
+              >
+                停止
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -56,19 +82,22 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, onBeforeUnmount, reactive, ref } from 'vue'
 import AppShell from '@/components/AppShell.vue'
 import api from '@/api/client'
 import { SkeletonBlock, EmptyState, ErrorState } from '@/components/ui'
 import { parseApiError } from '@/api/errors'
 import { useToastStore } from '@/stores/toast'
 import { formatDateTime } from '@/utils/format'
+import realtime from '@/utils/realtime'
 
 const machines = ref([])
 const loading = ref(false)
 const error = ref('')
 const stopping = reactive({})
+const countdowns = reactive({})
 const toast = useToastStore()
+let countdownTimer = null
 
 const fetchMachines = async () => {
   loading.value = true
@@ -76,7 +105,9 @@ const fetchMachines = async () => {
   try {
     const res = await api.get('/machines/')
     const data = res?.data?.data || res?.data || {}
-    machines.value = data.items || data || []
+    const list = data.items || data || []
+    machines.value = list
+    list.forEach((m) => updateCountdown(m))
   } catch (err) {
     const msg = parseApiError(err)
     error.value = msg
@@ -87,6 +118,7 @@ const fetchMachines = async () => {
 }
 
 const stopMachine = async (id) => {
+  if (!id) return
   stopping[id] = true
   try {
     await api.post(`/machines/${id}/stop/`, {})
@@ -99,7 +131,82 @@ const stopMachine = async (id) => {
   }
 }
 
+const restartMachine = async (machine) => {
+  if (!machine?.contest || !machine?.challenge) {
+    toast.error('缺少靶机上下文，无法重启')
+    return
+  }
+  stopping[machine.id] = true
+  try {
+    await api.post('/machines/', {
+      contest_slug: machine.contest,
+      challenge_slug: machine.challenge,
+    })
+    toast.success('靶机已重新启动')
+    fetchMachines()
+  } catch (err) {
+    toast.error(parseApiError(err))
+  } finally {
+    stopping[machine.id] = false
+  }
+}
+
+const extendMachine = async (machine) => {
+  if (!machine?.id) return
+  stopping[machine.id] = true
+  try {
+    await api.post(`/machines/${machine.id}/extend/`, {})
+    toast.success('靶机已延时')
+    fetchMachines()
+  } catch (err) {
+    toast.error(parseApiError(err))
+  } finally {
+    stopping[machine.id] = false
+  }
+}
+
+const updateCountdown = (machine) => {
+  if (!machine?.id) return
+  if (machine.remaining_seconds === undefined || machine.remaining_seconds === null) {
+    countdowns[machine.id] = null
+    return
+  }
+  countdowns[machine.id] = machine.remaining_seconds
+}
+
+const displayCountdown = (seconds) => {
+  if (seconds === null || seconds === undefined) return '--'
+  const s = Math.max(0, Math.floor(seconds))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  if (h > 0) return `${h}h ${m}m ${sec}s`
+  if (m > 0) return `${m}m ${sec}s`
+  return `${sec}s`
+}
+
+const tickCountdown = () => {
+  Object.keys(countdowns).forEach((key) => {
+    const cur = countdowns[key]
+    if (cur === null || cur === undefined) return
+    countdowns[key] = Math.max(0, cur - 1)
+  })
+}
+
+let offRealtime = null
+const handleRealtime = (evt) => {
+  if (!evt || !evt.event || !evt.event.startsWith('machine_')) return
+  fetchMachines()
+}
+
 onMounted(() => {
   fetchMachines()
+  countdownTimer = setInterval(tickCountdown, 1000)
+  offRealtime = realtime.onAny(handleRealtime)
+})
+
+onBeforeUnmount(() => {
+  if (offRealtime) offRealtime()
+  if (countdownTimer) clearInterval(countdownTimer)
 })
 </script>

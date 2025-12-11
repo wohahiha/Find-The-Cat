@@ -91,7 +91,7 @@ class BaseAuthorizedConsumer(AsyncJsonWebsocketConsumer):
 
     required_perm: str | None = None  # 可在子类覆盖或根据路径参数动态计算
     heartbeat_timeout_seconds: int = 120  # 超时自动断开
-    heartbeat_interval_seconds: int = 30  # 仅用于内部监控
+    heartbeat_interval_seconds: int = 25  # 与前端 ping 周期相近
     client_ip: str = ""
     _last_ping: float = 0.0
     _monitor_task: asyncio.Task | None = None

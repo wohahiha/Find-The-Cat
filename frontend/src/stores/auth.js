@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/api/client'
+import realtime from '@/utils/realtime'
 
 const hasWindow = typeof window !== 'undefined'
 const storage = hasWindow ? window.localStorage : null
@@ -40,6 +41,8 @@ export const useAuthStore = defineStore('auth', {
     async fetchMe() {
       const res = await api.get('/accounts/me/')
       this.user = res.data?.data?.user || res.data?.user || null
+      // 登录后启动通知通道
+      realtime.startNotify()
       if (hasWindow) {
         try {
           const avatar = resolveUrl(this.user?.avatar || '')
@@ -88,6 +91,7 @@ export const useAuthStore = defineStore('auth', {
       this.accessToken = ''
       this.refreshToken = ''
       delete api.defaults.headers.common.Authorization
+      realtime.stopAll()
       if (storage) {
         storage.removeItem('ftc_access')
         storage.removeItem('ftc_refresh')

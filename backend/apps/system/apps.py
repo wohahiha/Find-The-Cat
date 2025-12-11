@@ -43,6 +43,18 @@ class ConfigsConfig(AppConfig):
         )
         logger = get_logger(__name__)
 
+        # 启动时尝试读取后台安全配置并覆盖 settings（失败不阻断启动）
+        try:
+            import sys
+            from .services import apply_security_settings_from_config
+
+            # 避免在迁移/建模阶段访问数据库：检测当前命令，遇到 migrate/makemigrations/collectstatic 时跳过
+            command = sys.argv[1].lower() if len(sys.argv) > 1 else ""
+            if command not in {"migrate", "makemigrations", "collectstatic"}:
+                apply_security_settings_from_config()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"应用安全配置覆盖失败，继续使用默认值: {exc}")
+
         def sync_system_configs(**kwargs):
             """
             post_migrate 信号回调：确保 SystemConfig 表中的配置项齐全

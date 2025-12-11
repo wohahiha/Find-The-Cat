@@ -43,6 +43,10 @@ if _env_allowed_hosts:
 else:
     ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 
+# CSRF 信任域名列表：首启为空，生产可通过环境变量或后台配置补充
+_env_csrf_trusted = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [h.strip() for h in _env_csrf_trusted.split(",") if h.strip()] if _env_csrf_trusted else []
+
 # 登录验证码开关：默认关闭，需在环境变量/后台显式开启
 ALLOW_LOGIN_WITHOUT_CAPTCHA = os.getenv("ALLOW_LOGIN_WITHOUT_CAPTCHA", "False").lower() == "true"
 
@@ -162,12 +166,12 @@ WSGI_APPLICATION = 'Config.wsgi.application'
 # --------------------------------------------------------------------------------------
 # 数据库（默认 sqlite，生产可切换 mysql/postgres）
 # --------------------------------------------------------------------------------------
-DB_ENGINE = os.getenv("DB_ENGINE", "sqlite")
-DB_NAME = os.getenv("DB_NAME", "db.sqlite3")
-DB_USER = os.getenv("DB_USER", "")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "")
-DB_HOST = os.getenv("DB_HOST", "")
-DB_PORT = os.getenv("DB_PORT", "")
+DB_ENGINE = os.getenv("DB_ENGINE", "postgres")
+DB_NAME = os.getenv("DB_NAME", "ftc")
+DB_USER = os.getenv("DB_USER", "ftc")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "ftc-pass")
+DB_HOST = os.getenv("DB_HOST", "postgres")
+DB_PORT = os.getenv("DB_PORT", "5432")
 
 # 根据 DB_ENGINE 构建 DATABASES 配置
 if DB_ENGINE.lower() in ('my', 'mysql'):
@@ -388,6 +392,7 @@ try:
 except Exception:
     MACHINE_EXTEND_MAX_TIMES = -1
 MACHINE_EXTEND_THRESHOLD_MINUTES = int(os.getenv("MACHINE_EXTEND_THRESHOLD_MINUTES", "15"))  # 剩余 <= 此阈值时可延时
+MACHINE_EXPIRING_NOTIFY_MINUTES = int(os.getenv("MACHINE_EXPIRING_NOTIFY_MINUTES", "5"))  # 剩余时间提醒阈值
 
 # --------------------------------------------------------------------------------------
 # 邮件配置
@@ -397,14 +402,15 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # --------------------------------------------------------------------------------------
 # CORS (跨域资源共享)
 # --------------------------------------------------------------------------------------
-# 开发环境
-CORS_ALLOW_ALL_ORIGINS = True
-
-# 生产环境
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-#     "http://127.0.0.1:5173",
-# ]
+# 默认收紧 CORS：仅允许本机/常用本地端口
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost",
+    "http://127.0.0.1",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+# 若通过后台 SystemConfig 配置了 CORS_ALLOWED_ORIGINS，则在 apps.system.services.apply_security_settings_from_config 中覆盖
 
 
 # --------------------------------------------------------------------------------------

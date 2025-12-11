@@ -39,6 +39,11 @@ class Notification(models.Model):
         TEAM_DISBANDED = "team_disbanded", "队伍解散"
         TEAM_INVITE_RESET = "team_invite_reset", "邀请码重置"
         TEAM_ROSTER_WARNING = "team_roster_warning", "队伍人数预警"
+        # 靶机相关
+        MACHINE_STARTED = "machine_started", "靶机启动"
+        MACHINE_EXPIRING = "machine_expiring", "靶机即将到期"
+        MACHINE_EXPIRED = "machine_expired", "靶机已回收"
+        MACHINE_HEARTBEAT_MISS = "machine_heartbeat_miss", "靶机心跳异常"
 
     user = models.ForeignKey(User, verbose_name="接收用户", related_name="notifications", on_delete=models.CASCADE)
     type = models.CharField("通知类型", max_length=64, choices=Type.choices)
@@ -103,4 +108,3 @@ class Notification(models.Model):
             return
         self.read_at = timezone.now()
         self.save(update_fields=["read_at"])
-

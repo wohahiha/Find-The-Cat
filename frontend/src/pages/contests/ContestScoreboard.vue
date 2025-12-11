@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import api from '@/api/client'
@@ -65,6 +65,8 @@ import { SkeletonBlock, EmptyState, ErrorState } from '@/components/ui'
 import { parseApiError } from '@/api/errors'
 import { useToastStore } from '@/stores/toast'
 import { formatDateTime } from '@/utils/format'
+import { useContestChannel } from '@/composables/useContestChannel'
+import realtime from '@/utils/realtime'
 
 const route = useRoute()
 const toast = useToastStore()
@@ -95,5 +97,28 @@ const fetchScoreboard = async () => {
 
 onMounted(() => {
   fetchScoreboard()
+})
+
+// 订阅比赛 WS 事件：榜单更新/快照
+const { leave: leaveChannel } = useContestChannel(contestSlug.value, {
+  onMessage: (evt) => {
+    if (!evt || evt.contest !== contestSlug.value) return
+    if (evt.event === 'scoreboard_snapshot' && evt.entries) {
+      rows.value = evt.entries || []
+    }
+    if (evt.event === 'scoreboard_updated') {
+      fetchScoreboard()
+    }
+  },
+})
+
+// 初始尝试使用已有快照（若存在）
+const snapshot = realtime.getSnapshot(contestSlug.value)
+if (snapshot?.entries) {
+  rows.value = snapshot.entries
+}
+
+onBeforeUnmount(() => {
+  leaveChannel()
 })
 </script>

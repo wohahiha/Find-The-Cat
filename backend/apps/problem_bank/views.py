@@ -7,6 +7,7 @@ from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiParam
 from drf_spectacular.types import OpenApiTypes
 import base64
 from rest_framework import serializers
+from django.db import models
 
 from apps.common import response
 from apps.common.exceptions import ValidationError
@@ -68,14 +69,54 @@ class ProblemBankListView(APIView):
         request=None,
         responses=list_response("ProblemBankList", problem_bank_serializer(), paginated=True),
         tags=["problem-bank"],
-        parameters=pagination_parameters(),
+        parameters=pagination_parameters()
+        + [
+            OpenApiParameter("keyword", OpenApiTypes.STR, OpenApiParameter.QUERY, description="按名称/描述模糊搜索"),
+            OpenApiParameter("difficulty", OpenApiTypes.STR, OpenApiParameter.QUERY, description="难度过滤（easy/medium/hard）"),
+            OpenApiParameter("tags", OpenApiTypes.STR, OpenApiParameter.QUERY, description="标签列表，逗号分隔"),
+            OpenApiParameter("author", OpenApiTypes.INT, OpenApiParameter.QUERY, description="作者用户ID过滤"),
+            OpenApiParameter("is_public", OpenApiTypes.BOOL, OpenApiParameter.QUERY, description="是否公开"),
+            OpenApiParameter("updated_after", OpenApiTypes.DATETIME, OpenApiParameter.QUERY, description="更新时间 >= "),
+            OpenApiParameter("updated_before", OpenApiTypes.DATETIME, OpenApiParameter.QUERY, description="更新时间 <="),
+        ],
     )
     def get(self, request: Request) -> Response:
         qs = self.bank_repo.get_queryset()
         if not request.user.is_staff:
             qs = qs.filter(is_public=True)
+        keyword = request.query_params.get("keyword") or ""
+        if keyword:
+            qs = qs.filter(models.Q(name__icontains=keyword) | models.Q(description__icontains=keyword))
+        difficulty = request.query_params.get("difficulty")
+        if difficulty:
+            qs = qs.filter(challenges__difficulty=difficulty)
+        tags = request.query_params.get("tags", "")
+        if tags:
+            tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+            for tag in tag_list:
+                qs = qs.filter(
+                    models.Q(challenges__category__name__icontains=tag)
+                    | models.Q(name__icontains=tag)
+                    | models.Q(description__icontains=tag)
+                )
+        author = request.query_params.get("author")
+        if author:
+            qs = qs.filter(challenges__author_id=author)
+        updated_after = request.query_params.get("updated_after")
+        updated_before = request.query_params.get("updated_before")
+        if updated_after:
+            qs = qs.filter(updated_at__gte=updated_after)
+        if updated_before:
+            qs = qs.filter(updated_at__lte=updated_before)
+        is_public = request.query_params.get("is_public")
+        if is_public is not None:
+            if is_public.lower() in ("true", "1"):
+                qs = qs.filter(is_public=True)
+            elif is_public.lower() in ("false", "0"):
+                qs = qs.filter(is_public=False)
+        qs = qs.distinct()
         paginator = StandardPagination()
-        page = paginator.paginate_queryset(qs.order_by("-created_at", "name"), request)
+        page = paginator.paginate_queryset(qs.order_by("-updated_at", "-created_at", "name"), request)
         items = [serialize_bank(b) for b in page]
         return paginator.get_paginated_response({"items": items})
 
@@ -290,32 +331,8 @@ class BankExternalImportView(APIView):
         exclude=True,
     )
     def post(self, request: Request, bank_slug: str) -> Response:
-        uploaded = request.FILES.get("file")
-        if not uploaded:
-            # 统一业务异常：缺少必填文件时抛出校验错误
-            raise ValidationError(message="请上传文件")
-        validate_upload_file(
-            uploaded,
-            allowed_content_types={
-                "application/zip",
-                "application/x-zip-compressed",
-                "application/gzip",
-                "application/x-gzip",
-                "application/x-bzip2",
-                "application/x-7z-compressed",
-                "application/x-tar",
-                "application/octet-stream",
-            },
-            allowed_suffixes={".zip", ".tar", ".gz", ".tgz", ".bz2", ".7z"},
-            max_size_mb=50,
-            field_name="导入文件",
-        )
-        schema = BankExternalImportSchema.from_dict(
-            {"bank_slug": bank_slug, "filename": uploaded.name},
-            auto_validate=True,
-        )
-        items = self.service.execute(schema, content=uploaded.read())
-        return response.success({"count": len(items)}, message="导入成功")
+        # 功能占位，尚未开放外部 zip 导入
+        raise ValidationError(message="外部导入暂未开放，请使用比赛导入或后台录入")
 
 
 class BankExportView(APIView):

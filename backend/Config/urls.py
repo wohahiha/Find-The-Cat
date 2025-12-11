@@ -44,6 +44,7 @@ urlpatterns = [
     path('api/problem-bank/', include('apps.problem_bank.urls')),
     path('api/system/', include('apps.system.urls')),
     path('api/notifications/', include('apps.notifications.urls')),
+    path('api/auth/', include('apps.auth.urls')),
     # OpenAPI 文档：提供 schema JSON 及 UI，仅供内部/前端获取接口定义
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

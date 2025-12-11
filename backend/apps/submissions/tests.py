@@ -145,6 +145,31 @@ class SubmissionServiceTests(TestCase):
         with self.assertRaises(ValidationError):
             SubmissionService().execute(self.user, schema)
 
+    def test_submission_before_contest_start_is_rejected(self):
+        """未开赛时的提交应被比赛状态校验拒绝"""
+        now = timezone.now()
+        contest = Contest.objects.create(
+            name="Future Contest",
+            slug="future-contest",
+            start_time=now + timedelta(hours=1),
+            end_time=now + timedelta(hours=2),
+            is_team_based=False,
+        )
+        ChallengeCreateService().execute(
+            self.user,
+            ChallengeCreateSchema(
+                contest_slug=contest.slug,
+                title="FutureWarmup",
+                slug="future-warmup",
+                content="wait",
+                flag="demo",
+                dynamic_prefix="flag",
+            ),
+        )
+        schema = SubmissionCreateSchema(contest_slug=contest.slug, challenge_slug="future-warmup", flag="flag{demo}")
+        with self.assertRaises(ValidationError):
+            SubmissionService().execute(self.user, schema)
+
     @staticmethod
     def _build_dynamic_flag(contest, challenge_slug: str, user):
         challenge = ChallengeRepo().get_by_slug(contest=contest, slug=challenge_slug)
@@ -160,6 +185,7 @@ class SubmissionServiceTests(TestCase):
             "user_post": "1000/min",
         },
     },
+    ALLOW_LOGIN_WITHOUT_CAPTCHA=True,
     CACHES={
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",

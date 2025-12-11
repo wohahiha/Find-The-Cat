@@ -1,4 +1,5 @@
 export const parseApiError = (err, fallback = '服务异常，请稍后再试') => {
+  const code = extractCode(err)
   const codeMsg = mapCodeToMessage(err)
   if (codeMsg) return codeMsg
   if (err?.response?.data?.message) return err.response.data.message
@@ -27,6 +28,9 @@ const codeMessages = {
   40105: '邮箱未验证，请先完成邮箱验证',
   40106: '账户已被封禁，暂无法登录',
   40300: '无权限进行该操作',
+  40301: '未报名当前比赛，无法访问',
+  40302: '私有资源，权限不足',
+  40303: '封榜期间或已结束，暂不可访问',
 
   // 比赛相关（46xxx）
   46000: '比赛相关错误',

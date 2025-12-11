@@ -83,6 +83,15 @@ def serialize_user(user: User) -> dict[str, object]:
         "updated_at": user.updated_at.isoformat() if user.updated_at else None,
         # 权限概览：转成简短中文标签，便于前端展示权限概况
         "permissions": iter_permission_labels(user.get_all_permissions()),
+        # 角色列表：方便前端展示/编辑
+        "roles": [
+            {
+                "id": g.id,
+                "name": g.name,
+                "is_builtin": g.name in {"Admins::Default", "Users::Default"},
+            }
+            for g in user.groups.all().order_by("name")
+        ],
     }
 
 

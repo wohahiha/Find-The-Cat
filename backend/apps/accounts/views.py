@@ -75,7 +75,7 @@ class RolesPlaceholderView(APIView):
     )
     def get(self, request: Request) -> Response:
         _ = request
-        return response.success({"items": []})
+        return response.success({"items": []}, message="角色功能暂未开放")
 
 
 class PermissionsPlaceholderView(APIView):
@@ -97,7 +97,7 @@ class PermissionsPlaceholderView(APIView):
     )
     def get(self, request: Request) -> Response:
         _ = request
-        return response.success({"items": []})
+        return response.success({"items": []}, message="权限功能暂未开放")
 
 
 def _set_jwt_cookie(resp: Response, access_token: str) -> None:

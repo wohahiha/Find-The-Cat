@@ -1,0 +1,17 @@
+# 通用忽略，避免将本地依赖/缓存打入构建上下文
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+
+# 本地虚拟环境
+backend/FTCVenv
+
+# 前端本地构建/依赖
+frontend/node_modules
+frontend/dist
+
+# 数据与日志
+data
+*.log

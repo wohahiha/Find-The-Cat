@@ -56,7 +56,7 @@ class ConfigService(BaseService[SystemConfig]):
         "DEBUG": {
             "type": SystemConfig.ValueType.BOOL,
             "desc": "DEBUG 开关（生产应为 False）",
-            "detail": "控制 Django 是否开启调试模式，影响错误栈展示和静态资源加载方式。生产环境必须关闭以避免泄露敏感信息，开启只用于本地调试。首次启动时默认为 False（生产环境），如果在开发环境需要调试请在后台修改为 True。修改后需重启服务生效。",
+            "detail": "控制 Django 是否开启调试模式，影响错误栈展示和静态资源加载方式。生产环境必须关闭以避免泄露敏感信息，开启只用于本地调试或首启在未配置证书时临时允许 HTTP 访问后台。完成配置后请改为 False 并重启。",
             "required": True,
         },
         "ALLOWED_HOSTS": {
@@ -76,6 +76,42 @@ class ConfigService(BaseService[SystemConfig]):
             "desc": "允许登录跳过图形验证码（仅测试用）",
             "detail": "控制登录时是否强制校验图形验证码。仅在联调或自动化测试时可暂时置为 True，生产环境应保持 False（默认）。",
             "required": True,
+        },
+        "SECURE_SSL_REDIRECT": {
+            "type": SystemConfig.ValueType.BOOL,
+            "desc": "强制 HTTPS 跳转",
+            "detail": "控制是否将所有 HTTP 请求 301 跳转至 HTTPS。生产环境启用；首启可关闭以便在未配置证书前访问后台，证书就绪后开启并重启。修改后需重启生效。",
+            "required": True,
+        },
+        "SESSION_COOKIE_SECURE": {
+            "type": SystemConfig.ValueType.BOOL,
+            "desc": "Session Cookie 仅限 HTTPS",
+            "detail": "开启后 Session Cookie 仅通过 HTTPS 传输，防止明文泄露。与 TLS 配置一致，证书就绪后应开启。修改后需重启生效。",
+            "required": True,
+        },
+        "CSRF_COOKIE_SECURE": {
+            "type": SystemConfig.ValueType.BOOL,
+            "desc": "CSRF Cookie 仅限 HTTPS",
+            "detail": "开启后 CSRF Cookie 仅通过 HTTPS 传输。需与实际部署协议一致；证书就绪后应开启。修改后需重启生效。",
+            "required": True,
+        },
+        "CSRF_TRUSTED_ORIGINS": {
+            "type": SystemConfig.ValueType.JSON,
+            "desc": "CSRF 信任域名列表",
+            "detail": "允许提交跨域表单的可信站点列表，使用 JSON 数组格式，例如 [\"https://ctf.example.com\" , \"https://admin.example.com\"]。配置错误会导致后台表单/接口 CSRF 校验失败。修改后需重启生效。",
+            "required": False,
+        },
+        "CORS_ALLOWED_ORIGINS": {
+            "type": SystemConfig.ValueType.JSON,
+            "desc": "CORS 允许来源列表",
+            "detail": "允许跨域请求的来源列表，JSON 数组格式，例如 [\"https://ctf.example.com\"]。为空则默认全开放（开发模式），生产建议显式配置域名。修改后需重启生效。",
+            "required": False,
+        },
+        "MACHINE_PUBLIC_HOST": {
+            "type": SystemConfig.ValueType.STRING,
+            "desc": "靶机访问主机名/IP",
+            "detail": "前端展示靶机链接时使用的主机名或 IP，例如外网反向代理地址。为空则回退为 localhost。修改后需重启相关服务生效。",
+            "required": False,
         },
         "WS_MAX_CONNECTIONS_PER_USER": {
             "type": SystemConfig.ValueType.INT,
@@ -384,3 +420,62 @@ class ConfigService(BaseService[SystemConfig]):
     def perform(self, *args, **kwargs):
         """占位实现，满足 BaseService 抽象约束"""
         return None
+
+
+def apply_security_settings_from_config():
+    """
+    启动时根据 SystemConfig 覆盖部分安全相关 settings
+    - 允许管理员在后台调整 HTTPS/CSRF 行为，重启后生效
+    - 读取失败时记录日志但不阻断启动
+    """
+    from django.conf import settings  # 延迟导入避免循环
+
+    cfg = ConfigService()
+
+    def _normalize_origins(val):
+        if val is None:
+            return []
+        if isinstance(val, str):
+            try:
+                # 尝试解析 JSON 字符串
+                import json
+                loaded = json.loads(val)
+                if isinstance(loaded, list):
+                    return [str(v).strip() for v in loaded if str(v).strip()]
+            except Exception:
+                # 尝试解析 Python 风格列表（如 "['http://localhost']"）
+                try:
+                    import ast
+
+                    loaded = ast.literal_eval(val)
+                    if isinstance(loaded, (list, tuple, set)):
+                        return [str(v).strip() for v in loaded if str(v).strip()]
+                except Exception:
+                    pass
+                # fallback: 逗号分隔
+                return [v.strip().strip("'\"") for v in val.split(",") if v.strip().strip("'\"")]
+        if isinstance(val, (list, tuple, set)):
+            return [str(v).strip() for v in val if str(v).strip()]
+        return [str(val).strip()]
+
+    try:
+        settings.DEBUG = bool(cfg.get("DEBUG", settings.DEBUG))
+        settings.SECURE_SSL_REDIRECT = bool(
+            cfg.get("SECURE_SSL_REDIRECT", getattr(settings, "SECURE_SSL_REDIRECT", False))
+        )
+        settings.SESSION_COOKIE_SECURE = bool(
+            cfg.get("SESSION_COOKIE_SECURE", getattr(settings, "SESSION_COOKIE_SECURE", False))
+        )
+        settings.CSRF_COOKIE_SECURE = bool(
+            cfg.get("CSRF_COOKIE_SECURE", getattr(settings, "CSRF_COOKIE_SECURE", False))
+        )
+        origins = _normalize_origins(cfg.get("CSRF_TRUSTED_ORIGINS", getattr(settings, "CSRF_TRUSTED_ORIGINS", [])))
+        settings.CSRF_TRUSTED_ORIGINS = origins
+        cors_origins = _normalize_origins(
+            cfg.get("CORS_ALLOWED_ORIGINS", getattr(settings, "CORS_ALLOWED_ORIGINS", []))
+        )
+        if cors_origins:
+            settings.CORS_ALLOW_ALL_ORIGINS = False
+            settings.CORS_ALLOWED_ORIGINS = cors_origins
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"安全配置应用失败（跳过覆盖，使用默认值）：{exc}")

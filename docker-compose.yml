@@ -11,11 +11,15 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data/db/db.sqlite3:/data/db/db.sqlite3
       - ./data/media:/app/media
       - ./data/static:/app/static
+      - ./data/logs:/app/logs
+      - ./data/secrets:/data/secrets
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')"]
@@ -28,44 +32,72 @@ services:
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - ./data/redis:/data
-    ports:
-      - "6379:6379"
     restart: unless-stopped
 
   worker:
     image: ftc-backend:latest
     env_file: .env.example
+    environment:
+      RUN_MIGRATIONS: "false"
+      RUN_COLLECTSTATIC: "false"
     command: ["celery", "-A", "Config", "worker", "-l", "info"]
     volumes:
-      - ./data/db/db.sqlite3:/data/db/db.sqlite3
       - ./data/media:/app/media
       - ./data/static:/app/static
+      - ./data/logs:/app/logs
+      - ./data/secrets:/data/secrets
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
 
   beat:
     image: ftc-backend:latest
     env_file: .env.example
+    environment:
+      RUN_MIGRATIONS: "false"
+      RUN_COLLECTSTATIC: "false"
     command: ["celery", "-A", "Config", "beat", "-l", "info"]
     volumes:
-      - ./data/db/db.sqlite3:/data/db/db.sqlite3
       - ./data/media:/app/media
       - ./data/static:/app/static
+      - ./data/logs:/app/logs
+      - ./data/secrets:/data/secrets
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
 
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: deploy/nginx.Dockerfile
+    image: ftc-nginx:latest
     volumes:
       - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./data/static:/usr/share/nginx/html/static:ro
       - ./data/media:/usr/share/nginx/html/media:ro
-      # 前端 SPA 构建产物（根路径托管，配合 nginx.conf 中的 / -> index.html 回退）
-      - ./frontend/dist:/usr/share/nginx/html:ro
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - backend
     restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ftc}
+      POSTGRES_USER: ${DB_USER:-ftc}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ftc-pass}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ftc} -d ${DB_NAME:-ftc}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

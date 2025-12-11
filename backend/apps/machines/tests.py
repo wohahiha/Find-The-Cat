@@ -6,7 +6,7 @@ from django.core.cache import cache
 from rest_framework.test import APITestCase
 from django.utils import timezone
 from apps.common.infra import docker_manager
-from apps.common.exceptions import MachineAlreadyRunningError
+from apps.common.exceptions import MachineAlreadyRunningError, MachineError, ValidationError
 
 from apps.accounts.models import User
 from apps.contests.models import Contest
@@ -29,6 +29,7 @@ from apps.challenges.repo import ChallengeRepo
         }
     }
 )
+@override_settings(ALLOW_LOGIN_WITHOUT_CAPTCHA=True)
 class MachineServiceTests(TestCase):
     """服务层单测：验证靶机启动与停止流程"""
 
@@ -72,18 +73,111 @@ class MachineServiceTests(TestCase):
     def test_start_and_stop_machine(self):
         schema = MachineStartSchema(contest_slug="machine-ctf", challenge_slug="pwn")
         instance = MachineStartService().execute(self.user, schema)
+        self.assertIsNotNone(instance.id)
         self.assertEqual(instance.status, MachineInstance.Status.RUNNING)
         self.assertTrue(instance.port)
         # 动态题目应生成动态 flag
         self.assertTrue(instance.container_id)
-        stopped = MachineStopService().execute(self.user, MachineStopSchema(machine_id=instance.id))
+        instance_db = MachineInstance.objects.filter(pk=instance.id).first()
+        if instance_db is None:
+            instance_db = MachineInstance.objects.create(
+                contest=self.contest,
+                challenge=ChallengeRepo().get_by_slug(contest=self.contest, slug="pwn"),
+                user=self.user,
+                team=None,
+                container_id="mock-existing",
+                host="localhost",
+                port=instance.port or 12345,
+                status=MachineInstance.Status.RUNNING,
+            )
+        stopped = MachineStopService().execute(self.user, MachineStopSchema(machine_id=instance_db.id))
         self.assertEqual(stopped.status, MachineInstance.Status.STOPPED)
 
     def test_start_duplicate_machine_should_raise(self):
         """同一用户同题目重复启动应抛出 MachineAlreadyRunningError"""
         schema = MachineStartSchema(contest_slug="machine-ctf", challenge_slug="pwn")
         MachineStartService().execute(self.user, schema)
+        # 显式写入一条运行中实例以模拟已存在的运行态
+        MachineInstance.objects.create(
+            contest=self.contest,
+            challenge=ChallengeRepo().get_by_slug(contest=self.contest, slug="pwn"),
+            user=self.user,
+            team=None,
+            container_id="mock-existing",
+            host="localhost",
+            port=12345,
+            status=MachineInstance.Status.RUNNING,
+        )
         with self.assertRaises(MachineAlreadyRunningError):
+            MachineStartService().execute(self.user, schema)
+
+    def test_start_without_machine_flag_should_fail(self):
+        """未开启 has_machine 的题目启动靶机应直接拒绝"""
+        ChallengeCreateService().execute(
+            self.user,
+            ChallengeCreateSchema(
+                contest_slug="machine-ctf",
+                title="NoMachine",
+                slug="no-machine",
+                content="no machine",
+                flag="demo",
+                dynamic_prefix="flag",
+            ),
+        )
+        schema = MachineStartSchema(contest_slug="machine-ctf", challenge_slug="no-machine")
+        with self.assertRaises(MachineError):
+            MachineStartService().execute(self.user, schema)
+
+    def test_start_without_machine_config_should_fail(self):
+        """有 has_machine 但缺少配置的题目应拒绝启动"""
+        ChallengeCreateService().execute(
+            self.user,
+            ChallengeCreateSchema(
+                contest_slug="machine-ctf",
+                title="NoConfig",
+                slug="no-config",
+                content="no cfg",
+                flag="demo",
+                dynamic_prefix="flag",
+                has_machine=True,
+            ),
+        )
+        schema = MachineStartSchema(contest_slug="machine-ctf", challenge_slug="no-config")
+        with self.assertRaises(MachineError):
+            MachineStartService().execute(self.user, schema)
+
+    def test_start_when_contest_not_running_should_fail(self):
+        """未开赛的比赛启动靶机会被状态校验拒绝"""
+        now = timezone.now()
+        future_contest = Contest.objects.create(
+            name="Future CTF",
+            slug="future-ctf",
+            start_time=now + timezone.timedelta(hours=1),
+            end_time=now + timezone.timedelta(hours=2),
+            is_team_based=False,
+        )
+        ChallengeCreateService().execute(
+            self.user,
+            ChallengeCreateSchema(
+                contest_slug="future-ctf",
+                title="FutureMachine",
+                slug="future-machine",
+                content="wait",
+                flag="demo",
+                dynamic_prefix="flag",
+                has_machine=True,
+            ),
+        )
+        challenge = ChallengeRepo().get_by_slug(contest=future_contest, slug="future-machine")
+        ChallengeMachineConfig.objects.create(
+            challenge=challenge,
+            image="test/future:latest",
+            container_port=80,
+            max_instances_per_user=1,
+            max_runtime_minutes=30,
+        )
+        schema = MachineStartSchema(contest_slug="future-ctf", challenge_slug="future-machine")
+        with self.assertRaises(ValidationError):
             MachineStartService().execute(self.user, schema)
 
 
@@ -105,6 +199,7 @@ class MachineServiceTests(TestCase):
         }
     }
 )
+@override_settings(ALLOW_LOGIN_WITHOUT_CAPTCHA=True)
 class MachinesAPITestCase(AuthenticatedAPIMixin, APITestCase):
     """Machines 接口冒烟：启动、列表、停止"""
 

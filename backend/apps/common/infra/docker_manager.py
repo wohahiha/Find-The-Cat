@@ -30,7 +30,6 @@ try:
     import docker  # type: ignore
 except Exception:  # pragma: no cover
     docker = None
-    _USE_MOCK = True
 
 _logger = get_logger(__name__)
 
@@ -40,7 +39,7 @@ def _get_client():
     if _USE_MOCK:
         return None
     if not docker:
-        raise RuntimeError("未安装 docker SDK，请 pip install docker 或开启 DOCKER_USE_MOCK=1")
+        raise RuntimeError("未安装 docker SDK，请 pip install docker 或设置 DOCKER_USE_MOCK=1 启用模拟模式")
     host = getattr(settings, "DOCKER_HOST", None)
     tls_verify = os.getenv("DOCKER_TLS_VERIFY", "0")
     cert_path = os.getenv("DOCKER_CERT_PATH", None)

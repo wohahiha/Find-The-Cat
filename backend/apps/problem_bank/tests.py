@@ -20,6 +20,7 @@ from apps.problem_bank.services import (
     BankChallengeSubmitService,
 )
 from apps.problem_bank.repo import ProblemBankRepo, BankChallengeRepo, BankSolveRepo
+from apps.problem_bank.models import BankChallenge
 
 
 class ProblemBankServiceTests(TestCase):
@@ -80,6 +81,7 @@ class ProblemBankServiceTests(TestCase):
         "DEFAULT_PERMISSION_CLASSES": ("apps.common.permissions.IsAuthenticated",),
         "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     },
+    ALLOW_LOGIN_WITHOUT_CAPTCHA=True,
     CACHES={
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
@@ -148,3 +150,40 @@ class ProblemBankAPITests(AuthenticatedAPIMixin, APITestCase):
         resp = player_client.get("/api/problem-bank/api-bank/")
         solved_flags = [item["solved"] for item in resp.data["data"]["items"] if item["slug"] == "for-bank"]
         self.assertEqual(solved_flags, [True])
+
+    def test_private_bank_forbidden_for_regular_user(self):
+        """非公开题库应拒绝普通用户访问"""
+        private_bank = ProblemBankCreateService().execute(
+            ProblemBankCreateSchema(name="Private Bank", slug="private-bank", is_public=False)
+        )
+        BankChallenge.objects.create(
+            bank=private_bank,
+            category=None,
+            title="Hidden",
+            slug="hidden",
+            content="secret",
+            flag="secret",
+            dynamic_prefix="flag",
+        )
+        player_client = self.auth_client("alice", "Passw0rd123")
+        resp = player_client.get("/api/problem-bank/private-bank/")
+        self.assertEqual(resp.status_code, 403, resp.content)
+
+    def test_inactive_challenge_not_listed(self):
+        """下线的题库题目不应出现在列表中"""
+        inactive_slug = "inactive-bank-challenge"
+        BankChallenge.objects.create(
+            bank=self.bank,
+            category=None,
+            title="Inactive Challenge",
+            slug=inactive_slug,
+            content="hidden",
+            flag="demo",
+            dynamic_prefix="flag",
+            is_active=False,
+        )
+        player_client = self.auth_client("alice", "Passw0rd123")
+        resp = player_client.get(f"/api/problem-bank/{self.bank.slug}/")
+        self.assertEqual(resp.status_code, 200, resp.content)
+        slugs = [item["slug"] for item in resp.data["data"]["items"]]
+        self.assertNotIn(inactive_slug, slugs)

@@ -256,11 +256,22 @@ const loadContestTitle = async () => {
 }
 
 const loadCategories = async () => {
-  const res = await api.get(`/contests/${contestSlug.value}/categories/`)
-  const data = res?.data?.data || res?.data || {}
-  categories.value = data.items || data || []
-  if (!activeCategory.value && categories.value.length) {
-    activeCategory.value = categories.value[0].slug || categories.value[0].id
+  try {
+    const res = await api.get(`/contests/${contestSlug.value}/categories/`)
+    const data = res?.data?.data || res?.data || {}
+    categories.value = data.items || data || []
+    if (!activeCategory.value && categories.value.length) {
+      activeCategory.value = categories.value[0].slug || categories.value[0].id
+    }
+  } catch (err) {
+    const status = err?.response?.status
+    if (status === 401) {
+      toast.error('请先登录后再查看题目')
+    } else if (status === 403) {
+      toast.error(parseApiError(err, '暂无权限查看题目'))
+    } else {
+      toast.error(parseApiError(err))
+    }
   }
 }
 
@@ -276,9 +287,16 @@ const loadChallenges = async () => {
       if (!flagInputs[c.slug]) flagInputs[c.slug] = ''
     })
   } catch (err) {
+    const status = err?.response?.status
     const msg = parseApiError(err)
     error.value = msg
-    toast.error(msg)
+    if (status === 401) {
+      toast.error('请登录后查看题目')
+    } else if (status === 403) {
+      toast.error(msg || '暂无权限访问当前比赛题目')
+    } else {
+      toast.error(msg)
+    }
   } finally {
     loading.value = false
   }

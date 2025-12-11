@@ -123,8 +123,11 @@ def send_mail_with_settings(
     envelope_from, header_from = _build_sender(None, username)
 
     try:
-        # 配置不完整时回退到 Django 默认邮件发送（使用默认 backend）
+        # 配置不完整时提示管理员配置（生产关闭 DEBUG 时强制报错；DEBUG 下允许 console 兜底）
         if not host or not username:
+            if not settings.DEBUG:
+                raise ValidationError(message="邮件服务未配置，请联系管理员在后台填充 SMTP 或发信账号后重试")
+            logger.warning("邮件服务未配置，DEBUG 下回退 console 后端", extra={"host": host, "user": username})
             email = EmailMultiAlternatives(
                 subject=subject,
                 body=body,

@@ -97,9 +97,16 @@ const loadChallenge = async () => {
     challenge.value = data.challenge || data
     attachments.value = data.attachments || []
   } catch (err) {
+    const status = err?.response?.status
     const msg = parseApiError(err)
     error.value = msg
-    toast.error(msg)
+    if (status === 401) {
+      toast.error('请先登录后查看题目')
+    } else if (status === 403) {
+      toast.error(msg || '暂无权限访问该题目')
+    } else {
+      toast.error(msg)
+    }
   } finally {
     loading.value = false
   }

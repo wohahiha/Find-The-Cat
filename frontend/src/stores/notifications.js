@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/api/client'
+import realtime from '@/utils/realtime'
 
 const PAGE_SIZE = 10
 
@@ -32,63 +33,12 @@ export const useNotificationStore = defineStore('notifications', {
       return `${wsBase}/ws/notify/${query}`
     },
     ensureSocket() {
-      if (this.socket || !this._isAuthed()) return
-      try {
-        const url = this._wsUrl()
-        const ws = new WebSocket(url)
-        ws.onopen = () => {
-          this.socket = ws
-          // heartbeat
-          if (this.pingTimer) clearInterval(this.pingTimer)
-          this.pingTimer = setInterval(() => {
-            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-              this.socket.send(JSON.stringify({ type: 'ping' }))
-            }
-          }, 25000)
-        }
-        ws.onclose = () => {
-          this.socket = null
-          if (this.pingTimer) {
-            clearInterval(this.pingTimer)
-            this.pingTimer = null
-          }
-          if (this.reconnectTimer) clearTimeout(this.reconnectTimer)
-          // 简单重连
-          this.reconnectTimer = setTimeout(() => {
-            this.ensureSocket()
-          }, 5000)
-        }
-        ws.onerror = () => {
-          ws.close()
-        }
-        ws.onmessage = (evt) => {
-          try {
-            const data = JSON.parse(evt.data)
-            if (data.event === 'notification') {
-              this.ingestRealtime(data)
-              this.fetchUnreadCount()
-            }
-          } catch (e) {
-            // ignore
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
+      if (!this._isAuthed()) return
+      // 交由统一实时管理器处理，避免重复连接
+      realtime.startNotify()
     },
     disconnect() {
-      if (this.reconnectTimer) {
-        clearTimeout(this.reconnectTimer)
-        this.reconnectTimer = null
-      }
-      if (this.pingTimer) {
-        clearInterval(this.pingTimer)
-        this.pingTimer = null
-      }
-      if (this.socket) {
-        this.socket.close()
-        this.socket = null
-      }
+      realtime.stopNotify()
     },
     async fetchUnreadCount() {
       try {

@@ -31,6 +31,8 @@ from apps.common.infra import docker_manager
 from apps.common.infra import redis_client
 from apps.common.infra.logger import get_logger, logger_extra
 from apps.common.utils.redis_keys import machine_ports_key
+from apps.notifications.services import create_and_push_notification, build_dedup_key
+from apps.notifications.models import Notification
 
 logger = get_logger(__name__)
 
@@ -62,7 +64,8 @@ def serialize_machine(machine: MachineInstance) -> dict:
         "user": getattr(machine, "user_id", None),
         "team": getattr(machine, "team_id", None),
         "container_id": getattr(machine, "container_id", None),
-        "host": machine.host,
+        # 使用后台配置的对外主机名，未配置则回退实例记录
+        "host": getattr(settings, "MACHINE_PUBLIC_HOST", None) or machine.host,
         "port": machine.port,
         "status": machine.status,
         "extend_count": getattr(machine, "extend_count", 0),
@@ -185,6 +188,7 @@ class MachineStartService(BaseService[MachineInstance]):
             or getattr(settings, "MACHINE_MAX_RUNTIME_MINUTES", 30)
         )
         expires_at = timezone.now() + timedelta(minutes=runtime_minutes)
+        remaining_seconds = max(int((expires_at - timezone.now()).total_seconds()), 0)
 
         # 6) 创建实例记录
         instance = self.machine_repo.create(
@@ -254,6 +258,36 @@ class MachineStartService(BaseService[MachineInstance]):
             },
         )
         broadcast_machine_status(instance, event="machine_status")
+        # 系统通知：启动信息（含端口/到期时间）
+        try:
+            dedup = build_dedup_key(
+                type=Notification.Type.MACHINE_STARTED,
+                contest=contest,
+                challenge=challenge,
+                extra=f"machine:{machine_id}",
+            )
+            create_and_push_notification(
+                user,
+                type=Notification.Type.MACHINE_STARTED,
+                title=f"靶机已启动：{challenge_slug}",
+                body=f"访问 {instance.host}:{port}，到期时间 {expires_at.strftime('%Y-%m-%d %H:%M:%S') if expires_at else '未知'}",
+                payload={
+                    "machine_id": machine_id,
+                    "contest": contest_slug,
+                    "challenge": challenge_slug,
+                    "host": instance.host,
+                    "port": port,
+                    "expires_at": expires_at,
+                    "remaining_seconds": remaining_seconds,
+                },
+                contest=contest,
+                challenge=challenge,
+                dedup_key=dedup,
+                expires_at=expires_at,
+            )
+        except Exception:
+            # 通知失败不阻断业务
+            pass
         return instance
 
     def _allocate_port(self, config) -> int:

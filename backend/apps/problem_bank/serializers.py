@@ -25,6 +25,7 @@ def serialize_bank(bank: ProblemBank) -> dict:
         "name": bank.name,
         "description": bank.description,
         "is_public": bank.is_public,
+        "slug": bank.slug,
         "created_at": bank.created_at,
         "updated_at": bank.updated_at,
     }

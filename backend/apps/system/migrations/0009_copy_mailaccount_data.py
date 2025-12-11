@@ -26,6 +26,11 @@ def copy_mailaccount_data(apps, schema_editor):
     """
     from django.db import connection
 
+    # 仅针对 SQLite 迁移旧数据，其他数据库（全新部署）直接跳过
+    if connection.vendor != "sqlite":
+        print("非 SQLite 数据库，跳过 MailAccount 数据迁移")
+        return
+
     with connection.cursor() as cursor:
         # 检查旧表是否存在
         cursor.execute("""

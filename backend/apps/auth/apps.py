@@ -12,3 +12,22 @@ class AuthConfig(AppConfig):
     name = "apps.auth"
     label = "ftc_auth"
     verbose_name = "Authentication And Authorization"
+
+    def ready(self):
+        """
+        启动钩子：同步权限字典与默认角色
+        - 避开 migrate/makemigrations/collectstatic 阶段，防止 DB 未就绪
+        """
+        import sys
+        try:
+            cmd = sys.argv[1].lower() if len(sys.argv) > 1 else ""
+            if cmd in {"migrate", "makemigrations", "collectstatic"}:
+                return
+        except Exception:
+            return
+        try:
+            from apps.auth.services import RBACService
+            RBACService.sync_permissions_and_defaults()
+        except Exception:
+            # 同步失败不阻断启动，交由管理员手动触发
+            return
