@@ -3,7 +3,7 @@
 # =========================
 # Builder：安装依赖
 # =========================
-FROM python:3.14-slim AS builder
+FROM python:3.11-slim AS builder
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 WORKDIR /app
@@ -20,7 +20,7 @@ RUN apt-get update \
 # =========================
 # Runtime：仅拷贝依赖与代码
 # =========================
-FROM python:3.14-slim AS runtime
+FROM python:3.11-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DJANGO_SETTINGS_MODULE=Config.settings
