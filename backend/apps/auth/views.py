@@ -9,7 +9,7 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from apps.common.permissions import IsAdmin
 from apps.common import response
@@ -56,6 +56,16 @@ class RoleViewSet(ViewSet):
 
     permission_classes = [IsAdmin]
     serializer_class = RoleSerializer
+    # 显式声明路径参数类型，便于 OpenAPI 生成
+    lookup_url_kwarg = "id"
+    lookup_value_regex = r"\d+"
+
+    role_id_param = OpenApiParameter(
+        name="id",
+        type=int,
+        location=OpenApiParameter.PATH,
+        description="角色 ID",
+    )
 
     @extend_schema(summary="角色列表", responses=RoleSerializer(many=True))
     def list(self, request):
@@ -72,7 +82,7 @@ class RoleViewSet(ViewSet):
         group = RBACService.create_role(data["name"], data.get("permissions") or [])
         return response.created({"role": RBACService.role_payload(group)}, message="角色已创建")
 
-    @extend_schema(summary="角色详情", responses=RoleSerializer)
+    @extend_schema(summary="角色详情", responses=RoleSerializer, parameters=[role_id_param])
     def retrieve(self, request, pk=None):
         RBACService.sync_permissions_and_defaults()
         group = Group.objects.filter(pk=pk).first()
@@ -80,7 +90,7 @@ class RoleViewSet(ViewSet):
             raise NotFoundError(message="角色不存在")
         return response.success({"role": RBACService.role_payload(group)})
 
-    @extend_schema(summary="更新角色", request=RoleSerializer, responses=RoleSerializer)
+    @extend_schema(summary="更新角色", request=RoleSerializer, responses=RoleSerializer, parameters=[role_id_param])
     def update(self, request, pk=None):
         RBACService.sync_permissions_and_defaults()
         group = Group.objects.filter(pk=pk).first()
@@ -92,7 +102,7 @@ class RoleViewSet(ViewSet):
         group = RBACService.update_role(group, name=data.get("name"), permissions=data.get("permissions"))
         return response.success({"role": RBACService.role_payload(group)}, message="角色已更新")
 
-    @extend_schema(summary="部分更新角色", request=RoleSerializer, responses=RoleSerializer)
+    @extend_schema(summary="部分更新角色", request=RoleSerializer, responses=RoleSerializer, parameters=[role_id_param])
     def partial_update(self, request, pk=None):
         RBACService.sync_permissions_and_defaults()
         group = Group.objects.filter(pk=pk).first()
@@ -104,7 +114,7 @@ class RoleViewSet(ViewSet):
         group = RBACService.update_role(group, name=data.get("name"), permissions=data.get("permissions"))
         return response.success({"role": RBACService.role_payload(group)}, message="角色已更新")
 
-    @extend_schema(summary="删除角色")
+    @extend_schema(summary="删除角色", parameters=[role_id_param])
     def destroy(self, request, pk=None):
         RBACService.sync_permissions_and_defaults()
         group = Group.objects.filter(pk=pk).first()

@@ -481,13 +481,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/PasswordResetSendResponse'
           description: ''
-  /api/accounts/permissions/:
+  /api/auth/permissions/:
     get:
-      operationId: api_accounts_permissions_retrieve
-      description: 获取权限列表（当前返回空列表占位）
-      summary: 获取权限列表（占位）
+      operationId: api_auth_permissions_list
+      description: 权限字典：仅管理员可读
+      summary: 权限字典
       tags:
-      - accounts-auth
+      - auth
       security:
       - JWTAuth: []
       responses:
@@ -495,15 +495,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PermissionsPlaceholderResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
           description: ''
-  /api/accounts/roles/:
+  /api/auth/roles/:
     get:
-      operationId: api_accounts_roles_retrieve
-      description: 获取角色列表（当前返回空列表占位）
-      summary: 获取角色列表（占位）
+      operationId: api_auth_roles_list
+      description: 角色管理：基于 Django Group
+      summary: 角色列表
       tags:
-      - accounts-auth
+      - auth
       security:
       - JWTAuth: []
       responses:
@@ -511,8 +513,145 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RolesPlaceholderResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
           description: ''
+    post:
+      operationId: api_auth_roles_create
+      description: 角色管理：基于 Django Group
+      summary: 创建角色
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Role'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Role'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+  /api/auth/roles/{id}/:
+    get:
+      operationId: api_auth_roles_retrieve
+      description: 角色管理：基于 Django Group
+      summary: 角色详情
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 角色 ID
+        required: true
+      tags:
+      - auth
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+    put:
+      operationId: api_auth_roles_update
+      description: 角色管理：基于 Django Group
+      summary: 更新角色
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 角色 ID
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Role'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Role'
+        required: true
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+    patch:
+      operationId: api_auth_roles_partial_update
+      description: 角色管理：基于 Django Group
+      summary: 部分更新角色
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 角色 ID
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRole'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRole'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRole'
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+    delete:
+      operationId: api_auth_roles_destroy
+      description: 角色管理：基于 Django Group
+      summary: 删除角色
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 角色 ID
+        required: true
+      tags:
+      - auth
+      security:
+      - JWTAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/contests/:
     get:
       operationId: contest_list
@@ -1238,6 +1377,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/MachineStartResponse'
           description: ''
+  /api/machines/{machine_id}/extend/:
+    post:
+      operationId: api_machines_extend_create
+      description: |-
+        延长靶机运行时间：
+        - 仅运行中的实例可延长
+      summary: 延长靶机运行时间
+      parameters:
+      - in: path
+        name: machine_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - machines
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MachineExtendRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MachineExtendRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MachineExtendRequest'
+      security:
+      - JWTAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MachineExtendResponse'
+          description: ''
   /api/machines/{machine_id}/stop/:
     post:
       operationId: api_machines_stop_create
@@ -1261,52 +1435,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MachineStopResponse'
-          description: ''
-  /api/machines/{machine_id}/extend/:
-    post:
-      operationId: api_machines_extend_create
-      description: |-
-        延长靶机运行时间：
-        - 仅运行中的实例可延时
-        - 单次延时分钟数可配置，超过阈值或次数上限会被拒绝
-      summary: 延长靶机
-      parameters:
-      - in: path
-        name: machine_id
-        schema:
-          type: integer
-        required: true
-      tags:
-      - machines
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                minutes:
-                  type: integer
-                  description: 可选延长的分钟数，不传使用默认值
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              properties:
-                minutes:
-                  type: integer
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                minutes:
-                  type: integer
-      security:
-      - JWTAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MachineExtendResponse'
           description: ''
   /api/notifications/:
     get:
@@ -1404,6 +1532,26 @@ paths:
       summary: 题库列表
       parameters:
       - in: query
+        name: author
+        schema:
+          type: integer
+        description: 作者用户ID过滤
+      - in: query
+        name: difficulty
+        schema:
+          type: string
+        description: 难度过滤（easy/medium/hard）
+      - in: query
+        name: is_public
+        schema:
+          type: boolean
+        description: 是否公开
+      - in: query
+        name: keyword
+        schema:
+          type: string
+        description: 按名称/描述模糊搜索
+      - in: query
         name: page
         schema:
           type: integer
@@ -1413,6 +1561,23 @@ paths:
         schema:
           type: integer
         description: 每页条数
+      - in: query
+        name: tags
+        schema:
+          type: string
+        description: 标签列表，逗号分隔
+      - in: query
+        name: updated_after
+        schema:
+          type: string
+          format: date-time
+        description: '更新时间 >= '
+      - in: query
+        name: updated_before
+        schema:
+          type: string
+          format: date-time
+        description: 更新时间 <=
       tags:
       - problem-bank
       security:
@@ -2342,7 +2507,6 @@ components:
       properties:
         my_team:
           $ref: '#/components/schemas/TeamSummary'
-          nullable: true
         contest:
           $ref: '#/components/schemas/ContestSummary'
         challenges:
@@ -2365,6 +2529,7 @@ components:
       - announcements
       - challenges
       - contest
+      - my_team
       - scoreboard
     ContestDetailResponse:
       type: object
@@ -2740,6 +2905,40 @@ components:
       - code
       - data
       - message
+    MachineExtendData:
+      type: object
+      properties:
+        machine:
+          $ref: '#/components/schemas/MachineInstance'
+      required:
+      - machine
+    MachineExtendRequest:
+      type: object
+      properties:
+        minutes:
+          type: integer
+          nullable: true
+          description: 可选：本次延长的分钟数，不填使用默认值
+    MachineExtendResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/MachineExtendData'
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功
+        message:
+          type: string
+          description: 提示信息
+        extra:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: 附加信息
+      required:
+      - code
+      - data
+      - message
     MachineInstance:
       type: object
       properties:
@@ -2764,32 +2963,13 @@ components:
           type: string
         extend_count:
           type: integer
-          description: 已延长次数
         expires_at:
           type: string
           format: date-time
           nullable: true
-          description: 过期时间
         remaining_seconds:
           type: integer
           nullable: true
-          description: 剩余秒数
-        extend_max_times:
-          type: integer
-          nullable: true
-          description: 单实例最大延时次数（-1 不限）
-        extend_threshold_minutes:
-          type: integer
-          nullable: true
-          description: 允许延时的剩余时间阈值（分钟）
-        extend_minutes_default:
-          type: integer
-          nullable: true
-          description: 单次延时分钟数
-        remaining_extend_times:
-          type: integer
-          nullable: true
-          description: 剩余可延时次数（-1 表示不限）
         created_at:
           type: string
           format: date-time
@@ -2883,33 +3063,6 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/MachineStopData'
-        code:
-          type: integer
-          description: 业务状态码，0 表示成功
-        message:
-          type: string
-          description: 提示信息
-        extra:
-          type: object
-          additionalProperties: {}
-          nullable: true
-          description: 附加信息
-      required:
-      - code
-      - data
-      - message
-    MachineExtendData:
-      type: object
-      properties:
-        machine:
-          $ref: '#/components/schemas/MachineInstance'
-      required:
-      - machine
-    MachineExtendResponse:
-      type: object
-      properties:
-        data:
-          $ref: '#/components/schemas/MachineExtendData'
         code:
           type: integer
           description: 业务状态码，0 表示成功
@@ -3281,34 +3434,43 @@ components:
           type: string
         website:
           type: string
-    PermissionsPlaceholderData:
+    PatchedRole:
       type: object
       properties:
-        items:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        is_builtin:
+          type: boolean
+          readOnly: true
+        permissions:
           type: array
           items:
             type: string
-          default: []
-    PermissionsPlaceholderResponse:
+    Permission:
       type: object
       properties:
-        data:
-          $ref: '#/components/schemas/PermissionsPlaceholderData'
         code:
-          type: integer
-          description: 业务状态码，0 表示成功
-        message:
           type: string
-          description: 提示信息
-        extra:
-          type: object
-          additionalProperties: {}
-          nullable: true
-          description: 附加信息
+        category:
+          type: string
+        resource:
+          type: string
+        action:
+          type: string
+        admin_only:
+          type: boolean
+        user_default:
+          type: boolean
       required:
+      - action
+      - admin_only
+      - category
       - code
-      - data
-      - message
+      - resource
+      - user_default
     ProblemBankDetailData:
       type: object
       properties:
@@ -3500,35 +3662,26 @@ components:
       - code
       - data
       - message
-    RolesPlaceholderData:
+    Role:
       type: object
       properties:
-        items:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        is_builtin:
+          type: boolean
+          readOnly: true
+        permissions:
           type: array
           items:
-            type: object
-            additionalProperties: {}
-          default: []
-    RolesPlaceholderResponse:
-      type: object
-      properties:
-        data:
-          $ref: '#/components/schemas/RolesPlaceholderData'
-        code:
-          type: integer
-          description: 业务状态码，0 表示成功
-        message:
-          type: string
-          description: 提示信息
-        extra:
-          type: object
-          additionalProperties: {}
-          nullable: true
-          description: 附加信息
+            type: string
       required:
-      - code
-      - data
-      - message
+      - id
+      - is_builtin
+      - name
+      - permissions
     ScoreboardEntry:
       type: object
       properties:

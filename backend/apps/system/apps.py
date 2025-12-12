@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 from django.db.models.signals import post_migrate
+from django.core.signals import request_started
 
 
 class ConfigsConfig(AppConfig):
@@ -43,17 +44,28 @@ class ConfigsConfig(AppConfig):
         )
         logger = get_logger(__name__)
 
-        # 启动时尝试读取后台安全配置并覆盖 settings（失败不阻断启动）
-        try:
-            import sys
-            from .services import apply_security_settings_from_config
+        # 将安全配置覆盖延迟到首个请求，避免在 App 初始化阶段访问数据库
+        _applied_security = {"done": False}
 
-            # 避免在迁移/建模阶段访问数据库：检测当前命令，遇到 migrate/makemigrations/collectstatic 时跳过
-            command = sys.argv[1].lower() if len(sys.argv) > 1 else ""
-            if command not in {"migrate", "makemigrations", "collectstatic"}:
+        def apply_security_on_first_request(sender, **kwargs):
+            _ = sender, kwargs
+            if _applied_security["done"]:
+                return
+            _applied_security["done"] = True
+            try:
+                import sys
+                from .services import apply_security_settings_from_config
+
+                command = sys.argv[1].lower() if len(sys.argv) > 1 else ""
+                if command in {"migrate", "makemigrations", "collectstatic"}:
+                    return
                 apply_security_settings_from_config()
-        except Exception as exc:  # noqa: BLE001
-            logger.warning(f"应用安全配置覆盖失败，继续使用默认值: {exc}")
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(f"应用安全配置覆盖失败，继续使用默认值: {exc}")
+            finally:
+                request_started.disconnect(apply_security_on_first_request, dispatch_uid="configs-apply-security")
+
+        request_started.connect(apply_security_on_first_request, dispatch_uid="configs-apply-security")
 
         def sync_system_configs(**kwargs):
             """

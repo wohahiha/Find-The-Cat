@@ -1,4 +1,4 @@
-version: "3.9"
+# Docker Compose configuration for the FTC application stack
 
 services:
   backend:
@@ -8,8 +8,6 @@ services:
     image: ftc-backend:latest
     command: ["uvicorn", "Config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--workers", "3"]
     env_file: .env.example
-    ports:
-      - "8000:8000"
     volumes:
       - ./data/media:/app/media
       - ./data/static:/app/static

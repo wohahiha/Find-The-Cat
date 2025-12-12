@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.apps import AppConfig
+from django.db.models.signals import post_migrate
 
 
 class AuthConfig(AppConfig):
@@ -15,19 +16,20 @@ class AuthConfig(AppConfig):
 
     def ready(self):
         """
-        启动钩子：同步权限字典与默认角色
-        - 避开 migrate/makemigrations/collectstatic 阶段，防止 DB 未就绪
+        启动钩子：注册 post_migrate 信号，避免在 App 初始化阶段直接访问数据库
         """
-        import sys
-        try:
-            cmd = sys.argv[1].lower() if len(sys.argv) > 1 else ""
-            if cmd in {"migrate", "makemigrations", "collectstatic"}:
-                return
-        except Exception:
-            return
-        try:
-            from apps.auth.services import RBACService
-            RBACService.sync_permissions_and_defaults()
-        except Exception:
-            # 同步失败不阻断启动，交由管理员手动触发
-            return
+        from apps.common.infra.logger import get_logger
+
+        logger = get_logger(__name__)
+
+        def sync_rbac(**kwargs):
+            _ = kwargs  # 未使用
+            try:
+                from apps.auth.services import RBACService
+
+                RBACService.sync_permissions_and_defaults()
+                logger.info("RBAC 权限/默认角色已同步")
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(f"RBAC 同步跳过（可能数据库未就绪或命令上下文不适用）：{exc}")
+
+        post_migrate.connect(sync_rbac, sender=self, weak=False)

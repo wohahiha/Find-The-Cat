@@ -3,8 +3,6 @@ from __future__ import annotations
 from django.urls import path
 
 from .views import (
-    RolesPlaceholderView,
-    PermissionsPlaceholderView,
     RegisterView,
     LoginView,
     CaptchaView,
@@ -44,9 +42,6 @@ urlpatterns = [
     path("email/verification/", SendEmailVerificationView.as_view(), name="email-code"),
     # 变更邮箱：需要当前密码 + 新邮箱验证码
     path("email/change/", ChangeEmailView.as_view(), name="email-change"),
-    # 占位：角色/权限列表
-    path("roles/", RolesPlaceholderView.as_view(), name="roles-placeholder"),
-    path("permissions/", PermissionsPlaceholderView.as_view(), name="permissions-placeholder"),
     # 个人资料：查看/更新当前用户信息
     path("me/", ProfileView.as_view(), name="profile"),
     # 上传头像：保存图片并回写头像 URL
