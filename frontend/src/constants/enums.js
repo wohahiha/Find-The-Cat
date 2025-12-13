@@ -34,7 +34,7 @@ export const FLAG_ERRORS = {
 
 export const DEFAULT_PAGE_META = {
   page: 1,
-  page_size: 10,
+  page_size: 12,
   total: 0,
   has_next: false,
   has_previous: false,

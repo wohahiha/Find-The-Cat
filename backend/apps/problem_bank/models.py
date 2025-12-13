@@ -16,17 +16,11 @@ User = settings.AUTH_USER_MODEL
 class ProblemBank(models.Model):
     """题库主体：用于归档题目，支持公开/私有"""
 
-    # 题库名称
     name = models.CharField("题库名称", max_length=200, unique=True)
-    # 题库标识
     slug = models.SlugField("标识", max_length=200, unique=True)
-    # 描述
     description = models.TextField("题库描述", blank=True)
-    # 是否公开给前端浏览/作答
     is_public = models.BooleanField("是否公开", default=False)
-    # 创建时间
     created_at = models.DateTimeField("创建时间", auto_now_add=True)
-    # 更新时间
     updated_at = models.DateTimeField("更新时间", auto_now=True)
 
     class Meta:
@@ -42,9 +36,7 @@ class BankCategory(models.Model):
     """题库分类：便于题库内部对题目分组"""
 
     bank = models.ForeignKey(ProblemBank, verbose_name="所属题库", related_name="categories", on_delete=models.CASCADE)
-    # 分类名称
     name = models.CharField("分类名称", max_length=80)
-    # slug 用于标识
     slug = models.SlugField("标识", max_length=80)
 
     class Meta:
@@ -77,32 +69,35 @@ class BankChallenge(models.Model):
     category = models.ForeignKey(
         BankCategory, verbose_name="分类", related_name="challenges", on_delete=models.SET_NULL, null=True, blank=True
     )
-    # 标题
     title = models.CharField("题目标题", max_length=200)
-    # 唯一标识
     slug = models.SlugField("题目标识", max_length=200)
-    # 简介
     short_description = models.CharField("题目简介", max_length=255, blank=True)
-    # 题面
     content = models.TextField("题目内容")
-    # 难度
     difficulty = models.CharField("难度", max_length=20, choices=Difficulty.choices, default=Difficulty.MEDIUM)
-    # 标准 Flag 或种子
     flag = models.CharField("Flag", max_length=256)
-    # Flag 忽略大小写
     flag_case_insensitive = models.BooleanField("忽略大小写", default=True)
-    # Flag 类型
     flag_type = models.CharField("Flag 类型", max_length=16, choices=FlagType.choices, default=FlagType.STATIC)
-    # Flag 前缀
     dynamic_prefix = models.CharField("Flag 前缀", max_length=64, blank=True, default="FLAG")
-    # 是否可见
     is_active = models.BooleanField("是否可见", default=True)
-    # 题目作者
-    author = models.ForeignKey(User, verbose_name="作者", related_name="bank_challenges", on_delete=models.SET_NULL,
-                               null=True)
-    # 创建时间
+    author = models.ForeignKey(
+        User, verbose_name="作者", related_name="bank_challenges", on_delete=models.SET_NULL, null=True
+    )
+    # 关联的比赛靶机上下文（可选）：便于题库题复用比赛靶机
+    machine_contest_slug = models.SlugField(
+        "靶机比赛标识",
+        max_length=200,
+        blank=True,
+        default="",
+        help_text="如需复用比赛靶机，填入已存在的比赛 slug",
+    )
+    machine_challenge_slug = models.SlugField(
+        "靶机题目标识",
+        max_length=200,
+        blank=True,
+        default="",
+        help_text="与靶机比赛对应的题目 slug",
+    )
     created_at = models.DateTimeField("创建时间", auto_now_add=True)
-    # 更新时间
     updated_at = models.DateTimeField("更新时间", auto_now=True)
 
     class Meta:
@@ -114,19 +109,20 @@ class BankChallenge(models.Model):
     def __str__(self) -> str:
         return f"{self.title} ({self.bank.name})"
 
+    @property
+    def has_machine(self) -> bool:
+        return bool(self.machine_contest_slug and self.machine_challenge_slug)
+
     def normalized_flag(self, value: str) -> str:
-        """按配置标准化输入 Flag，便于比对"""
         return value.strip().lower() if self.flag_case_insensitive else value.strip()
 
     def _assemble_flag(self, prefix: str, body: str) -> str:
-        """拼接前缀与 flag 主体，形成标准串"""
         normalized_prefix = (prefix or "").strip()
         normalized_body = self.normalized_flag(body)
         wrapped = f"{normalized_prefix}{{{normalized_body}}}"
         return self.normalized_flag(wrapped)
 
     def build_expected_flag(self, user=None, secret: str | None = None) -> str:
-        """构造当前用户的期望 Flag，动态题基于用户 ID 派生"""
         if self.flag_type != self.FlagType.DYNAMIC:
             return self._assemble_flag(self.dynamic_prefix, self.flag)
         owner_id = getattr(user, "id", None)
@@ -138,7 +134,6 @@ class BankChallenge(models.Model):
         return self._assemble_flag(self.dynamic_prefix, digest)
 
     def check_flag(self, submitted: str, *, user=None, secret: str | None = None) -> bool:
-        """校验题库题目 Flag"""
         if self.flag_type == self.FlagType.DYNAMIC and user is None:
             return False
         expected = self.build_expected_flag(user=user, secret=secret)
@@ -148,8 +143,7 @@ class BankChallenge(models.Model):
 class BankAttachment(models.Model):
     """题库附件：存储下载链接"""
 
-    challenge = models.ForeignKey(BankChallenge, verbose_name="题目", related_name="attachments",
-                                  on_delete=models.CASCADE)
+    challenge = models.ForeignKey(BankChallenge, verbose_name="题目", related_name="attachments", on_delete=models.CASCADE)
     name = models.CharField("附件名称", max_length=200)
     url = models.URLField("附件链接", max_length=500)
     order = models.PositiveIntegerField("排序", default=1)
@@ -164,12 +158,14 @@ class BankAttachment(models.Model):
 
 
 class BankHint(models.Model):
-    """题库提示：统一免费，不扣分"""
+    """题库提示：支持免费/扣分标签（题库场景默认不扣分）"""
 
     challenge = models.ForeignKey(BankChallenge, verbose_name="题目", related_name="hints", on_delete=models.CASCADE)
     title = models.CharField("提示标题", max_length=200)
     content = models.TextField("提示内容")
     order = models.PositiveIntegerField("排序", default=1)
+    is_free = models.BooleanField("是否免费", default=True)
+    cost = models.PositiveIntegerField("扣分成本", default=0)
 
     class Meta:
         ordering = ["order", "id"]

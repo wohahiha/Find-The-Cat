@@ -10,6 +10,7 @@ from rest_framework import serializers
 from django.db import models
 
 from apps.common import response
+from apps.common.response import page_success
 from apps.common.exceptions import ValidationError
 from apps.common.utils.validators import validate_upload_file
 from apps.common.permissions import (
@@ -71,7 +72,11 @@ class ProblemBankListView(APIView):
         tags=["problem-bank"],
         parameters=pagination_parameters()
         + [
-            OpenApiParameter("keyword", OpenApiTypes.STR, OpenApiParameter.QUERY, description="按名称/描述模糊搜索"),
+            OpenApiParameter("keyword", OpenApiTypes.STR, OpenApiParameter.QUERY, description="模糊搜索关键字（兼容旧版 search_scope）"),
+            OpenApiParameter("search_scope", OpenApiTypes.STR, OpenApiParameter.QUERY, description="兼容旧版：bank/challenge/category"),
+            OpenApiParameter("bank_keyword", OpenApiTypes.STR, OpenApiParameter.QUERY, description="按题库名模糊搜索"),
+            OpenApiParameter("challenge_keyword", OpenApiTypes.STR, OpenApiParameter.QUERY, description="按题目名模糊搜索"),
+            OpenApiParameter("category_keyword", OpenApiTypes.STR, OpenApiParameter.QUERY, description="按题目类型（分类名）模糊搜索"),
             OpenApiParameter("difficulty", OpenApiTypes.STR, OpenApiParameter.QUERY, description="难度过滤（easy/medium/hard）"),
             OpenApiParameter("tags", OpenApiTypes.STR, OpenApiParameter.QUERY, description="标签列表，逗号分隔"),
             OpenApiParameter("author", OpenApiTypes.INT, OpenApiParameter.QUERY, description="作者用户ID过滤"),
@@ -85,8 +90,30 @@ class ProblemBankListView(APIView):
         if not request.user.is_staff:
             qs = qs.filter(is_public=True)
         keyword = request.query_params.get("keyword") or ""
+        bank_keyword = request.query_params.get("bank_keyword") or ""
+        challenge_keyword = request.query_params.get("challenge_keyword") or ""
+        category_keyword = request.query_params.get("category_keyword") or ""
+        search_scope = (request.query_params.get("search_scope") or "bank").lower()
+        # 新版：独立字段，均可叠加
+        if bank_keyword:
+            qs = qs.filter(models.Q(name__icontains=bank_keyword))
+        if challenge_keyword:
+            qs = qs.filter(models.Q(challenges__title__icontains=challenge_keyword) | models.Q(challenges__slug__icontains=challenge_keyword))
+        if category_keyword:
+            qs = qs.filter(
+                models.Q(challenges__category__name__icontains=category_keyword)
+                | models.Q(challenges__category__slug__icontains=category_keyword)
+            )
+        # 兼容旧版 search_scope + keyword
         if keyword:
-            qs = qs.filter(models.Q(name__icontains=keyword) | models.Q(description__icontains=keyword))
+            if search_scope == "challenge":
+                qs = qs.filter(models.Q(challenges__title__icontains=keyword) | models.Q(challenges__slug__icontains=keyword))
+            elif search_scope == "category":
+                qs = qs.filter(
+                    models.Q(challenges__category__name__icontains=keyword) | models.Q(challenges__category__slug__icontains=keyword)
+                )
+            else:
+                qs = qs.filter(models.Q(name__icontains=keyword) | models.Q(description__icontains=keyword))
         difficulty = request.query_params.get("difficulty")
         if difficulty:
             qs = qs.filter(challenges__difficulty=difficulty)
@@ -191,14 +218,38 @@ class BankChallengeListView(APIView):
     )
     def get(self, request: Request, bank_slug: str) -> Response:
         bank = self.context_service.get_bank_for_user(request.user, bank_slug)
-        challenges = self.challenge_repo.list_active(bank=bank).order_by("slug")
+        challenges_qs = self.challenge_repo.list_active(bank=bank)
+        category = request.query_params.get("category")
+        if category:
+            challenges_qs = challenges_qs.filter(
+                models.Q(category__slug=category) | models.Q(category__name__iexact=category)
+            )
+        challenges = challenges_qs.order_by("slug")
         solved_ids = set(
             self.solve_repo.filter(challenge__bank=bank, user=request.user).values_list("challenge_id", flat=True)
         )
         paginator = StandardPagination()
         page = paginator.paginate_queryset(challenges, request)
         data = [serialize_challenge(ch, solved=ch.id in solved_ids, request=request) for ch in page]
-        return paginator.get_paginated_response({"items": data})
+        # 收集所有分类（用于前端筛选，不随分页丢失）
+        all_categories = (
+            self.challenge_repo.list_active(bank=bank)
+            .exclude(category__isnull=True)
+            .values_list("category__slug", "category__name")
+            .distinct()
+        )
+        categories = [{"slug": slug or "", "name": name or ""} for slug, name in all_categories]
+        return page_success(
+            items={"items": data, "categories": categories},
+            page=paginator.page.number,
+            page_size=paginator.get_page_size(request) or paginator.page.paginator.per_page,
+            total=paginator.page.paginator.count,
+            has_next=paginator.page.has_next(),
+            has_previous=paginator.page.has_previous(),
+            total_pages=paginator.page.paginator.num_pages,
+            next_page=paginator.page.next_page_number() if paginator.page.has_next() else None,
+            previous_page=paginator.page.previous_page_number() if paginator.page.has_previous() else None,
+        )
 
 
 class BankChallengeDetailView(APIView):

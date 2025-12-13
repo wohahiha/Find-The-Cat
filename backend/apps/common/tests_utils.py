@@ -8,6 +8,16 @@ class AuthenticatedAPIMixin:
     提供统一的登录与认证客户端构造工具，减少各测试用例的重复代码
     """
 
+    def setUp(self):
+        """
+        测试环境默认关闭图形验证码、使用内存邮件后端，避免外部依赖/验证码阻断
+        """
+        super().setUp()
+        self.settings(
+            ALLOW_LOGIN_WITHOUT_CAPTCHA=True,
+            EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        )
+
     login_url: str = "/api/accounts/auth/login/"
     client: APIClient  # 由 APITestCase 提供
 
@@ -30,6 +40,7 @@ class AuthenticatedAPIMixin:
         """
         token = self.api_login(identifier, password)
         client = APIClient()
+        client.raise_request_exception = False
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
         return client
 

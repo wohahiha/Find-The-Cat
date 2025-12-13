@@ -30,11 +30,11 @@ def serialize_hint(hint: ChallengeHint, *, unlocked: bool) -> dict:
     return {
         "id": getattr(hint, "id", None),
         "title": hint.title,
-        "content": hint.content if unlocked or hint.is_free else "",
+        "content": hint.content if unlocked else "",
         "is_free": hint.is_free,
         "cost": hint.cost,
         "order": hint.order,
-        "unlocked": unlocked or hint.is_free,
+        "unlocked": unlocked,
     }
 
 

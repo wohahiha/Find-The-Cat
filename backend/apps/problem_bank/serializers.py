@@ -32,12 +32,15 @@ def serialize_bank(bank: ProblemBank) -> dict:
 
 
 def serialize_hint(hint: BankHint) -> dict:
-    """题库提示：统一免费，直接返回内容"""
+    """题库提示：返回内容与付费标记（题库默认不扣分，前端自行控制解锁展示）"""
     return {
         "id": hint.id,
         "title": hint.title,
         "content": hint.content,
         "order": hint.order,
+        "is_free": getattr(hint, "is_free", True),
+        "cost": getattr(hint, "cost", 0),
+        "unlocked": False,
     }
 
 
@@ -48,6 +51,7 @@ def serialize_challenge(
     request: HttpRequest | None = None,
 ) -> dict:
     """题库题目序列化：用于列表与详情"""
+    has_machine = bool(getattr(challenge, "machine_contest_slug", "") and getattr(challenge, "machine_challenge_slug", ""))
     return {
         "id": challenge.id,
         "bank": challenge.bank_id,
@@ -56,8 +60,13 @@ def serialize_challenge(
         "short_description": challenge.short_description,
         "content": challenge.content,
         "category": challenge.category.name if challenge.category else None,
+        "category_name": challenge.category.name if challenge.category else None,
+        "category_slug": challenge.category.slug if challenge.category else None,
         "difficulty": challenge.difficulty,
         "is_active": challenge.is_active,
+        "has_machine": has_machine,
+        "machine_contest_slug": challenge.machine_contest_slug or None,
+        "machine_challenge_slug": challenge.machine_challenge_slug or None,
         "attachments": [
             {
                 "id": att.id,
@@ -68,9 +77,6 @@ def serialize_challenge(
             }
             for att in challenge.attachments.all().order_by("order", "id")
         ],
-        "hints": [
-            serialize_hint(hint)
-            for hint in challenge.hints.all().order_by("order", "id")
-        ],
+        "hints": [serialize_hint(hint) for hint in challenge.hints.all().order_by("order", "id")],
         "solved": solved,
     }

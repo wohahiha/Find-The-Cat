@@ -10,74 +10,47 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-1">
         <div class="flex flex-col gap-2">
-          <label class="text-xs text-muted">关键词</label>
+          <label class="text-xs text-muted">题库名</label>
           <div class="flex w-full items-stretch rounded-lg h-11">
             <div class="text-muted flex border border-r-0 border-input-border bg-input items-center justify-center pl-4 rounded-l-lg">
               <span class="material-symbols-outlined">search</span>
             </div>
             <input
-              v-model.trim="filters.keyword"
+              v-model.trim="filters.bank_keyword"
               class="form-input flex w-full min-w-0 flex-1 rounded-lg text-text focus:outline-0 focus:ring-2 focus:ring-primary border border-input-border bg-input h-full placeholder:text-muted px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
-              placeholder="按名称或描述搜索"
+              placeholder="按题库名称搜索"
               type="text"
               @keyup.enter="applySearch"
             />
           </div>
         </div>
         <div class="flex flex-col gap-2">
-          <label class="text-xs text-muted">标签（逗号分隔）</label>
-          <input
-            v-model.trim="filters.tags"
-            class="h-11 rounded-lg border border-input-border bg-input px-3 text-sm text-text placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/40 outline-none"
-            placeholder="如 web,pwn 或分类关键字"
-            @keyup.enter="applySearch"
-          />
-        </div>
-        <div class="flex flex-col gap-2">
-          <label class="text-xs text-muted">难度</label>
-          <select
-            v-model="filters.difficulty"
-            class="h-11 rounded-lg border border-input-border bg-input px-3 text-sm text-text focus:border-primary focus:ring-2 focus:ring-primary/40 outline-none"
-          >
-            <option value="">全部</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-        <div class="flex flex-col gap-2">
-          <label class="text-xs text-muted">作者 ID</label>
-          <input
-            v-model.trim="filters.author"
-            class="h-11 rounded-lg border border-input-border bg-input px-3 text-sm text-text placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/40 outline-none"
-            placeholder="填写数字 ID"
-            inputmode="numeric"
-            @keyup.enter="applySearch"
-          />
-        </div>
-        <div class="flex flex-col gap-2">
-          <label class="text-xs text-muted">可见性</label>
-          <select
-            v-model="filters.is_public"
-            class="h-11 rounded-lg border border-input-border bg-input px-3 text-sm text-text focus:border-primary focus:ring-2 focus:ring-primary/40 outline-none"
-          >
-            <option value="">全部</option>
-            <option value="true">公开</option>
-            <option value="false">私有</option>
-          </select>
-        </div>
-        <div class="flex flex-col gap-2">
-          <label class="text-xs text-muted">更新时间（起/止）</label>
-          <div class="flex items-center gap-2">
+          <label class="text-xs text-muted">题目名</label>
+          <div class="flex w-full items-stretch rounded-lg h-11">
+            <div class="text-muted flex border border-r-0 border-input-border bg-input items-center justify-center pl-4 rounded-l-lg">
+              <span class="material-symbols-outlined">search</span>
+            </div>
             <input
-              v-model="filters.updated_after"
-              class="h-11 flex-1 rounded-lg border border-input-border bg-input px-3 text-sm text-text focus:border-primary focus:ring-2 focus:ring-primary/40 outline-none"
-              type="date"
+              v-model.trim="filters.challenge_keyword"
+              class="form-input flex w-full min-w-0 flex-1 rounded-lg text-text focus:outline-0 focus:ring-2 focus:ring-primary border border-input-border bg-input h-full placeholder:text-muted px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
+              placeholder="按题目名称搜索（筛出含该题的题库）"
+              type="text"
+              @keyup.enter="applySearch"
             />
+          </div>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="text-xs text-muted">题目类型</label>
+          <div class="flex w-full items-stretch rounded-lg h-11">
+            <div class="text-muted flex border border-r-0 border-input-border bg-input items-center justify-center pl-4 rounded-l-lg">
+              <span class="material-symbols-outlined">search</span>
+            </div>
             <input
-              v-model="filters.updated_before"
-              class="h-11 flex-1 rounded-lg border border-input-border bg-input px-3 text-sm text-text focus:border-primary focus:ring-2 focus:ring-primary/40 outline-none"
-              type="date"
+              v-model.trim="filters.category_keyword"
+              class="form-input flex w-full min-w-0 flex-1 rounded-lg text-text focus:outline-0 focus:ring-2 focus:ring-primary border border-input-border bg-input h-full placeholder:text-muted px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
+              placeholder="按题目类型搜索，例如 web、pwn 等"
+              type="text"
+              @keyup.enter="applySearch"
             />
           </div>
         </div>
@@ -176,13 +149,9 @@ const pageMeta = reactive({ ...DEFAULT_PAGE_META, total_pages: 1 })
 const route = useRoute()
 const router = useRouter()
 const filters = reactive({
-  keyword: '',
-  tags: '',
-  difficulty: '',
-  author: '',
-  is_public: '',
-  updated_after: '',
-  updated_before: '',
+  bank_keyword: '',
+  challenge_keyword: '',
+  category_keyword: '',
 })
 
 const filteredBanks = computed(() => banks.value)
@@ -195,13 +164,9 @@ const fetchBanks = async () => {
       params: {
         page: pageMeta.page,
         page_size: pageMeta.page_size,
-        keyword: filters.keyword || undefined,
-        tags: filters.tags || undefined,
-        difficulty: filters.difficulty || undefined,
-        author: filters.author || undefined,
-        is_public: filters.is_public || undefined,
-        updated_after: filters.updated_after || undefined,
-        updated_before: filters.updated_before || undefined,
+        bank_keyword: filters.bank_keyword || undefined,
+        challenge_keyword: filters.challenge_keyword || undefined,
+        category_keyword: filters.category_keyword || undefined,
       },
     })
     const data = res?.data?.data || res?.data || {}
@@ -222,13 +187,9 @@ const goPage = (page) => {
 }
 
 const resetFilters = () => {
-  filters.keyword = ''
-  filters.tags = ''
-  filters.difficulty = ''
-  filters.author = ''
-  filters.is_public = ''
-  filters.updated_after = ''
-  filters.updated_before = ''
+  filters.bank_keyword = ''
+  filters.challenge_keyword = ''
+  filters.category_keyword = ''
   pageMeta.page = 1
   syncQuery()
   fetchBanks()
@@ -244,13 +205,9 @@ const syncQuery = () => {
   router.replace({
     query: {
       ...route.query,
-      keyword: filters.keyword || undefined,
-      tags: filters.tags || undefined,
-      difficulty: filters.difficulty || undefined,
-      author: filters.author || undefined,
-      is_public: filters.is_public || undefined,
-      updated_after: filters.updated_after || undefined,
-      updated_before: filters.updated_before || undefined,
+      bank_keyword: filters.bank_keyword || undefined,
+      challenge_keyword: filters.challenge_keyword || undefined,
+      category_keyword: filters.category_keyword || undefined,
       page: pageMeta.page !== 1 ? pageMeta.page : undefined,
     },
   })
@@ -258,13 +215,9 @@ const syncQuery = () => {
 
 const loadFromQuery = () => {
   const q = route.query
-  filters.keyword = q.keyword || ''
-  filters.tags = q.tags || ''
-  filters.difficulty = q.difficulty || ''
-  filters.author = q.author || ''
-  filters.is_public = q.is_public || ''
-  filters.updated_after = q.updated_after || ''
-  filters.updated_before = q.updated_before || ''
+  filters.bank_keyword = q.bank_keyword || ''
+  filters.challenge_keyword = q.challenge_keyword || ''
+  filters.category_keyword = q.category_keyword || ''
   const page = parseInt(q.page || '1', 10)
   pageMeta.page = Number.isNaN(page) ? 1 : page
 }

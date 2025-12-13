@@ -98,15 +98,8 @@
           >
             加入
           </button>
-          <button
-            class="h-10 w-full rounded-lg border border-input-border text-sm font-semibold text-text hover:border-primary hover:text-primary disabled:opacity-60"
-            type="button"
-            :disabled="leaving"
-            @click="leaveTeam"
-          >
-            退出当前队伍
-          </button>
           <p v-if="!canOperate" class="text-xs text-muted">{{ disabledReason }}</p>
+          <p class="text-xs text-muted">退出队伍请在下方对应的战队卡片或战队详情页操作。</p>
         </div>
       </div>
 
@@ -139,6 +132,23 @@
               成员状态：{{ team.is_active ? '有效' : '已退出/失效' }} · 加入于 {{ formatDate(team.joined_at) }}
             </p>
           </div>
+          <div class="flex items-center gap-2 pt-1">
+            <RouterLink
+              v-if="team.contest?.slug"
+              :to="{ name: 'team-detail', params: { contestSlug: team.contest.slug } }"
+              class="flex-1 inline-flex h-9 items-center justify-center rounded-lg border border-input-border text-xs font-semibold text-text hover:border-primary hover:text-primary"
+            >
+              战队详情
+            </RouterLink>
+            <button
+              class="flex-1 h-9 rounded-lg border border-danger/50 text-xs font-semibold text-danger hover:border-danger hover:text-danger disabled:opacity-60"
+              type="button"
+              :disabled="!team.contest?.slug || leaving === team.contest?.slug"
+              @click="leaveTeam(team.contest?.slug, team.name)"
+            >
+              退出该队伍
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -166,7 +176,7 @@ const createForm = ref({ name: '', description: '' })
 const inviteToken = ref('')
 const creating = ref(false)
 const joining = ref(false)
-const leaving = ref(false)
+const leaving = ref('')
 
 const filteredContests = computed(() => {
   if (!contestSearch.value) return []
@@ -268,20 +278,25 @@ const joinTeam = async () => {
   }
 }
 
-const leaveTeam = async () => {
-  if (!contestSlug.value) {
-    toast.error('请选择比赛以退出对应队伍')
+const leaveTeam = async (slug, name) => {
+  const targetSlug = slug || contestSlug.value
+  if (!targetSlug) {
+    toast.error('未找到比赛标识，无法退出队伍')
     return
   }
-  leaving.value = true
+  leaving.value = targetSlug
   try {
-    await api.post(`/contests/${contestSlug.value}/teams/leave/`, {})
-    toast.success('已退出队伍')
+    await api.post(`/contests/${targetSlug}/teams/leave/`, {})
+    toast.success(name ? `已退出「${name}」` : '已退出队伍')
+    if (contestSlug.value === targetSlug) {
+      contestSlug.value = ''
+      contestSearch.value = ''
+    }
     fetchTeams()
   } catch (err) {
     toast.error(parseApiError(err))
   } finally {
-    leaving.value = false
+    leaving.value = ''
   }
 }
 

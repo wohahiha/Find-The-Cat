@@ -1,58 +1,16 @@
 <template>
-  <div class="dark">
-    <div class="relative min-h-screen bg-background-dark text-text">
-      <div class="absolute inset-0">
-        <div class="absolute inset-0 bg-background-dark"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(42,50,113,0.35),_transparent_45%)]"></div>
+  <AppShell>
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div v-if="loading" class="flex justify-center py-12">
+        <LoadingSpinner>加载资料中…</LoadingSpinner>
       </div>
-
-      <!-- 顶部导航，贴合模板 -->
-      <header class="relative z-20 border-b border-border-panel bg-background-dark/80 backdrop-blur-sm">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="size-6 text-primary">
-              <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 42.4379Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </div>
-            <router-link to="/" class="text-base font-bold text-text hover:text-primary">{{ brandName }}</router-link>
-          </div>
-          <nav class="hidden md:flex items-center gap-8 text-sm text-text">
-            <router-link class="hover:text-text" to="/">仪表盘</router-link>
-            <router-link class="hover:text-text" to="/contests">比赛</router-link>
-            <router-link class="hover:text-text" to="/problems">题库</router-link>
-            <router-link class="hover:text-text" to="/announcements">公告</router-link>
-            <router-link class="hover:text-text" to="/teams">战队</router-link>
-            <router-link class="hover:text-text" to="/machines">靶机</router-link>
-            <router-link class="hover:text-text" to="/profile">个人资料</router-link>
-          </nav>
-          <div class="flex items-center gap-3">
-            <button class="flex h-9 w-9 items-center justify-center rounded-lg bg-border-panel text-muted hover:text-text hover:bg-input-border">
-              <span class="material-symbols-outlined text-lg">notifications</span>
-            </button>
-            <router-link
-              to="/profile"
-              class="h-9 w-9 rounded-full border border-input-border block bg-center bg-cover bg-no-repeat"
-              :style="{ backgroundImage: headerAvatar ? `url(${headerAvatar})` : 'linear-gradient(135deg,#2547f4,#1c2a5f)' }"
-            ></router-link>
-          </div>
-        </div>
-      </header>
-
-      <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div v-if="loading" class="flex justify-center py-12">
-          <LoadingSpinner>加载资料中…</LoadingSpinner>
-        </div>
-        <ErrorState
-          v-else-if="error"
-          :message="error"
-          retry-label="重试"
-          @retry="loadProfile"
-        />
-        <template v-else>
+      <ErrorState
+        v-else-if="error"
+        :message="error"
+        retry-label="重试"
+        @retry="loadProfile"
+      />
+      <template v-else>
         <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>
             <h1 class="text-3xl sm:text-4xl font-bold leading-tight tracking-tight text-text">个人资料</h1>
@@ -220,27 +178,24 @@
             </div>
           </aside>
         </div>
-        </template>
-      </div>
+      </template>
     </div>
-  </div>
+  </AppShell>
 </template>
 
 <script setup>
-  import { onBeforeUnmount, onMounted, reactive, ref, computed } from 'vue'
+  import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import api from '@/api/client'
   import { useAuthStore } from '@/stores/auth'
-  import { useConfigStore } from '@/stores/config'
   import { parseApiError } from '@/api/errors'
   import { useToastStore } from '@/stores/toast'
   import { LoadingSpinner, ErrorState } from '@/components/ui'
+  import AppShell from '@/components/AppShell.vue'
 
   const router = useRouter()
   const auth = useAuthStore()
-  const configStore = useConfigStore()
   const toast = useToastStore()
-  const brandName = computed(() => configStore.brand || 'Find The Cat')
 
   const profile = reactive({
     username: '',
@@ -264,6 +219,15 @@ const countdown = ref(0)
 let timer = null
 const avatarInput = ref(null)
 const uploadingAvatar = ref(false)
+const hasToken = () => {
+  if (typeof window === 'undefined') return false
+  return (
+    !!auth.accessToken ||
+    !!auth.refreshToken ||
+    !!localStorage.getItem('ftc_access') ||
+    !!sessionStorage.getItem('ftc_access')
+  )
+}
 const resolveUrl = (url) => {
   if (!url) return ''
   const normalized = url.replace(/\\/g, '/')
@@ -297,7 +261,7 @@ const loadProfile = async () => {
     error.value = parseApiError(e, '获取资料失败，请稍后重试')
     toast.error(error.value)
     if (e?.response?.status === 401) {
-      router.replace('/login')
+      auth.logout()
     }
   } finally {
     loading.value = false
@@ -380,8 +344,6 @@ const logout = () => {
   router.replace('/login')
 }
 
-const headerAvatar = computed(() => resolveUrl(profile.avatar || auth.user?.avatar || ''))
-
 const pickAvatar = () => {
   if (!avatarInput.value) return
   avatarInput.value.value = ''
@@ -436,9 +398,10 @@ const openAvatar = () => {
 }
 
 onMounted(() => {
-  // 如果完全没有 token，直接跳转登录
-  if (!auth.accessToken && !sessionStorage.getItem('ftc_access') && !localStorage.getItem('ftc_access')) {
-    router.replace('/login')
+  if (!hasToken()) {
+    error.value = '请先登录后访问'
+    loading.value = false
+    toast.error(error.value)
     return
   }
   loadProfile()

@@ -1,56 +1,16 @@
 <template>
-  <div class="dark">
-    <div class="relative min-h-screen bg-background-dark text-text">
-      <div class="absolute inset-0">
-        <div class="absolute inset-0 bg-background-dark"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(42,50,113,0.35),_transparent_40%)]"></div>
+  <AppShell>
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col items-center gap-6">
+      <div v-if="loadingUser" class="py-10">
+        <LoadingSpinner>加载账户信息…</LoadingSpinner>
       </div>
-
-      <!-- 顶部导航，贴合模板 -->
-      <header class="relative z-20 border-b border-border-panel bg-background-dark/80 backdrop-blur-sm">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="size-6 text-primary">
-              <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 42.4379Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </div>
-            <router-link to="/" class="text-base font-bold text-text hover:text-primary">{{ brandName }}</router-link>
-          </div>
-          <nav class="hidden md:flex items-center gap-8 text-sm text-text">
-            <router-link class="hover:text-text" to="/">仪表盘</router-link>
-            <router-link class="hover:text-text" to="/contests">比赛</router-link>
-            <router-link class="hover:text-text" to="/problems">题库</router-link>
-            <router-link class="hover:text-text" to="/announcements">公告</router-link>
-            <router-link class="hover:text-text" to="/profile">个人资料</router-link>
-          </nav>
-          <div class="flex items-center gap-3">
-            <button class="flex h-9 w-9 items-center justify-center rounded-lg bg-border-panel text-muted hover:text-text hover:bg-input-border">
-              <span class="material-symbols-outlined text-lg">notifications</span>
-            </button>
-            <router-link
-              to="/profile"
-              class="h-9 w-9 rounded-full border border-input-border block bg-center bg-cover bg-no-repeat"
-              :style="{ backgroundImage: headerAvatar ? `url(${headerAvatar})` : 'linear-gradient(135deg,#2547f4,#1c2a5f)' }"
-            ></router-link>
-          </div>
-        </div>
-      </header>
-
-      <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col items-center gap-6">
-        <div v-if="loadingUser" class="py-10">
-          <LoadingSpinner>加载账户信息…</LoadingSpinner>
-        </div>
-        <ErrorState
-          v-else-if="loadError"
-          :message="loadError"
-          retry-label="重试"
-          @retry="loadUser"
-        />
-        <template v-else>
+      <ErrorState
+        v-else-if="loadError"
+        :message="loadError"
+        retry-label="重试"
+        @retry="loadUser"
+      />
+      <template v-else>
         <div class="text-center space-y-2">
           <h1 class="text-3xl sm:text-4xl font-bold leading-tight text-text">修改密码</h1>
           <p class="text-sm text-muted">为了您的账户安全，请不要将您的密码分享给其他人</p>
@@ -71,7 +31,7 @@
                   type="email"
                 />
               </div>
-          <p class="text-xs text-muted">将通过邮箱验证码确认本次修改</p>
+              <p class="text-xs text-muted">将通过邮箱验证码确认本次修改</p>
             </div>
 
             <div class="lg:col-span-2 flex flex-col gap-2">
@@ -184,29 +144,26 @@
             </div>
           </form>
         </div>
-        </template>
-      </div>
+      </template>
     </div>
-  </div>
+  </AppShell>
 </template>
 
 <script setup>
-  import { computed, reactive, ref, onMounted, onBeforeUnmount } from 'vue'
+  import { reactive, ref, onMounted, onBeforeUnmount } from 'vue'
   import { useRouter } from 'vue-router'
   import api from '@/api/client'
   import { useAuthStore } from '@/stores/auth'
-  import { useConfigStore } from '@/stores/config'
   import { parseApiError } from '@/api/errors'
   import { useToastStore } from '@/stores/toast'
   import { validatePassword } from '@/utils/validation'
   import { CAPTCHA_SCENES } from '@/constants/enums'
   import { LoadingSpinner, ErrorState } from '@/components/ui'
+  import AppShell from '@/components/AppShell.vue'
 
   const router = useRouter()
   const auth = useAuthStore()
-  const configStore = useConfigStore()
-const toast = useToastStore()
-const brandName = computed(() => configStore.brand || 'Find The Cat')
+  const toast = useToastStore()
 
 const form = reactive({
   old_password: '',
@@ -231,18 +188,14 @@ const loadingUser = ref(false)
 const oldError = ref(false)
 const newError = ref(false)
 const confirmError = ref(false)
-const headerAvatar = ref('')
-
-const resolveUrl = (url) => {
-  if (!url) return ''
-  const normalized = url.replace(/\\/g, '/')
-  if (/^https?:\/\//i.test(normalized)) return normalized
-  const base = import.meta.env.VITE_BACKEND_URL || window.location.origin
-  try {
-    return new URL(normalized, base).toString()
-  } catch {
-    return normalized
-  }
+const hasToken = () => {
+  if (typeof window === 'undefined') return false
+  return (
+    !!auth.accessToken ||
+    !!auth.refreshToken ||
+    !!localStorage.getItem('ftc_access') ||
+    !!sessionStorage.getItem('ftc_access')
+  )
 }
 
 const submit = async () => {
@@ -303,31 +256,27 @@ const submit = async () => {
 }
 
 const loadUser = async () => {
-  if (!auth.accessToken && !sessionStorage.getItem('ftc_access') && !localStorage.getItem('ftc_access')) {
-    router.replace('/login')
-    return
-  }
   loadingUser.value = true
   loadError.value = ''
+  if (!hasToken()) {
+    loadError.value = '请先登录后访问'
+    toast.error(loadError.value)
+    loadingUser.value = false
+    return
+  }
   if (auth.user?.email) {
     email.value = auth.user.email
-  }
-  const existingAvatar = auth.user?.avatar
-  if (existingAvatar) {
-    headerAvatar.value = resolveUrl(existingAvatar)
   }
   try {
     const res = await api.get('/accounts/me/')
     const data = res.data?.data?.user || res.data?.user || {}
     email.value = data.email || ''
-    if (data.avatar) {
-      headerAvatar.value = resolveUrl(data.avatar)
-    }
   } catch (err) {
     const status = err?.response?.status
     if (status === 401) {
       auth.logout()
-      router.replace({ path: '/login', query: { redirect: '/change-password' } })
+      loadError.value = '请先登录后访问'
+      toast.error(loadError.value)
       return
     }
     loadError.value = parseApiError(err, '获取账户信息失败')

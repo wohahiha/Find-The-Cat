@@ -71,6 +71,9 @@ PERMISSIONS: Tuple[PermissionDef, ...] = (
     # 提交计分
     PermissionDef("submissions.view_submission", "提交计分", "提交记录", "查看提交", user_default=True),
 
+    # 通知
+    PermissionDef("notifications.view_notification", "系统通知", "通知", "查看通知", user_default=True),
+
     # 靶机
     PermissionDef("machines.view_machine", "靶机管理", "靶机实例", "查看实例", user_default=True),
     PermissionDef("machines.start_machine", "靶机管理", "靶机实例", "启动实例", user_default=True),

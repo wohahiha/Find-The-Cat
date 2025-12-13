@@ -22,10 +22,12 @@ import ProblemBankChallengeList from '@/pages/problems/ProblemBankChallengeList.
 import ProblemBankChallengeDetail from '@/pages/problems/ProblemBankChallengeDetail.vue'
 import TeamPage from '@/pages/teams/TeamPage.vue'
 import TeamManagement from '@/pages/teams/TeamManagement.vue'
+import TeamDetail from '@/pages/teams/TeamDetail.vue'
 import MachineManagement from '@/pages/machines/MachineManagement.vue'
 import AccountDeactivation from '@/pages/account/AccountDeactivation.vue'
 import NotificationList from '@/pages/notifications/NotificationList.vue'
 import NotFound from '@/pages/NotFound.vue'
+import { useToastStore } from '@/stores/toast'
 
 const routes = [
   {
@@ -99,6 +101,12 @@ const routes = [
         meta: { requiresAuth: true, theme: 'green' },
       },
       { path: 'teams', name: 'teams', component: TeamPage, meta: { requiresAuth: true, theme: 'green' } },
+      {
+        path: 'teams/:contestSlug/detail',
+        name: 'team-detail',
+        component: TeamDetail,
+        meta: { requiresAuth: true, theme: 'green' },
+      },
       { path: 'teams/manage', name: 'team-manage', component: TeamManagement, meta: { requiresAuth: true, theme: 'green' } },
       { path: 'machines', name: 'machines', component: MachineManagement, meta: { requiresAuth: true, theme: 'green' } },
       { path: 'account/deactivate', name: 'account-deactivate', component: AccountDeactivation, meta: { requiresAuth: true } },
@@ -123,7 +131,13 @@ router.beforeEach((to, from, next) => {
   const guestOnly = to.matched.some((record) => record.meta?.guestOnly)
 
   if (requiresAuth && !hasToken()) {
-    next({ path: '/login', query: { redirect: to.fullPath } })
+    const toast = useToastStore()
+    toast.error('请先登录后访问')
+    if (from?.matched?.length) {
+      next(false)
+    } else {
+      next('/')
+    }
     return
   }
   if (guestOnly && hasToken()) {

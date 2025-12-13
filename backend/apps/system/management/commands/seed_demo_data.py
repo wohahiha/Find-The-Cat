@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import User
+from apps.accounts.utils import assign_default_admin_permissions, assign_default_user_permissions
 from apps.contests.models import (
     Contest,
     ContestAnnouncement,
@@ -14,7 +15,7 @@ from apps.contests.models import (
     TeamMember,
     ContestParticipant,
 )
-from apps.challenges.models import Challenge, ChallengeCategory
+from apps.challenges.models import Challenge, ChallengeCategory, ChallengeHint
 from apps.machines.models import ChallengeMachineConfig, MachineInstance
 from apps.submissions.models import Submission
 from apps.problem_bank.models import BankAttachment, BankCategory, BankChallenge, BankHint, ProblemBank
@@ -94,9 +95,16 @@ class Command(BaseCommand):
                 bio=item["bio"],
                 avatar=item["avatar"],
                 is_email_verified=True,
+                is_staff=item.get("is_staff", False),
+                is_superuser=item.get("is_superuser", False),
+                account_type=User.AccountType.ADMIN if item.get("is_staff") else User.AccountType.USER,
             )
             user.set_password(item["password"])
             user.save()
+            if user.account_type == User.AccountType.ADMIN and not user.is_superuser:
+                assign_default_admin_permissions(user)
+            elif user.account_type == User.AccountType.USER:
+                assign_default_user_permissions(user)
             created[item["username"]] = user
         return created
 
@@ -188,6 +196,23 @@ class Command(BaseCommand):
                         author=author,
                         has_machine=(cat_slug == "web"),
                         is_active=True,
+                    )
+                    # 提示：1 条免费 + 1 条扣分
+                    ChallengeHint.objects.create(
+                        challenge=chal,
+                        title="免费提示",
+                        content=f"{cat_name} 第 {i} 题的免费提示：关注输入验证和基本信息收集。",
+                        is_free=True,
+                        cost=0,
+                        order=1,
+                    )
+                    ChallengeHint.objects.create(
+                        challenge=chal,
+                        title="扣分提示",
+                        content=f"{cat_name} 第 {i} 题的扣分提示：尝试查看 {cat_name.lower()} 典型漏洞利用思路。",
+                        is_free=False,
+                        cost=10,
+                        order=2,
                     )
                     if cat_slug == "web":
                         ChallengeMachineConfig.objects.create(
@@ -315,6 +340,32 @@ class Command(BaseCommand):
         - 每类至少 3 道题，web 题面带靶机运行提示
         """
         author = users.get("player1") or next(iter(users.values()))
+        now = timezone.now()
+        bank_machine_contest = Contest.objects.create(
+            name="题库演练场",
+            slug="bank-lab",
+            description="为题库 Web 题提供靶机演示的练习比赛（个人赛）。",
+            visibility=Contest.Visibility.PUBLIC,
+            start_time=now - timedelta(days=3),
+            end_time=now + timedelta(days=60),
+            freeze_time=None,
+            registration_start_time=now - timedelta(days=5),
+            registration_end_time=now + timedelta(days=55),
+            is_team_based=False,
+            max_team_members=1,
+        )
+        bank_machine_categories = {}
+        base_categories = [
+            ("web", "Web", "Web 安全与漏洞利用"),
+            ("crypto", "Crypto", "密码学基础与应用"),
+            ("misc", "Misc", "杂项技巧与综合玩法"),
+            ("pwn", "Pwn", "二进制漏洞利用"),
+            ("reverse", "Reverse", "逆向分析与调试"),
+        ]
+        for slug, name, desc in base_categories:
+            bank_machine_categories[slug] = ChallengeCategory.objects.create(
+                contest=bank_machine_contest, name=name, slug=slug, description=desc
+            )
         base_banks = [
             {
                 "name": "入门演练题库",
@@ -334,13 +385,6 @@ class Command(BaseCommand):
                 "description": "偏实战场景的演示题库，便于演示攻防流程。",
                 "is_public": True,
             },
-        ]
-        base_categories = [
-            ("web", "Web", "Web 安全与漏洞利用"),
-            ("crypto", "Crypto", "密码学基础与应用"),
-            ("misc", "Misc", "杂项技巧与综合玩法"),
-            ("pwn", "Pwn", "二进制漏洞利用"),
-            ("reverse", "Reverse", "逆向分析与调试"),
         ]
         difficulty_cycle = [
             BankChallenge.Difficulty.EASY,
@@ -370,6 +414,48 @@ class Command(BaseCommand):
                             "`docker run --rm -p 8080:80 -e FLAG=DEMO_FLAG nginx:alpine`，"
                             "平台会为正式赛题配置 ChallengeMachineConfig。"
                         )
+                    machine_contest_slug = ""
+                    machine_challenge_slug = ""
+                    # Web 题创建对应的比赛题目与靶机配置，便于前端与机器服务复用
+                    if cat_slug == "web":
+                        contest_category = bank_machine_categories.get(cat_slug)
+                        machine_challenge_slug = f"{bank.slug}-{cat_slug}-{idx}-lab"
+                        mirror_challenge = Challenge.objects.create(
+                            contest=bank_machine_contest,
+                            category=contest_category,
+                            title=f"{cat_name} 演练题 {idx} ({bank.slug})",
+                            slug=machine_challenge_slug,
+                            short_description=f"{cat_name} 题库演练靶机 {idx}",
+                            content="\n\n".join(content),
+                            difficulty=Challenge.Difficulty.MEDIUM,
+                            base_points=200,
+                            flag=f"PB-LAB{{{bank.slug}_{cat_slug}_{idx}}}",
+                            flag_type=Challenge.FlagType.STATIC,
+                            flag_case_insensitive=True,
+                            dynamic_prefix="FLAG",
+                            scoring_mode=Challenge.ScoringMode.FIXED,
+                            decay_type=Challenge.DecayType.PERCENTAGE,
+                            decay_factor=0.9,
+                            min_score=120,
+                            blood_reward_type=Challenge.BloodRewardType.NONE,
+                            blood_reward_count=0,
+                            blood_bonus_points=[],
+                            author=author,
+                            has_machine=True,
+                            is_active=True,
+                        )
+                        ChallengeMachineConfig.objects.create(
+                            challenge=mirror_challenge,
+                            image="nginx:alpine",
+                            container_port=80,
+                            max_instances_per_user=1,
+                            max_runtime_minutes=60,
+                            environment={"FLAG": f"PB-LAB{{{bank.slug}_{cat_slug}_{idx}}}"},
+                            extend_minutes_default=30,
+                            extend_max_times=3,
+                            extend_threshold_minutes=10,
+                        )
+                        machine_contest_slug = bank_machine_contest.slug
                     challenge = BankChallenge.objects.create(
                         bank=bank,
                         category=categories[cat_slug],
@@ -384,6 +470,8 @@ class Command(BaseCommand):
                         dynamic_prefix="FLAG",
                         is_active=True,
                         author=author,
+                        machine_contest_slug=machine_contest_slug,
+                        machine_challenge_slug=machine_challenge_slug,
                     )
 
                     if cat_slug == "web":
@@ -392,6 +480,8 @@ class Command(BaseCommand):
                             title="靶机启动方式",
                             content="本地可用 docker run --rm -p 8080:80 -e FLAG=DEMO_FLAG nginx:alpine 进行演示。",
                             order=1,
+                            is_free=True,
+                            cost=0,
                         )
                         BankAttachment.objects.create(
                             challenge=challenge,
@@ -399,3 +489,20 @@ class Command(BaseCommand):
                             url="https://hub.docker.com/_/nginx",
                             order=1,
                         )
+                    # 通用提示：免费 + 扣分（题库不扣分，仅用于区分标签）
+                    BankHint.objects.create(
+                        challenge=challenge,
+                        title="免费提示",
+                        content=f"{cat_name} 第 {idx} 题的免费提示：关注基础信息收集与输入验证。",
+                        order=2,
+                        is_free=True,
+                        cost=0,
+                    )
+                    BankHint.objects.create(
+                        challenge=challenge,
+                        title="扣分提示",
+                        content=f"{cat_name} 第 {idx} 题的扣分提示：尝试更深入的漏洞利用或变体思路。",
+                        order=3,
+                        is_free=False,
+                        cost=10,
+                    )

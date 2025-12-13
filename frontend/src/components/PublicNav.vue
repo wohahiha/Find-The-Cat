@@ -27,9 +27,7 @@
       </nav>
 
       <div class="flex items-center gap-3">
-        <button class="flex h-9 w-9 items-center justify-center rounded-lg bg-border-panel text-muted hover:text-text hover:bg-input-border">
-          <span class="material-symbols-outlined text-lg">notifications</span>
-        </button>
+        <NotificationBell />
         <template v-if="isAuthed">
           <RouterLink
             to="/profile"
@@ -63,6 +61,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useConfigStore } from '@/stores/config'
 import { useToastStore } from '@/stores/toast'
 import { NAV_LINKS } from '@/constants/navLinks'
+import NotificationBell from '@/components/NotificationBell.vue'
 
 const auth = useAuthStore()
 const configStore = useConfigStore()
@@ -105,7 +104,6 @@ const linkClass = (path) => {
 const onNavClick = (link) => {
   if (link.requiresAuth && !isAuthed.value) {
     toast.error('请先登录后访问')
-    router.push({ path: '/login', query: { redirect: link.to } })
     return
   }
   router.push(link.to)

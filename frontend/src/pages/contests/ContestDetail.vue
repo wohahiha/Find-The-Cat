@@ -14,8 +14,8 @@
             <div class="flex flex-wrap gap-3 text-xs text-muted">
               <span v-if="registrationStart">报名开始：{{ formatDateTime(registrationStart) }}</span>
               <span v-if="registrationEnd">报名截止：{{ formatDateTime(registrationEnd) }}</span>
-              <span>开始：{{ formatDateTime(contest?.start_time) }}</span>
-              <span>结束：{{ formatDateTime(contest?.end_time) }}</span>
+              <span>比赛开始：{{ formatDateTime(contest?.start_time) }}</span>
+              <span>比赛结束：{{ formatDateTime(contest?.end_time) }}</span>
               <span v-if="contest?.freeze_time">封榜：{{ formatDateTime(contest?.freeze_time) }}</span>
               <span>赛制：{{ contest?.is_team_based ? `组队赛（最多 ${contest?.max_team_members || 'N/A'} 人）` : '个人赛' }}</span>
             </div>

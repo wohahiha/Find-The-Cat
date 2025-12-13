@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Verification Code Email Template</title>
+    <title>验证码邮件</title>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script id="tailwind-config">
@@ -60,7 +60,7 @@
 </head>
 <body style="margin: 0; padding: 0; background-color: #f6f7f8; font-family: Inter, sans-serif;">
 <div style="display: none; font-size: 1px; color: #fefefe; line-height: 1px; font-family: Inter, sans-serif; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
-        Your verification code is here.
+        您的验证码已生成。
     </div>
     <table border="0" cellpadding="0" cellspacing="0" width="100%">
         <tbody><tr>
@@ -81,18 +81,18 @@
                                 <!-- TITLE -->
                                 <tbody><tr>
                                     <td align="center" style="padding: 0 0 16px 0;">
-                                        <h1 style="font-family: Inter, sans-serif; font-size: 32px; font-weight: 700; line-height: 1.2; color: #111418; margin: 0;">Your Verification Code</h1>
+                                        <h1 style="font-family: Inter, sans-serif; font-size: 32px; font-weight: 700; line-height: 1.2; color: #111418; margin: 0;">您的验证码</h1>
                                     </td>
                                 </tr>
                                 <!-- BODY TEXT -->
                                 <tr>
                                     {% if brand %}
                                     <td align="center" style="padding: 0 0 16px 0;">
-                                        <p style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.5; color: #111418; margin: 0;">We received a request to {{ scene }} for your {{ brand }} account.</p>
+                                        <p style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.5; color: #111418; margin: 0;">我们收到了您关于 {{ brand }} 账户的{{ scene }}请求。</p>
                                     </td>
                                     {% else %}
                                     <td align="center" style="padding: 0 0 16px 0;">
-                                        <p style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.5; color: #111418; margin: 0;">We received a request to {{ scene }}.</p>
+                                        <p style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.5; color: #111418; margin: 0;">我们收到了{{ scene }}请求。</p>
                                     </td>
                                     {% endif %}
                                 </tr>
@@ -107,7 +107,7 @@
                                 <!-- META TEXT -->
                                 <tr>
                                     <td align="center" style="padding: 12px 0 24px 0;">
-                                        <p style="font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; line-height: 1.5; color: #637488; margin: 0;">This code is valid for {{ expire_minutes }} minutes.</p>
+                                        <p style="font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; line-height: 1.5; color: #637488; margin: 0;">本验证码有效期 {{ expire_minutes }} 分钟。</p>
                                     </td>
                                 </tr>
                                 <!-- DIVIDER -->
@@ -137,9 +137,9 @@
                                 <tr>
                                     <td align="center">
                                         <p style="margin: 0; font-family: Inter, sans-serif; font-size: 12px; line-height: 1.5; color: #637488;">
-                                            This is an automated message, please do not reply.
-                                            {% if support_email %}<br /> If you have any questions, please contact our support team at
-                                            <a href="mailto:{{ support_email }}" style="color: #1665c0; text-decoration: none;">{{ support_email }}</a>.{% endif %}
+                                            本邮件为系统自动发送，请勿直接回复。
+                                            {% if support_email %}<br /> 如有问题，请联系支持邮箱：
+                                            <a href="mailto:{{ support_email }}" style="color: #1665c0; text-decoration: none;">{{ support_email }}</a>{% endif %}
                                         </p>
                                     </td>
                                 </tr>
@@ -147,7 +147,7 @@
                                 <tr>
                                     <td align="center" style="padding: 10px 0 0 0;">
                                         <p style="margin: 0; font-family: Inter, sans-serif; font-size: 12px; line-height: 1.5; color: #637488;">
-                                            {% if brand %}© {{ brand }}{% endif %}{% if brand and site_url %} | {% endif %}{% if site_url %}<a href="{{ site_url }}" style="color: #1665c0; text-decoration: none;">Visit our website</a>{% endif %}
+                                            {% if brand %}© {{ brand }}{% endif %}{% if brand and site_url %} | {% endif %}{% if site_url %}<a href="{{ site_url }}" style="color: #1665c0; text-decoration: none;">访问我们的网站</a>{% endif %}
                                         </p>
                                     </td>
                                 </tr>

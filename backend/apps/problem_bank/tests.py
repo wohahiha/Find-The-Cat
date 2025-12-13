@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from apps.accounts.models import User
+from apps.common.exceptions import PermissionDeniedError
 from apps.common.tests_utils import AuthenticatedAPIMixin
 from apps.challenges.schemas import ChallengeCreateSchema
 from apps.challenges.services import ChallengeCreateService
@@ -20,7 +21,7 @@ from apps.problem_bank.services import (
     BankChallengeSubmitService,
 )
 from apps.problem_bank.repo import ProblemBankRepo, BankChallengeRepo, BankSolveRepo
-from apps.problem_bank.models import BankChallenge
+from apps.problem_bank.models import BankChallenge, BankCategory, ProblemBank
 
 
 class ProblemBankServiceTests(TestCase):
@@ -89,6 +90,16 @@ class ProblemBankServiceTests(TestCase):
         }
     },
 )
+@override_settings(
+    ALLOW_LOGIN_WITHOUT_CAPTCHA=True,
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "problem-bank-api-tests",
+        }
+    },
+)
 class ProblemBankAPITests(AuthenticatedAPIMixin, APITestCase):
     """接口冒烟：创建题库、导入题目、作答"""
 
@@ -130,6 +141,8 @@ class ProblemBankAPITests(AuthenticatedAPIMixin, APITestCase):
         self.bank_repo = ProblemBankRepo()
         self.challenge_repo = BankChallengeRepo()
         self.solve_repo = BankSolveRepo()
+        # 避免 PermissionDeniedError 被测试客户端抛出，直接拿到 403 响应
+        self.client.raise_request_exception = False
 
     def test_bank_flow(self):
         # 列表/详情（使用预置题库）
@@ -166,8 +179,10 @@ class ProblemBankAPITests(AuthenticatedAPIMixin, APITestCase):
             dynamic_prefix="flag",
         )
         player_client = self.auth_client("alice", "Passw0rd123")
-        resp = player_client.get("/api/problem-bank/private-bank/")
-        self.assertEqual(resp.status_code, 403, resp.content)
+        # 强制抛出异常，断言为权限拒绝
+        player_client.raise_request_exception = True
+        with self.assertRaises(PermissionDeniedError):
+            player_client.get("/api/problem-bank/private-bank/")
 
     def test_inactive_challenge_not_listed(self):
         """下线的题库题目不应出现在列表中"""
@@ -187,3 +202,45 @@ class ProblemBankAPITests(AuthenticatedAPIMixin, APITestCase):
         self.assertEqual(resp.status_code, 200, resp.content)
         slugs = [item["slug"] for item in resp.data["data"]["items"]]
         self.assertNotIn(inactive_slug, slugs)
+
+    def test_bank_list_search_fields(self):
+        """题库列表搜索字段：题库名/题目名/题目类型"""
+        player_client = self.auth_client("alice", "Passw0rd123")
+        # 补充分类与标题，便于检索
+        category = BankCategory.objects.create(bank=self.bank, name="Crypto", slug="crypto")
+        challenge = self.bank_challenges[0]
+        challenge.title = "Crypto Starter"
+        challenge.category = category
+        challenge.save()
+        # 另一个题库，用于排除
+        other_bank = ProblemBankCreateService().execute(
+            ProblemBankCreateSchema(name="Other Bank", slug="other-bank", is_public=True)
+        )
+        BankChallenge.objects.create(
+            bank=other_bank,
+            category=None,
+            title="Misc Title",
+            slug="misc-title",
+            short_description="desc",
+            content="ct",
+            difficulty=BankChallenge.Difficulty.MEDIUM,
+            flag="flag",
+            dynamic_prefix="FLAG",
+            author=self.admin,
+        )
+        # 按题库名
+        resp = player_client.get("/api/problem-bank/", {"bank_keyword": "API"})
+        self.assertEqual(resp.status_code, 200, resp.content)
+        names = [item["name"] for item in resp.data["data"]["items"]]
+        self.assertIn("API Bank", names)
+        # 按题目名
+        resp = player_client.get("/api/problem-bank/", {"challenge_keyword": "Starter"})
+        self.assertEqual(resp.status_code, 200, resp.content)
+        names = [item["name"] for item in resp.data["data"]["items"]]
+        self.assertIn("API Bank", names)
+        self.assertNotIn("Other Bank", names)
+        # 按题目类型（分类）
+        resp = player_client.get("/api/problem-bank/", {"category_keyword": "crypto"})
+        self.assertEqual(resp.status_code, 200, resp.content)
+        names = [item["name"] for item in resp.data["data"]["items"]]
+        self.assertIn("API Bank", names)

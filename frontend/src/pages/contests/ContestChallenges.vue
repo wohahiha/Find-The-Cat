@@ -68,6 +68,28 @@
       </div>
     </div>
 
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+      <div class="flex flex-wrap items-center justify-between border-t border-border-panel/80 pt-4 mt-6 text-sm text-muted">
+        <span>第 1 / 1 页</span>
+        <div class="flex items-center gap-2">
+          <button
+            class="inline-flex h-9 items-center justify-center rounded-lg border border-input-border px-3 font-semibold text-text opacity-70 cursor-not-allowed"
+            type="button"
+            disabled
+          >
+            上一页
+          </button>
+          <button
+            class="inline-flex h-9 items-center justify-center rounded-lg border border-input-border px-3 font-semibold text-text opacity-70 cursor-not-allowed"
+            type="button"
+            disabled
+          >
+            下一页
+          </button>
+        </div>
+      </div>
+    </div>
+
     <Teleport to="body">
       <div
         v-if="showModal"
@@ -119,6 +141,46 @@
                 <span class="truncate">{{ att.name || `附件 ${idx + 1}` }}</span>
                 <span class="material-symbols-outlined text-base">download</span>
               </a>
+            </div>
+          </div>
+
+          <div class="rounded-lg border border-border-panel bg-input/40 p-4 text-sm space-y-2">
+            <div class="flex items-center justify-between">
+              <p class="font-semibold text-text">提示</p>
+              <span class="text-xs text-muted">{{ hints.length ? `${hints.length} 个提示` : '暂无提示' }}</span>
+            </div>
+            <p v-if="hintsLoading" class="text-muted text-xs">加载提示中…</p>
+            <EmptyState v-else-if="!hints.length" title="暂无提示" />
+            <div v-else class="space-y-2">
+              <div
+                v-for="(hint, idx) in hints"
+                :key="idx"
+                class="rounded-lg border border-input-border bg-input/60 p-3 text-sm text-text space-y-2"
+              >
+                <div class="flex items-center justify-between gap-2">
+                  <p class="font-semibold">{{ hint.title || `提示 ${idx + 1}` }}</p>
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    :class="hint.is_free ? 'bg-green-500/10 text-green-300' : 'bg-danger/10 text-danger border border-danger/40'"
+                  >
+                    {{ hint.is_free ? '免费' : `扣 ${hint.cost || 0} 分` }}
+                  </span>
+                </div>
+                <p class="text-muted whitespace-pre-wrap" v-if="hint.unlocked">{{ hint.content || '暂无内容' }}</p>
+                <div class="flex items-center justify-between" v-else>
+                  <p class="text-xs text-muted">
+                    {{ hint.is_free ? '未解锁，点击后免费解锁。' : `未解锁，解锁将扣 ${hint.cost || 0} 分。` }}
+                  </p>
+                  <button
+                    class="inline-flex items-center rounded-lg border border-input-border px-3 py-1 text-xs font-semibold text-text hover:border-primary hover:text-primary disabled:opacity-60"
+                    type="button"
+                    :disabled="unlocking[hint.id]"
+                    @click="unlockHint(hint)"
+                  >
+                    {{ unlocking[hint.id] ? '解锁中…' : '解锁提示' }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -226,6 +288,9 @@ const flagInputs = reactive({})
 const submitting = reactive({})
 const attachments = ref([])
 const detailLoading = ref(false)
+const hints = ref([])
+const hintsLoading = ref(false)
+const unlocking = reactive({})
 const machineLoading = ref(false)
 const machineError = ref('')
 const machineInfo = ref(null)
@@ -334,6 +399,7 @@ const modalForMachine = ref(false)
 const openModal = (chal, forMachine = false) => {
   selectedChallenge.value = chal
   attachments.value = chal.attachments || []
+  hints.value = chal.hints || []
   modalForMachine.value = !!forMachine
   flagInputs[chal.slug] = flagInputs[chal.slug] || ''
   machineInfo.value = null
@@ -344,12 +410,14 @@ const openModal = (chal, forMachine = false) => {
   }
   showModal.value = true
   fetchChallengeDetail(chal.slug)
+  fetchHints(chal.slug)
 }
 
 const closeModal = () => {
   showModal.value = false
   modalForMachine.value = false
   attachments.value = []
+  hints.value = []
   machineLoading.value = false
   machineError.value = ''
   machineInfo.value = null
@@ -368,6 +436,38 @@ const fetchChallengeDetail = async (slug) => {
     // 静默失败，保持已有数据
   } finally {
     detailLoading.value = false
+  }
+}
+
+const fetchHints = async (slug) => {
+  hintsLoading.value = true
+  Object.keys(unlocking).forEach((k) => delete unlocking[k])
+  try {
+    const res = await api.get(`/contests/${contestSlug.value}/challenges/${slug}/hints/`)
+    const list = res?.data?.data?.items || res?.data?.data || res?.data?.items || res?.data || []
+    hints.value = Array.isArray(list) ? list : []
+  } catch (err) {
+    toast.error(parseApiError(err, '获取提示失败'))
+  } finally {
+    hintsLoading.value = false
+  }
+}
+
+const unlockHint = async (hint) => {
+  if (!hint?.id || hint?.unlocked) return
+  unlocking[hint.id] = true
+  try {
+    const res = await api.post(
+      `/contests/${contestSlug.value}/challenges/${selectedChallenge.value?.slug}/hints/${hint.id}/unlock/`,
+      {},
+    )
+    const unlocked = res?.data?.data?.hint || res?.data?.hint || res?.data || {}
+    hints.value = hints.value.map((h) => (h.id === hint.id ? { ...h, ...unlocked, unlocked: true } : h))
+    toast.success('提示已解锁')
+  } catch (err) {
+    toast.error(parseApiError(err, '解锁提示失败'))
+  } finally {
+    unlocking[hint.id] = false
   }
 }
 

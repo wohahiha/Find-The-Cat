@@ -82,7 +82,7 @@ class ChallengeHintService(BaseService[dict]):
         hints = self.hint_repo.list_for_challenge(challenge)
         payload = []
         for hint in hints:
-            unlocked = hint.is_free or self.unlock_repo.has_unlocked(
+            unlocked = self.unlock_repo.has_unlocked(
                 hint=hint,
                 user=user,
                 team=getattr(membership, "team", None),
@@ -103,7 +103,7 @@ class ChallengeHintService(BaseService[dict]):
             raise ValidationError(message="提示不属于当前题目")
 
         membership = self.member_repo.get_membership(contest=contest, user=user)
-        if hint.is_free or self.unlock_repo.has_unlocked(
+        if self.unlock_repo.has_unlocked(
                 hint=hint,
                 user=user,
                 team=getattr(membership, "team", None),
@@ -115,7 +115,7 @@ class ChallengeHintService(BaseService[dict]):
             challenge=challenge,
             user=user,
             team=membership.team if membership else None,
-            cost=hint.cost,
+            cost=hint.cost if not hint.is_free else 0,
         )
         payload = serialize_hint(hint, unlocked=True)
         total_cost = self.unlock_repo.cost_for_solver(

@@ -1537,6 +1537,21 @@ paths:
           type: integer
         description: 作者用户ID过滤
       - in: query
+        name: bank_keyword
+        schema:
+          type: string
+        description: 按题库名模糊搜索
+      - in: query
+        name: category_keyword
+        schema:
+          type: string
+        description: 按题目类型（分类名）模糊搜索
+      - in: query
+        name: challenge_keyword
+        schema:
+          type: string
+        description: 按题目名模糊搜索
+      - in: query
         name: difficulty
         schema:
           type: string
@@ -1550,7 +1565,7 @@ paths:
         name: keyword
         schema:
           type: string
-        description: 按名称/描述模糊搜索
+        description: 模糊搜索关键字（兼容旧版 search_scope）
       - in: query
         name: page
         schema:
@@ -1561,6 +1576,11 @@ paths:
         schema:
           type: integer
         description: 每页条数
+      - in: query
+        name: search_scope
+        schema:
+          type: string
+        description: 兼容旧版：bank/challenge/category
       - in: query
         name: tags
         schema:

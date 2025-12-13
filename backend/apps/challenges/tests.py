@@ -236,6 +236,8 @@ class ChallengeServiceTests(TestCase):
             "LOCATION": "challenges-tests",
         }
     },
+    ALLOW_LOGIN_WITHOUT_CAPTCHA=True,
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
 )
 class ChallengesAPITestCase(AuthenticatedAPIMixin, APITestCase):
     """挑战模块接口冒烟：题目 CRUD、提交/动态 Flag、附件上传"""

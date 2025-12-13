@@ -61,15 +61,18 @@ export const useNotificationStore = defineStore('notifications', {
         const res = await api.get('/notifications/', {
           params: { page: this.page, page_size: PAGE_SIZE, status },
         })
-        const data = res.data?.data || {}
-        const list = data.items || []
+        const payload = res.data || {}
+        const data = payload.data ?? payload
+        const extra = payload.extra || {}
+        const list = Array.isArray(data) ? data : data?.items || []
         if (reset) {
           this.items = list
         } else {
           this.items = [...this.items, ...list]
         }
-        this.hasMore = list.length >= PAGE_SIZE
-        this.page += 1
+        const pageSize = extra.page_size || PAGE_SIZE
+        this.hasMore = extra.has_next ?? list.length >= pageSize
+        this.page = extra.next_page || this.page + 1
         this.status = status
       } catch (e) {
         // ignore

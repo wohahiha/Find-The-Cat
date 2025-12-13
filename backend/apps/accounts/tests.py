@@ -14,6 +14,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 # EmailVerificationCode 已迁移至 system 模块
 from apps.system.models import EmailVerificationCode
 from apps.accounts.models import User
+from apps.accounts.services import SendEmailVerificationService
 from apps.common.tests_utils import AuthenticatedAPIMixin
 
 
@@ -32,6 +33,8 @@ from apps.common.tests_utils import AuthenticatedAPIMixin
             "LOCATION": "accounts-tests",
         }
     },
+    ALLOW_LOGIN_WITHOUT_CAPTCHA=True,
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
 )
 class AccountsAPITestCase(AuthenticatedAPIMixin, APITestCase):
     """
@@ -40,6 +43,18 @@ class AccountsAPITestCase(AuthenticatedAPIMixin, APITestCase):
     - 继承 AuthenticatedAPIMixin，提供快捷登录与认证客户端工具
     - 提高节流阈值，避免测试过程触发限流
     """
+
+    @classmethod
+    def setUpClass(cls):
+        """测试环境跳过实际邮件发送，避免依赖外部 SMTP/MailAccount"""
+        super().setUpClass()
+        cls._orig_deliver = SendEmailVerificationService._deliver
+        SendEmailVerificationService._deliver = lambda self, email, scene, code: None
+
+    @classmethod
+    def tearDownClass(cls):
+        SendEmailVerificationService._deliver = cls._orig_deliver
+        super().tearDownClass()
 
     @classmethod
     def setUpTestData(cls):
@@ -214,18 +229,23 @@ class AccountsAPITestCase(AuthenticatedAPIMixin, APITestCase):
         client = self.auth_client(self.user.username, "Passw0rd123")
         png_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9YlT6y8AAAAASUVORK5CYII="
         avatar_bytes = base64.b64decode(png_base64)
-        with tempfile.TemporaryDirectory() as tmpdir, override_settings(MEDIA_ROOT=tmpdir, MEDIA_URL="/media/"):
-            file = SimpleUploadedFile("avatar.png", avatar_bytes, content_type="image/png")
-            resp = client.post(
-                "/api/accounts/me/avatar/",
-                {"avatar": file},
-                format="multipart",
-            )
-            self.assertEqual(resp.status_code, 200)
-            # 响应应包含头像 URL
-            self.assertTrue(resp.data["data"]["avatar"])  # type: ignore[index]
-            self.user.refresh_from_db()
-            self.assertTrue(self.user.avatar)
+        tmpdir = tempfile.mkdtemp()
+        try:
+            with override_settings(MEDIA_ROOT=tmpdir, MEDIA_URL="/media/"):
+                file = SimpleUploadedFile("avatar.png", avatar_bytes, content_type="image/png")
+                resp = client.post(
+                    "/api/accounts/me/avatar/",
+                    {"avatar": file},
+                    format="multipart",
+                )
+                self.assertEqual(resp.status_code, 200)
+                # 响应应包含头像 URL
+                self.assertTrue(resp.data["data"]["avatar"])  # type: ignore[index]
+                self.user.refresh_from_db()
+                self.assertTrue(self.user.avatar)
+        finally:
+            import shutil
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
     @override_settings(
         REST_FRAMEWORK={

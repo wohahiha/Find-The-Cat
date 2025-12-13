@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 from django.contrib.auth import get_user_model
 
-from apps.auth.group import assign_default_group
+from apps.auth.group import assign_default_group, sync_builtin_groups
 
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from rest_framework.request import Request
@@ -21,6 +21,16 @@ from rest_framework.request import Request
 from .exceptions import PermissionDeniedError
 
 User = get_user_model()
+
+# 确保内置权限/组在进程启动后同步一次，避免新增权限未下发到默认组
+_GROUPS_SYNCED = False
+
+def _ensure_groups_synced() -> None:
+    global _GROUPS_SYNCED
+    if _GROUPS_SYNCED:
+        return
+    sync_builtin_groups()
+    _GROUPS_SYNCED = True
 
 
 # ======================
@@ -112,6 +122,7 @@ class BizPermission(BasePermission):
         return getattr(view, "biz_permission", None)
 
     def has_permission(self, request: Request, view: Any) -> bool:
+        _ensure_groups_synced()
         user = _ensure_authenticated(request)
         # 若用户尚未绑定任何组，则自动加入默认组（区分管理员/普通用户），避免权限缺失
         if not user.groups.exists():

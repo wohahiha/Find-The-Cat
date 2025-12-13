@@ -15,10 +15,15 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    scrollbar-gutter: stable;
+  }
+
   body {
     background-color: theme('colors.background-dark');
     color: theme('colors.text');
     @apply font-display antialiased;
+    overflow-y: scroll;
   }
 }
 

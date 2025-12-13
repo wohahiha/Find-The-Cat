@@ -150,6 +150,8 @@ class ContestServiceTests(TestCase):
             "LOCATION": "contests-api-tests",
         }
     },
+    ALLOW_LOGIN_WITHOUT_CAPTCHA=True,
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
 )
 class ContestsAPITestCase(AuthenticatedAPIMixin, APITestCase):
     """Contests 模块接口冒烟：比赛、公告、队伍全链路"""

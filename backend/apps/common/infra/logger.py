@@ -202,10 +202,32 @@ def configure_logging(force: bool = False, *, level: Optional[int] = None, log_f
         when='midnight',
         interval=1,
         backupCount=30,
-        encoding='utf-8'
+        encoding='utf-8',
+        delay=True,  # 延迟打开文件，避免多进程抢占导致轮转失败
     )
     file_handler.suffix = "%Y-%m-%d"  # 轮转文件后缀：system.log.2025-11-28
     file_handler.setLevel(log_level)
+
+    def _force_rollover_if_outdated(handler: logging.handlers.TimedRotatingFileHandler) -> None:
+        """
+        若现有日志文件的日期早于今天（例如午夜停机导致错过轮转），或文件过大，尝试补一次轮转。
+        """
+        try:
+            if not os.path.exists(handler.baseFilename):
+                return
+
+            last_write = datetime.fromtimestamp(os.path.getmtime(handler.baseFilename)).date()
+            today = datetime.now().date()
+            size_bytes = os.path.getsize(handler.baseFilename)
+            rollover_mb = int(os.getenv("LOG_FORCE_ROLLOVER_MB", "50"))
+
+            if last_write < today or size_bytes > rollover_mb * 1024 * 1024:
+                handler.doRollover()
+        except Exception:
+            # 兼容 Windows 文件占用或并发写入，失败时跳过，下一次写入再尝试
+            pass
+
+    _force_rollover_if_outdated(file_handler)
 
     # 使用PLAIN格式化器（默认）
     formatter = FTCPlainFormatter()
