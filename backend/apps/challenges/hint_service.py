@@ -12,6 +12,7 @@ from apps.contests.repo import TeamMemberRepo
 from apps.common.ws_utils import broadcast_notify, broadcast_contest
 from apps.notifications.services import create_and_push_notification, build_dedup_key
 from apps.notifications.models import Notification
+from apps.submissions.services import SubmissionService
 
 from .repo import ChallengeRepo, ChallengeHintRepo, ChallengeHintUnlockRepo
 from .schemas import HintUnlockSchema
@@ -41,6 +42,8 @@ class ChallengeHintService(BaseService[dict]):
         self.hint_repo = hint_repo or ChallengeHintRepo()
         self.unlock_repo = unlock_repo or ChallengeHintUnlockRepo()
         self.member_repo = member_repo or TeamMemberRepo()
+        # 使用解锁仓储，确保提示扣分在可见分值计算时生效
+        self.submission_service = SubmissionService(hint_repo=self.unlock_repo)
 
     def perform(
             self,
@@ -124,6 +127,17 @@ class ChallengeHintService(BaseService[dict]):
             team=getattr(membership, "team", None),
         )
         payload["total_cost"] = total_cost
+        try:
+            # 计算解锁后当前可得分（含提示扣分/动态衰减），便于前端刷新显示
+            current_points = self.submission_service.visible_points_for_user(
+                user,
+                contest,
+                challenge,
+                membership=membership,
+            )
+            payload["current_points"] = current_points
+        except Exception:
+            pass
         hint_brief = {
             "id": getattr(hint, "id", None),
             "title": hint.title,

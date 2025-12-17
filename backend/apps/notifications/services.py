@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from datetime import datetime, date
 
 from django.utils import timezone
 
@@ -31,6 +32,21 @@ def serialize_notification(notification: Notification) -> dict:
         "expires_at": notification.expires_at,
         "created_at": notification.created_at,
     }
+
+
+def _normalize_payload(value: Any) -> Any:
+    """
+    将 payload 中的 datetime/date 等不可序列化对象转换为字符串，避免 JSONField 抛错。
+    """
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, list):
+        return [_normalize_payload(v) for v in value]
+    if isinstance(value, tuple):
+        return tuple(_normalize_payload(v) for v in value)
+    if isinstance(value, dict):
+        return {k: _normalize_payload(v) for k, v in value.items()}
+    return value
 
 
 def build_dedup_key(
@@ -82,7 +98,7 @@ class NotificationCreateService(BaseService[Notification]):
             dedup_key: str | None = None,
             expires_at=None,
     ) -> Notification:
-        payload = payload or {}
+        payload = _normalize_payload(payload or {})
         dedup_key = dedup_key or ""
         existing = self.repo.get_by_dedup(user=user, dedup_key=dedup_key)
         data = {

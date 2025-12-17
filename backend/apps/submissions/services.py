@@ -13,7 +13,12 @@ from apps.common.exceptions import (
 )
 from apps.accounts.models import User
 from apps.challenges.models import ChallengeSolve
-from apps.challenges.repo import ChallengeRepo, ChallengeSolveRepo, ChallengeHintRepo
+from apps.challenges.repo import (
+    ChallengeRepo,
+    ChallengeSolveRepo,
+    ChallengeHintRepo,
+    ChallengeHintUnlockRepo,
+)
 from apps.contests.services import ContestContextService, ScoreboardService
 from apps.contests.repo import TeamMemberRepo
 from apps.common.infra import redis_client
@@ -80,7 +85,8 @@ class SubmissionService(BaseService[Submission]):
         self.challenge_repo = challenge_repo or ChallengeRepo()
         self.solve_repo = solve_repo or ChallengeSolveRepo()
         self.member_repo = member_repo or TeamMemberRepo()
-        self.hint_repo = hint_repo or ChallengeHintRepo()
+        # 提示扣分需读取解锁记录，默认使用 ChallengeHintUnlockRepo 以便统计成本
+        self.hint_repo = hint_repo or ChallengeHintUnlockRepo()
         self.submission_repo = submission_repo or SubmissionRepo()
         self.scoreboard_service = scoreboard_service or ScoreboardService()
 

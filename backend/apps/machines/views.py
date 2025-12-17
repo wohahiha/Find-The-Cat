@@ -44,9 +44,9 @@ class MachineListCreateView(APIView):
         parameters=pagination_parameters(),
     )
     def get(self, request: Request) -> Response:
-        # 查询当前登录用户的所有实例，按创建时间倒序
+        # 查询当前登录用户“运行中”的实例，按创建时间倒序；已停止实例不再返回
         queryset = (
-            self.repo.filter(user=request.user)
+            self.repo.filter(user=request.user, status=self.repo.model.Status.RUNNING)
             .select_related("contest", "challenge", "team")
             .order_by("-created_at")
         )

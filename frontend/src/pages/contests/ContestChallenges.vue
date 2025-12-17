@@ -102,7 +102,7 @@
               <p class="text-xs uppercase tracking-[0.08em] text-primary">题目详情</p>
               <h2 class="text-2xl font-bold leading-tight">{{ selectedChallenge?.title || selectedChallenge?.name }}</h2>
               <p class="text-sm text-muted mt-1">{{ selectedChallenge?.short_description || selectedChallenge?.description }}</p>
-              <div class="mt-2 flex flex-wrap gap-3 text-xs text-muted">
+              <div class="mt-2 flex flex-wrap gap-3 text-sm text-text font-medium">
                 <span v-if="selectedChallenge?.category">分类：{{ selectedChallenge.category }}</span>
                 <span>分值：{{ displayPoints(selectedChallenge || {}) }} pts</span>
                 <span v-if="selectedChallenge?.difficulty">难度：{{ selectedChallenge.difficulty }}</span>
@@ -397,14 +397,18 @@ const showModal = ref(false)
 const modalForMachine = ref(false)
 
 const openModal = (chal, forMachine = false) => {
+  // 切换到新题目时重置靶机状态；同一题目则保留已知实例信息
+  const isSameChallenge = selectedChallenge.value?.slug === chal.slug
   selectedChallenge.value = chal
   attachments.value = chal.attachments || []
   hints.value = chal.hints || []
   modalForMachine.value = !!forMachine
   flagInputs[chal.slug] = flagInputs[chal.slug] || ''
-  machineInfo.value = null
-  machineError.value = ''
-  clearCountdown()
+  if (!isSameChallenge) {
+    machineInfo.value = null
+    machineError.value = ''
+    clearCountdown()
+  }
   if (chal.has_machine) {
     fetchMachineForChallenge(chal)
   }
@@ -420,7 +424,6 @@ const closeModal = () => {
   hints.value = []
   machineLoading.value = false
   machineError.value = ''
-  machineInfo.value = null
   clearCountdown()
 }
 
@@ -463,7 +466,22 @@ const unlockHint = async (hint) => {
     )
     const unlocked = res?.data?.data?.hint || res?.data?.hint || res?.data || {}
     hints.value = hints.value.map((h) => (h.id === hint.id ? { ...h, ...unlocked, unlocked: true } : h))
+    const cost = Number(unlocked.cost ?? hint.cost ?? 0)
+    const totalCost = Number(unlocked.total_cost ?? 0)
+    if (selectedChallenge.value) {
+      const base = selectedChallenge.value.base_points || displayPoints(selectedChallenge.value)
+      const newPoints =
+        unlocked.current_points !== undefined
+          ? Number(unlocked.current_points)
+          : Math.max(base - totalCost - cost, 0)
+      selectedChallenge.value = { ...selectedChallenge.value, current_points: newPoints }
+      challenges.value = challenges.value.map((c) =>
+        c.slug === selectedChallenge.value.slug ? { ...c, current_points: newPoints } : c,
+      )
+    }
     toast.success('提示已解锁')
+    // 刷新详情以获取后端最新分值/提示状态
+    fetchChallengeDetail(selectedChallenge.value?.slug)
   } catch (err) {
     toast.error(parseApiError(err, '解锁提示失败'))
   } finally {
@@ -555,6 +573,8 @@ const startMachine = async () => {
     })
     machineInfo.value = res?.data?.data?.machine || res?.data?.machine || null
     toast.success('靶机启动中，可前往靶机页查看')
+    // 启动后再拉取列表，确保实例存在于后台列表
+    fetchMachineForChallenge(selectedChallenge.value)
     updateCountdown(machineInfo.value)
   } catch (err) {
     machineError.value = parseApiError(err)
@@ -614,16 +634,18 @@ const fetchMachineForChallenge = async (chal) => {
   try {
     const res = await api.get('/machines/', { params: { page_size: 50 } })
     const items = res?.data?.data?.items || res?.data?.items || []
-    const found = items.find(
+    // 优先运行中的实例，否则取最近的同题目实例
+    const candidates = items.filter(
       (m) =>
         (m.challenge === chal.slug || m.challenge_slug === chal.slug) &&
-        (m.contest === contestSlug.value || m.contest_slug === contestSlug.value) &&
-        m.status === 'running'
+        (m.contest === contestSlug.value || m.contest_slug === contestSlug.value),
     )
-    if (found) {
-      machineInfo.value = found
-      updateCountdown(machineInfo.value)
+    let found = candidates.find((m) => m.status === 'running')
+    if (!found && candidates.length) {
+      found = candidates[0]
     }
+    machineInfo.value = found || null
+    updateCountdown(machineInfo.value)
   } catch (err) {
     // 静默处理
   } finally {

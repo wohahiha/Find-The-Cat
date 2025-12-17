@@ -39,7 +39,15 @@
           <div class="text-xs text-muted space-y-1">
             <p v-if="machine.expire_at">到期：{{ formatDateTime(machine.expire_at) }}</p>
             <p v-if="machine.created_at">创建：{{ formatDateTime(machine.created_at) }}</p>
-            <p v-if="machine.challenge">关联题目：{{ machine.challenge }}</p>
+            <p v-if="machine.challenge">
+              关联题目：
+              <RouterLink
+                class="text-primary hover:underline"
+                :to="challengeLink(machine)"
+              >
+                {{ machine.challenge }}
+              </RouterLink>
+            </p>
             <p v-if="countdowns[machine.id] !== null && countdowns[machine.id] !== undefined">
               剩余：{{ displayCountdown(countdowns[machine.id]) }}
             </p>
@@ -103,7 +111,7 @@ const fetchMachines = async () => {
   loading.value = true
   error.value = ''
   try {
-    const res = await api.get('/machines/')
+    const res = await api.get('/machines/', { params: { page_size: 50 } })
     const data = res?.data?.data || res?.data || {}
     const list = data.items || data || []
     machines.value = list
@@ -162,6 +170,15 @@ const extendMachine = async (machine) => {
     toast.error(parseApiError(err))
   } finally {
     stopping[machine.id] = false
+  }
+}
+
+const challengeLink = (machine) => {
+  if (!machine?.contest || !machine?.challenge) return `/contests`
+  // 跳转到比赛题目页，携带 query 以便前端打开对应题目
+  return {
+    path: `/contests/${machine.contest}/challenges`,
+    query: { challenge: machine.challenge },
   }
 }
 
