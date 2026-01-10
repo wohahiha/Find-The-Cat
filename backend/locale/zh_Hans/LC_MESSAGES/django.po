@@ -1,0 +1,10 @@
+# Django 自定义翻译覆盖：将后台左侧“认证和授权”显示为英文，保持与 ACCOUNTS/SUBMISSIONS 匹配
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: zh_Hans\n"
+
+# Admin app label: Authentication and Authorization -> English uppercase
+msgid "Authentication and Authorization"
+msgstr "AUTHENTICATION AND AUTHORIZATION"

@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  demo-web:
+    image: nginx:alpine
+    container_name: ftc_demo_web
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      FLAG: "DEMO{Replace_with_real_flag}"
+    command: ["/bin/sh", "-c", "echo $FLAG > /usr/share/nginx/html/flag.txt && nginx -g 'daemon off;'"]
+    labels:
+      org.ftc.role: "demo-machine"
+      org.ftc.challenge: "portal-probe"
+
+  demo-ssrf:
+    image: nginx:alpine
+    container_name: ftc_demo_ssrf
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    environment:
+      FLAG: "DEMO{SSRF_sample_flag}"
+    command: ["/bin/sh", "-c", "echo $FLAG > /usr/share/nginx/html/flag.txt && nginx -g 'daemon off;'"]
+    labels:
+      org.ftc.role: "demo-machine"
+      org.ftc.challenge: "ssrf-lab"
