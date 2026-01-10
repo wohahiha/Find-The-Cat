@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>验证码邮件</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1665c0",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111821",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style type="text/css">
+        body,
+        table,
+        td,
+        a {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        table,
+        td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        img {
+            -ms-interpolation-mode: bicubic;
+        }
+        a[x-apple-data-detectors] {
+            font-family: inherit !important;
+            font-size: inherit !important;
+            font-weight: inherit !important;
+            line-height: inherit !important;
+            color: inherit !important;
+            text-decoration: none !important;
+        }
+        div[style*="margin: 16px 0;"] {
+            margin: 0 !important;
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f6f7f8; font-family: Inter, sans-serif;">
+<div style="display: none; font-size: 1px; color: #fefefe; line-height: 1px; font-family: Inter, sans-serif; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+        您的验证码已生成。
+    </div>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tbody><tr>
+            <td align="center" bgcolor="#f6f7f8" style="padding: 20px 15px 20px 15px;">
+                <table border="0" cellpadding="0" cellspacing="0" style="max-width: 600px;" width="100%">
+                    <!-- LOGO -->
+                    {% if logo_cid %}
+                    <tbody><tr>
+                        <td align="center" style="padding: 0px 0px 20px 0px;">
+                            <img alt="{{ brand }} Logo" border="0" height="auto" src="cid:{{ logo_cid }}" style="display: block; width: 120px; max-width: 120px; min-width: 120px; font-family: Inter, sans-serif; color: #333333; font-size: 16px;" width="120" />
+                        </td>
+                    </tr>
+                    {% endif %}
+                    <!-- CARD -->
+                    <tr>
+                        <td align="center" bgcolor="#ffffff" style="padding: 40px 30px 40px 30px; border-radius: 0.75rem;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <!-- TITLE -->
+                                <tbody><tr>
+                                    <td align="center" style="padding: 0 0 16px 0;">
+                                        <h1 style="font-family: Inter, sans-serif; font-size: 32px; font-weight: 700; line-height: 1.2; color: #111418; margin: 0;">您的验证码</h1>
+                                    </td>
+                                </tr>
+                                <!-- BODY TEXT -->
+                                <tr>
+                                    {% if brand %}
+                                    <td align="center" style="padding: 0 0 16px 0;">
+                                        <p style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.5; color: #111418; margin: 0;">我们收到了您关于 {{ brand }} 账户的{{ scene }}请求。</p>
+                                    </td>
+                                    {% else %}
+                                    <td align="center" style="padding: 0 0 16px 0;">
+                                        <p style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.5; color: #111418; margin: 0;">我们收到了{{ scene }}请求。</p>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                <!-- CONFIRMATION CODE -->
+                                <tr>
+                                    <td align="center" style="padding: 12px 0;">
+                                        <div style="background-color: #f0f2f4; border-radius: 0.5rem; padding: 16px 24px;">
+                                            <p style="font-family: 'Courier New', Courier, monospace; font-size: 48px; font-weight: 700; color: #1665c0; margin: 0; letter-spacing: 12px;">{{ code }}</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- META TEXT -->
+                                <tr>
+                                    <td align="center" style="padding: 12px 0 24px 0;">
+                                        <p style="font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; line-height: 1.5; color: #637488; margin: 0;">本验证码有效期 {{ expire_minutes }} 分钟。</p>
+                                    </td>
+                                </tr>
+                                <!-- DIVIDER -->
+                                <tr>
+                                    <td align="center" style="padding: 0 0 24px 0;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                            <tbody><tr>
+                                                <td height="1" style="font-size: 1px; line-height: 1px; background-color: #e5e7eb;"> </td>
+                                            </tr>
+                                        </tbody></table>
+                                    </td>
+                                </tr>
+                                <!-- SECURITY TIP -->
+                                <tr>
+                                    <td align="center">
+                                        <p style="font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; line-height: 1.5; color: #637488; margin: 0;">如果不是您本人操作，请忽略此邮件</p>
+                                    </td>
+                                </tr>
+                            </tbody></table>
+                        </td>
+                    </tr>
+                    <!-- FOOTER -->
+                    <tr>
+                        <td align="center" style="padding: 30px 10px 0px 10px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tbody>
+                                <tr>
+                                    <td align="center">
+                                        <p style="margin: 0; font-family: Inter, sans-serif; font-size: 12px; line-height: 1.5; color: #637488;">
+                                            本邮件为系统自动发送，请勿直接回复。
+                                            {% if support_email %}<br /> 如有问题，请联系支持邮箱：
+                                            <a href="mailto:{{ support_email }}" style="color: #1665c0; text-decoration: none;">{{ support_email }}</a>{% endif %}
+                                        </p>
+                                    </td>
+                                </tr>
+                                {% if brand or site_url %}
+                                <tr>
+                                    <td align="center" style="padding: 10px 0 0 0;">
+                                        <p style="margin: 0; font-family: Inter, sans-serif; font-size: 12px; line-height: 1.5; color: #637488;">
+                                            {% if brand %}© {{ brand }}{% endif %}{% if brand and site_url %} | {% endif %}{% if site_url %}<a href="{{ site_url }}" style="color: #1665c0; text-decoration: none;">访问我们的网站</a>{% endif %}
+                                        </p>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody></table>
+                        </td>
+                    </tr>
+                </tbody></table>
+            </td>
+        </tr>
+    </tbody></table>
+</body>
+</html>

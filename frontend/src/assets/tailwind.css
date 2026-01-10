@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+
+/* Material symbols usage */
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background-color: theme('colors.background-dark');
+    color: theme('colors.text');
+    @apply font-display antialiased;
+    overflow-y: scroll;
+  }
+}
+
+/* Green theme helper: wrap page with class="theme-green" to switch to green accent and alt font */
+.theme-green {
+  --tw-text-opacity: 1;
+  color: theme('colors.text');
+  font-family: theme('fontFamily.alt');
+}
+.theme-green .text-primary,
+.theme-green .hover\:text-primary:hover,
+.theme-green .focus\:border-primary:focus,
+.theme-green .focus\:ring-primary\/40,
+.theme-green .focus\:ring-primary\/50,
+.theme-green .bg-primary,
+.theme-green .hover\:bg-primary\/90:hover,
+.theme-green .border-primary,
+.theme-green .border-primary\/20,
+.theme-green .hover\:border-primary\/40:hover,
+.theme-green .hover\:border-primary\/50:hover,
+.theme-green .ring-primary {
+  color: theme('colors.primary-green') !important;
+  border-color: theme('colors.primary-green') !important;
+  background-color: theme('colors.primary-green') !important;
+  --tw-ring-color: theme('colors.primary-green') !important;
+}
+
+/* Remove browser autofill green/yellow background on dark inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e8ecff !important;
+  caret-color: #e8ecff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #181d34 inset !important;
+  box-shadow: 0 0 0px 1000px #181d34 inset !important;
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s;
+}

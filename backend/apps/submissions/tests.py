@@ -19,6 +19,7 @@ from apps.common.tests_utils import AuthenticatedAPIMixin
 from apps.common.exceptions import ValidationError
 from apps.contests.repo import TeamRepo, TeamMemberRepo
 from apps.contests.models import TeamMember
+from apps.common.security import get_flag_secret
 
 from .schemas import SubmissionCreateSchema
 from .services import SubmissionService
@@ -173,7 +174,8 @@ class SubmissionServiceTests(TestCase):
     @staticmethod
     def _build_dynamic_flag(contest, challenge_slug: str, user):
         challenge = ChallengeRepo().get_by_slug(contest=contest, slug=challenge_slug)
-        return challenge.build_expected_flag(user=user, secret=settings.SECRET_KEY)  # type: ignore[attr-defined]
+        membership = TeamMemberRepo().get_membership(contest=contest, user=user)
+        return challenge.build_expected_flag(user=user, membership=membership, secret=get_flag_secret())  # type: ignore[attr-defined]
 
 
 @override_settings(
@@ -303,4 +305,5 @@ class SubmissionsAPITestCase(AuthenticatedAPIMixin, APITestCase):
 
     @staticmethod
     def _build_dynamic_flag(_contest, challenge, user):
-        return challenge.build_expected_flag(user=user, membership=None, secret=settings.SECRET_KEY)  # type: ignore[attr-defined]
+        membership = TeamMemberRepo().get_membership(contest=_contest, user=user)
+        return challenge.build_expected_flag(user=user, membership=membership, secret=get_flag_secret())  # type: ignore[attr-defined]

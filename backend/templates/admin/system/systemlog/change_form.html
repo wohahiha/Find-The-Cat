@@ -1,0 +1,12 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{# 系统日志详情页：在对象工具栏追加导出按钮，保持默认操作不变 #}
+{% block object-tools-items %}
+{% if single_export_urls %}
+<li><a class="button" href="{{ single_export_urls.txt }}">导出为 TXT</a></li>
+<li><a class="button" href="{{ single_export_urls.csv }}">导出为 CSV</a></li>
+<li><a class="button" href="{{ single_export_urls.json }}">导出为 JSON</a></li>
+{% endif %}
+{{ block.super }}
+{% endblock %}
