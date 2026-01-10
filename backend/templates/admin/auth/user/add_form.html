@@ -1,0 +1,10 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{# 用户新增表单模板覆盖：仅替换顶部提示为中文，其余沿用默认 change_form 行为 #}
+{% block content %}
+{% if not is_popup %}
+<p class="help">请先填写用户名和密码，保存后可继续编辑更多用户选项</p>
+{% endif %}
+{{ block.super }}
+{% endblock %}

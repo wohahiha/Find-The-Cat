@@ -1,0 +1,44 @@
+{% load i18n %}
+{# 后台批量操作区域：将批量动作渲染为按钮，配合选择计数与全选提示 #}
+{% if action_form %}
+<div class="actions actions-as-buttons">
+    <div class="action-hidden-fields">
+        {# 隐藏域：保留 action 以外的辅助字段，确保提交状态正确 #}
+        {% for field in action_form %}
+        {% if field.name != 'action' %}
+        {{ field }}
+        {% endif %}
+        {% endfor %}
+    </div>
+    <div class="action-buttons">
+        {# 将可用的批量动作渲染为独立按钮，方便一键执行 #}
+        {% for choice in action_form.fields.action.choices %}
+        {% if choice.0 %}
+        <button
+                type="submit"
+                class="button action-button"
+                name="action"
+                value="{{ choice.0 }}"
+                title="{% blocktranslate with action_name=choice.1 trimmed %}执行 {{ action_name }}{% endblocktranslate %}">
+            {{ choice.1 }}
+        </button>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% if actions_selection_counter %}
+    {# 选择计数提示：展示当前选中数量并提供全选/清除入口 #}
+    <span class="action-counter" data-actions-icnt="{{ cl.result_list|length }}">{{ selection_note }}</span>
+    {% if cl.result_count != cl.result_list|length %}
+    <span class="all hidden">{{ selection_note_all }}</span>
+    <span class="question hidden">
+          <a role="button" href="#" title="{% translate '点击此处选择所有分页内的对象' %}">
+            {% blocktranslate with cl.result_count as total_count trimmed %}全选 {{ total_count }} 个 {{ module_name }}{% endblocktranslate %}
+          </a>
+        </span>
+    <span class="clear hidden">
+          <a role="button" href="#">{% translate '清除选择' %}</a>
+        </span>
+    {% endif %}
+    {% endif %}
+</div>
+{% endif %}
