@@ -1,13 +1,7 @@
 # Find The Cat（FTC）
 
-**A Comprehensive CTF Center**
-
-------
-
 ## 📖 项目简介 / Project Overview
 FTC 是一款现代化的 CTF 竞赛与练习平台，支持比赛发布、题库管理、战队/榜单、通知与验证码登录，以及靶机容器的调度。
-
-FTC is a modern CTF platform for contests and practice, covering contest/scoreboard/team management, problem bank, notifications with captcha login, and dynamic machine orchestration.
 
 ### ✨ 核心特性 / Key Features
 - 🖥️ 现代化界面：Vite 构建的前端，Nginx 提供静态与反代。
@@ -111,22 +105,6 @@ FTC/
 
 ------
 
-## 🤝 贡献指南 / Contributing
-
-我们欢迎所有形式的贡献！
-
-We welcome all forms of contributions!
-
-### 🐛 问题反馈 / Bug Reports
-
-如果您发现了 bug，请在 [Issues](https://github.com/carbofish/A1CTF/issues) 页面提交问题报告。
-
-### 💡 功能建议 / Feature Requests
-
-有好的想法？欢迎在 [Discussions](https://github.com/carbofish/A1CTF/discussions) 中分享！
-
-------
-
 ## 📄 许可证 / License
+本项目基于 MIT License 开源，详见 LICENSE。
 
-MIT License. Refer to `LICENSE`.
